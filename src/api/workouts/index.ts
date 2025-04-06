@@ -7,6 +7,7 @@ import type { WorkoutLog, WorkoutLogPayload } from '@/types'; // Define these ty
 const workoutKeys = {
     all: ['workouts'] as const,
     history: () => [...workoutKeys.all, 'history'] as const, // Key for the current user's history
+    details: (workoutLogId: string) => [...workoutKeys.all, 'details', workoutLogId] as const, // Key for specific workout details
     // Add keys for specific logs if needed: details: (logId) => [...]
 };
 
@@ -66,3 +67,24 @@ export const useDeleteWorkoutLog = () => {
         },
     });
 }
+
+/** Hook for fetching a specific workout log with its details */
+export const useWorkoutLogDetails = (userId: string) => {
+    return useQuery({
+        queryKey: workoutKeys.details(userId),
+        queryFn: () => workoutsApi.fetchUserWorkouts(userId),
+        enabled: !!userId, // Only run the query if workoutLogId is available
+       
+    });
+};
+
+
+/** Hook for fetching a specific workout log with its details (formatted) */
+export const useWorkoutLogDetailsFormatted = (workoutLogId: string) => {
+    return useQuery({
+        queryKey: workoutKeys.details(workoutLogId), // Reusing the same detail key for consistency
+        queryFn: () => workoutsApi.fetchUserWorkoutsFormatted(workoutLogId),
+        enabled: !!workoutLogId, // Only run the query if workoutLogId is available
+     
+    });
+};

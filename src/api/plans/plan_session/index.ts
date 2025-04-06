@@ -1,5 +1,5 @@
 // src/api/plans/session/index.ts
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import * as sessionApi from './endpoint'; // Relative import
 import type { PlanSession, PlanDetail } from '@/types/planTypes'; // Adjust path
 import type { CreateSessionPayload, UpdateSessionPayload } from './endpoint'; // Import payload types
@@ -84,5 +84,16 @@ export const useDeletePlanSession = () => {
             console.error(`Mutation Error useDeletePlanSession (ID: ${variables.sessionId}):`, error);
             alert(`Delete Session Error: ${error.message}`); // Replace UI
         },
+    });
+};
+
+/**
+ * Hook for fetching a plan session by its ID.
+ */
+export const usePlanSession = (sessionId: string) => {
+    return useQuery<PlanSession, Error>({
+        queryKey: ['planSession', sessionId],
+        queryFn: () => sessionApi.fetchPlanSession(sessionId),
+        enabled: !!sessionId, // Only fetch if sessionId is provided
     });
 };

@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 // import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreatePlanSchema, CreatePlanPayload } from '@/types/type'; // Adjust path
 import { useCreatePlan } from '@/api/plans/plan';
+import { useTeamStore } from '@/store/useTeamStore';
 
 interface CreatePlanFormProps {
   onSuccess?: () => void; // Optional callback on successful creation
@@ -27,6 +28,7 @@ interface CreatePlanFormProps {
 
 export function CreatePlanForm({ onSuccess }: CreatePlanFormProps) {
   const createPlanMutation = useCreatePlan();
+  const selectedTeamId = useTeamStore((state) => state.selectedTeamId); // Assuming temp is a team ID or similar
 
   const form = useForm<CreatePlanPayload>({
     resolver: zodResolver(CreatePlanSchema),
@@ -40,17 +42,26 @@ export function CreatePlanForm({ onSuccess }: CreatePlanFormProps) {
 
   function onSubmit(values: CreatePlanPayload) {
     console.log("Submitting Plan Data:", values);
-    createPlanMutation.mutate(values, {
-        onSuccess: (newPlan) => {
-            console.log("Plan created via mutation:", newPlan);
-            form.reset(); // Reset form fields
-            onSuccess?.(); // Call the success callback (e.g., close dialog)
-        },
-        onError: (error) => {
-            // Error is already logged/alerted by the hook, but you could add more specific handling
-            console.error("Form submission error:", error);
+    if (selectedTeamId) {
+      createPlanMutation.mutate(
+        {
+          title: values.title,
+          description: values.description,
+          visibility: 'team',
+          allow_public_forking: false,
+          team_id: selectedTeamId // Include team ID if available,
         }
-    });
+      )
+    } else {
+      createPlanMutation.mutate(
+        {
+          title: values.title,
+          description: values.description,
+          visibility: 'private',
+          allow_public_forking: false
+        }
+      )
+    }
   }
 
   return (
@@ -87,7 +98,7 @@ export function CreatePlanForm({ onSuccess }: CreatePlanFormProps) {
                   placeholder="Briefly describe the goal or focus of this plan..."
                   className="resize-none"
                   {...field}
-                   // Assign value explicitly to handle potential null from optional field
+                  // Assign value explicitly to handle potential null from optional field
                   value={field.value ?? ''}
                 />
               </FormControl>

@@ -17,6 +17,27 @@ export type UpdateSessionPayload = Partial<Omit<CreateSessionPayload, 'plan_day_
 
 
 /**
+ * Fetches a plan session by its ID.
+ * Assumes RLS policy handles authorization.
+ */
+export const fetchPlanSession = async (sessionId: string): Promise<PlanSession> => {
+    const { data: session, error } = await supabase
+        .from('plan_sessions')
+        .select('*, plan_session_exercises(*, exercises(*), plan_session_exercise_sets(*))') // Fetch the session record
+        .eq('id', sessionId)
+        .single();
+
+    if (error) {
+        console.error(`API Error fetchPlanSession (ID: ${sessionId}):`, error);
+        throw new Error(error.message);
+    }
+    if (!session) {
+        throw new Error("Plan session not found or unauthorized.");
+    }
+    return session as PlanSession;
+};
+
+/**
  * Creates a new session within a specified plan day.
  * Assumes RLS policy handles authorization.
  */

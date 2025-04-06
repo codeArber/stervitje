@@ -74,3 +74,27 @@ export const deleteWorkoutLog = async (workoutLogId: string): Promise<{ success:
     }
     return { success: true };
 }
+
+export async function fetchUserWorkouts(userId: string) {
+    const { data, error } = await supabase
+      .rpc('get_user_workouts_with_details', { p_user_id: userId });
+  
+    if (error) {
+      console.error('Error fetching workouts:', error);
+      return null;
+    }
+  
+    return data;
+  }
+
+export async function fetchUserWorkoutsFormatted(userId: string) {
+    const { data, error } = await supabase
+      .rpc('get_user_workouts_formatted', { p_user_id: userId });
+  
+    if (error) {
+      console.error('Error fetching formatted workouts:', error);
+      return null;
+    }
+  
+    return data?.[0]?.workouts; // The result will be an array of workouts in the 'workouts' column
+  }

@@ -14,6 +14,15 @@ const teamKeys = {
 
 // --- Hooks ---
 
+/** Hook to fetch all teams for a specific member */
+export const useFetchAllTeamsForMember = (userId: string | null | undefined) => {
+    return useQuery<Team[], Error>({
+        queryKey: [...teamKeys.all, 'forMember', userId],
+        queryFn: () => teamsApi.fetchAllTeamsForMember(userId),
+        enabled: !!userId, // Only fetch if userId is provided
+    });
+};
+
 /** Hook to fetch details of a specific team */
 export const useTeamDetails = (teamId: string | null | undefined) => {
     return useQuery<Team | null, Error>({ // Specify return type
@@ -32,25 +41,50 @@ export const useTeamMembers = (teamId: string | null | undefined) => {
     });
 };
 
-/** Hook to create a new team */
-export const useCreateTeam = () => {
-    const queryClient = useQueryClient();
-    const { data: userContext } = useUserContext(); // Get user context for invalidation
+// Define a clear payload type (adjust optionality based on your API)
+export interface CreateTeamPayload {
+    name: string;
+    description?: string;
+    sport?: string;
+    is_private?: boolean;
+    logo_url?: string;
+}
 
-    return useMutation<Team, Error, Pick<Team, 'name' | 'description' | 'sport' | 'is_private' | 'logo_url'>>({
-        mutationFn: teamsApi.createTeam,
-        onSuccess: (newTeam) => {
-            // Invalidate user context because their team list has changed
-            queryClient.invalidateQueries({ queryKey: ['userContext'] }); // Invalidate user context
-            // Optional: Add the new team to a cached list of user's teams if applicable
+/** Hook to create a new team */
+export const useCreateTeam = (userId: string) => {
+    const queryClient = useQueryClient();
+    // const { data: userContext } = useUserContext(); // Keep if you *really* need to invalidate ['userContext']
+
+    return useMutation<Team, Error, CreateTeamPayload>({ // Use the dedicated payload type
+        mutationFn: teamsApi.createTeam, // This function likely takes CreateTeamPayload
+        onSuccess: (newTeam, variables) => {
+            console.log('Team created successfully:', newTeam);
+
+            // --- Invalidate queries ---
+
+            // 1. Most Important: Invalidate the list of teams the user is a member of
+            if (userId) {
+                // *** Replace with the ACTUAL query key used by useFetchAllTeamsForMember ***
+                queryClient.invalidateQueries({ queryKey: ['teams', 'member', userId] });
+                queryClient.invalidateQueries({ queryKey: ['teams', 'forMember', userId] });
+                // Example alternative key structures: ['userTeams', userId], ['teams', { userId }]
+            } else {
+                console.warn('User ID not found, could not invalidate team list query.');
+            }
+
+            // 2. Optional: Invalidate user context if it depends on the team list
+            // queryClient.invalidateQueries({ queryKey: ['userContext'] });
+
+            // 3. Optional: You could potentially add the newTeam to the cache optimistically here
+            // using queryClient.setQueryData(['teams', 'member', userId], (oldData) => ...);
         },
         onError: (error) => {
-            console.error("Mutation Error useCreateTeam:", error);
-             alert(`Create Team Error: ${error.message}`);
+            // Log the error for debugging. Avoid alert().
+            console.error("Mutation Error - useCreateTeam:", error);
+            // The component calling mutate should handle user-facing error messages (e.g., toasts)
         },
     });
 };
-
 /** Hook to add a member to a team */
 export const useAddTeamMember = () => {
     const queryClient = useQueryClient();

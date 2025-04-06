@@ -20,6 +20,29 @@ export const fetchTeamDetails = async (teamId: string | null | undefined): Promi
     return data as Team | null;
 }
 
+/** Fetches all teams for a specific member */
+export const fetchAllTeamsForMember = async (userId: string | null | undefined): Promise<Team[]> => {
+    if (!userId) return [];
+
+    // Rely on RLS to ensure the user can only see teams they are a member of
+    const { data, error } = await supabase
+        .from('team_members')
+        .select(`
+            team_id,
+            teams ( id, name, description, sport, is_private, logo_url, created_by )
+        `)
+        .eq('user_id', userId);
+
+    if (error) {
+        console.error(`API Error fetchAllTeamsForMember (User ID: ${userId}):`, error);
+        throw new Error(error.message);
+    }
+
+    // Extract and return the teams
+    return (data?.map(m => m.teams) || []) as unknown as Team[];
+};
+
+
 /** Fetches members of a specific team (includes user profile info) */
 export const fetchTeamMembers = async (teamId: string | null | undefined): Promise<TeamMemberWithProfile[]> => {
      if (!teamId) return [];

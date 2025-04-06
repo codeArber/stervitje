@@ -8,18 +8,39 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { createFileRoute } from '@tanstack/react-router'
+
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as LayoutImport } from './routes/_layout'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutAboutImport } from './routes/_layout/about'
+import { Route as LayoutSettingsIndexImport } from './routes/_layout/settings/index'
 import { Route as LayoutPlansIndexImport } from './routes/_layout/plans/index'
+import { Route as LayoutHistoryIndexImport } from './routes/_layout/history/index'
 import { Route as LayoutExerciseIndexImport } from './routes/_layout/exercise/index'
+import { Route as LayoutDiscoverIndexImport } from './routes/_layout/discover/index'
+import { Route as LayoutSessionIdIndexImport } from './routes/_layout/$sessionId/index'
 import { Route as LayoutExerciseExerciseIdImport } from './routes/_layout/exercise/$exerciseId'
-import { Route as LayoutPlansPlanIdIndexImport } from './routes/_layout/plans/$planId/index'
-import { Route as LayoutPlansPlanIdWeekIdIndexImport } from './routes/_layout/plans/$planId/$weekId/index'
-import { Route as LayoutPlansPlanIdWeekIdDayIdIndexImport } from './routes/_layout/plans/$planId/$weekId/$dayId/index'
+import { Route as LayoutPlansPlanIdLayoutImport } from './routes/_layout/plans/$planId/_layout'
+import { Route as LayoutDiscoverPlanPlanIdImport } from './routes/_layout/discover/plan/$planId'
+import { Route as LayoutPlansPlanIdLayoutIndexImport } from './routes/_layout/plans/$planId/_layout/index'
+import { Route as LayoutPlansPlanIdLayoutWeekIdLayoutImport } from './routes/_layout/plans/$planId/_layout/$weekId/_layout'
+import { Route as LayoutPlansPlanIdLayoutWeekIdLayoutIndexImport } from './routes/_layout/plans/$planId/_layout/$weekId/_layout/index'
+import { Route as LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutImport } from './routes/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout'
+import { Route as LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexImport } from './routes/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/index'
+import { Route as LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutSessionIdIndexImport } from './routes/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/$sessionId/index'
+
+// Create Virtual Routes
+
+const LayoutPlansPlanIdImport = createFileRoute('/_layout/plans/$planId')()
+const LayoutPlansPlanIdLayoutWeekIdImport = createFileRoute(
+  '/_layout/plans/$planId/_layout/$weekId',
+)()
+const LayoutPlansPlanIdLayoutWeekIdLayoutDayIdImport = createFileRoute(
+  '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId',
+)()
 
 // Create/Update Routes
 
@@ -40,9 +61,27 @@ const LayoutAboutRoute = LayoutAboutImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutPlansPlanIdRoute = LayoutPlansPlanIdImport.update({
+  id: '/plans/$planId',
+  path: '/plans/$planId',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutSettingsIndexRoute = LayoutSettingsIndexImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutPlansIndexRoute = LayoutPlansIndexImport.update({
   id: '/plans/',
   path: '/plans/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutHistoryIndexRoute = LayoutHistoryIndexImport.update({
+  id: '/history/',
+  path: '/history/',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -52,30 +91,87 @@ const LayoutExerciseIndexRoute = LayoutExerciseIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutDiscoverIndexRoute = LayoutDiscoverIndexImport.update({
+  id: '/discover/',
+  path: '/discover/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutSessionIdIndexRoute = LayoutSessionIdIndexImport.update({
+  id: '/$sessionId/',
+  path: '/$sessionId/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutExerciseExerciseIdRoute = LayoutExerciseExerciseIdImport.update({
   id: '/exercise/$exerciseId',
   path: '/exercise/$exerciseId',
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutPlansPlanIdIndexRoute = LayoutPlansPlanIdIndexImport.update({
-  id: '/plans/$planId/',
-  path: '/plans/$planId/',
+const LayoutPlansPlanIdLayoutRoute = LayoutPlansPlanIdLayoutImport.update({
+  id: '/_layout',
+  getParentRoute: () => LayoutPlansPlanIdRoute,
+} as any)
+
+const LayoutDiscoverPlanPlanIdRoute = LayoutDiscoverPlanPlanIdImport.update({
+  id: '/discover/plan/$planId',
+  path: '/discover/plan/$planId',
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutPlansPlanIdWeekIdIndexRoute =
-  LayoutPlansPlanIdWeekIdIndexImport.update({
-    id: '/plans/$planId/$weekId/',
-    path: '/plans/$planId/$weekId/',
-    getParentRoute: () => LayoutRoute,
+const LayoutPlansPlanIdLayoutWeekIdRoute =
+  LayoutPlansPlanIdLayoutWeekIdImport.update({
+    id: '/$weekId',
+    path: '/$weekId',
+    getParentRoute: () => LayoutPlansPlanIdLayoutRoute,
   } as any)
 
-const LayoutPlansPlanIdWeekIdDayIdIndexRoute =
-  LayoutPlansPlanIdWeekIdDayIdIndexImport.update({
-    id: '/plans/$planId/$weekId/$dayId/',
-    path: '/plans/$planId/$weekId/$dayId/',
-    getParentRoute: () => LayoutRoute,
+const LayoutPlansPlanIdLayoutIndexRoute =
+  LayoutPlansPlanIdLayoutIndexImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => LayoutPlansPlanIdLayoutRoute,
+  } as any)
+
+const LayoutPlansPlanIdLayoutWeekIdLayoutRoute =
+  LayoutPlansPlanIdLayoutWeekIdLayoutImport.update({
+    id: '/_layout',
+    getParentRoute: () => LayoutPlansPlanIdLayoutWeekIdRoute,
+  } as any)
+
+const LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRoute =
+  LayoutPlansPlanIdLayoutWeekIdLayoutDayIdImport.update({
+    id: '/$dayId',
+    path: '/$dayId',
+    getParentRoute: () => LayoutPlansPlanIdLayoutWeekIdLayoutRoute,
+  } as any)
+
+const LayoutPlansPlanIdLayoutWeekIdLayoutIndexRoute =
+  LayoutPlansPlanIdLayoutWeekIdLayoutIndexImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => LayoutPlansPlanIdLayoutWeekIdLayoutRoute,
+  } as any)
+
+const LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRoute =
+  LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutImport.update({
+    id: '/_layout',
+    getParentRoute: () => LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRoute,
+  } as any)
+
+const LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexRoute =
+  LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRoute,
+  } as any)
+
+const LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutSessionIdIndexRoute =
+  LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutSessionIdIndexImport.update({
+    id: '/$sessionId/',
+    path: '/$sessionId/',
+    getParentRoute: () => LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRoute,
   } as any)
 
 // Populate the FileRoutesByPath interface
@@ -110,11 +206,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutExerciseExerciseIdImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/$sessionId/': {
+      id: '/_layout/$sessionId/'
+      path: '/$sessionId'
+      fullPath: '/$sessionId'
+      preLoaderRoute: typeof LayoutSessionIdIndexImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/discover/': {
+      id: '/_layout/discover/'
+      path: '/discover'
+      fullPath: '/discover'
+      preLoaderRoute: typeof LayoutDiscoverIndexImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/exercise/': {
       id: '/_layout/exercise/'
       path: '/exercise'
       fullPath: '/exercise'
       preLoaderRoute: typeof LayoutExerciseIndexImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/history/': {
+      id: '/_layout/history/'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof LayoutHistoryIndexImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/plans/': {
@@ -124,53 +241,215 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutPlansIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/plans/$planId/': {
-      id: '/_layout/plans/$planId/'
+    '/_layout/settings/': {
+      id: '/_layout/settings/'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof LayoutSettingsIndexImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/discover/plan/$planId': {
+      id: '/_layout/discover/plan/$planId'
+      path: '/discover/plan/$planId'
+      fullPath: '/discover/plan/$planId'
+      preLoaderRoute: typeof LayoutDiscoverPlanPlanIdImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/plans/$planId': {
+      id: '/_layout/plans/$planId'
       path: '/plans/$planId'
       fullPath: '/plans/$planId'
-      preLoaderRoute: typeof LayoutPlansPlanIdIndexImport
+      preLoaderRoute: typeof LayoutPlansPlanIdImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/plans/$planId/$weekId/': {
-      id: '/_layout/plans/$planId/$weekId/'
-      path: '/plans/$planId/$weekId'
+    '/_layout/plans/$planId/_layout': {
+      id: '/_layout/plans/$planId/_layout'
+      path: '/plans/$planId'
+      fullPath: '/plans/$planId'
+      preLoaderRoute: typeof LayoutPlansPlanIdLayoutImport
+      parentRoute: typeof LayoutPlansPlanIdRoute
+    }
+    '/_layout/plans/$planId/_layout/': {
+      id: '/_layout/plans/$planId/_layout/'
+      path: '/'
+      fullPath: '/plans/$planId/'
+      preLoaderRoute: typeof LayoutPlansPlanIdLayoutIndexImport
+      parentRoute: typeof LayoutPlansPlanIdLayoutImport
+    }
+    '/_layout/plans/$planId/_layout/$weekId': {
+      id: '/_layout/plans/$planId/_layout/$weekId'
+      path: '/$weekId'
       fullPath: '/plans/$planId/$weekId'
-      preLoaderRoute: typeof LayoutPlansPlanIdWeekIdIndexImport
-      parentRoute: typeof LayoutImport
+      preLoaderRoute: typeof LayoutPlansPlanIdLayoutWeekIdImport
+      parentRoute: typeof LayoutPlansPlanIdLayoutImport
     }
-    '/_layout/plans/$planId/$weekId/$dayId/': {
-      id: '/_layout/plans/$planId/$weekId/$dayId/'
-      path: '/plans/$planId/$weekId/$dayId'
+    '/_layout/plans/$planId/_layout/$weekId/_layout': {
+      id: '/_layout/plans/$planId/_layout/$weekId/_layout'
+      path: '/$weekId'
+      fullPath: '/plans/$planId/$weekId'
+      preLoaderRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutImport
+      parentRoute: typeof LayoutPlansPlanIdLayoutWeekIdRoute
+    }
+    '/_layout/plans/$planId/_layout/$weekId/_layout/': {
+      id: '/_layout/plans/$planId/_layout/$weekId/_layout/'
+      path: '/'
+      fullPath: '/plans/$planId/$weekId/'
+      preLoaderRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutIndexImport
+      parentRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutImport
+    }
+    '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId': {
+      id: '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId'
+      path: '/$dayId'
       fullPath: '/plans/$planId/$weekId/$dayId'
-      preLoaderRoute: typeof LayoutPlansPlanIdWeekIdDayIdIndexImport
-      parentRoute: typeof LayoutImport
+      preLoaderRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdImport
+      parentRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutImport
+    }
+    '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout': {
+      id: '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout'
+      path: '/$dayId'
+      fullPath: '/plans/$planId/$weekId/$dayId'
+      preLoaderRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutImport
+      parentRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRoute
+    }
+    '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/': {
+      id: '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/'
+      path: '/'
+      fullPath: '/plans/$planId/$weekId/$dayId/'
+      preLoaderRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexImport
+      parentRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutImport
+    }
+    '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/$sessionId/': {
+      id: '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/$sessionId/'
+      path: '/$sessionId'
+      fullPath: '/plans/$planId/$weekId/$dayId/$sessionId'
+      preLoaderRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutSessionIdIndexImport
+      parentRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutImport
     }
   }
 }
 
 // Create and export the route tree
 
+interface LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRouteChildren {
+  LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexRoute
+  LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutSessionIdIndexRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutSessionIdIndexRoute
+}
+
+const LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRouteChildren: LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRouteChildren =
+  {
+    LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexRoute:
+      LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexRoute,
+    LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutSessionIdIndexRoute:
+      LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutSessionIdIndexRoute,
+  }
+
+const LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRouteWithChildren =
+  LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRoute._addFileChildren(
+    LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRouteChildren,
+  )
+
+interface LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRouteChildren {
+  LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRouteWithChildren
+}
+
+const LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRouteChildren: LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRouteChildren =
+  {
+    LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRoute:
+      LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRouteWithChildren,
+  }
+
+const LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRouteWithChildren =
+  LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRoute._addFileChildren(
+    LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRouteChildren,
+  )
+
+interface LayoutPlansPlanIdLayoutWeekIdLayoutRouteChildren {
+  LayoutPlansPlanIdLayoutWeekIdLayoutIndexRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutIndexRoute
+  LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRouteWithChildren
+}
+
+const LayoutPlansPlanIdLayoutWeekIdLayoutRouteChildren: LayoutPlansPlanIdLayoutWeekIdLayoutRouteChildren =
+  {
+    LayoutPlansPlanIdLayoutWeekIdLayoutIndexRoute:
+      LayoutPlansPlanIdLayoutWeekIdLayoutIndexRoute,
+    LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRoute:
+      LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRouteWithChildren,
+  }
+
+const LayoutPlansPlanIdLayoutWeekIdLayoutRouteWithChildren =
+  LayoutPlansPlanIdLayoutWeekIdLayoutRoute._addFileChildren(
+    LayoutPlansPlanIdLayoutWeekIdLayoutRouteChildren,
+  )
+
+interface LayoutPlansPlanIdLayoutWeekIdRouteChildren {
+  LayoutPlansPlanIdLayoutWeekIdLayoutRoute: typeof LayoutPlansPlanIdLayoutWeekIdLayoutRouteWithChildren
+}
+
+const LayoutPlansPlanIdLayoutWeekIdRouteChildren: LayoutPlansPlanIdLayoutWeekIdRouteChildren =
+  {
+    LayoutPlansPlanIdLayoutWeekIdLayoutRoute:
+      LayoutPlansPlanIdLayoutWeekIdLayoutRouteWithChildren,
+  }
+
+const LayoutPlansPlanIdLayoutWeekIdRouteWithChildren =
+  LayoutPlansPlanIdLayoutWeekIdRoute._addFileChildren(
+    LayoutPlansPlanIdLayoutWeekIdRouteChildren,
+  )
+
+interface LayoutPlansPlanIdLayoutRouteChildren {
+  LayoutPlansPlanIdLayoutIndexRoute: typeof LayoutPlansPlanIdLayoutIndexRoute
+  LayoutPlansPlanIdLayoutWeekIdRoute: typeof LayoutPlansPlanIdLayoutWeekIdRouteWithChildren
+}
+
+const LayoutPlansPlanIdLayoutRouteChildren: LayoutPlansPlanIdLayoutRouteChildren =
+  {
+    LayoutPlansPlanIdLayoutIndexRoute: LayoutPlansPlanIdLayoutIndexRoute,
+    LayoutPlansPlanIdLayoutWeekIdRoute:
+      LayoutPlansPlanIdLayoutWeekIdRouteWithChildren,
+  }
+
+const LayoutPlansPlanIdLayoutRouteWithChildren =
+  LayoutPlansPlanIdLayoutRoute._addFileChildren(
+    LayoutPlansPlanIdLayoutRouteChildren,
+  )
+
+interface LayoutPlansPlanIdRouteChildren {
+  LayoutPlansPlanIdLayoutRoute: typeof LayoutPlansPlanIdLayoutRouteWithChildren
+}
+
+const LayoutPlansPlanIdRouteChildren: LayoutPlansPlanIdRouteChildren = {
+  LayoutPlansPlanIdLayoutRoute: LayoutPlansPlanIdLayoutRouteWithChildren,
+}
+
+const LayoutPlansPlanIdRouteWithChildren =
+  LayoutPlansPlanIdRoute._addFileChildren(LayoutPlansPlanIdRouteChildren)
+
 interface LayoutRouteChildren {
   LayoutAboutRoute: typeof LayoutAboutRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutExerciseExerciseIdRoute: typeof LayoutExerciseExerciseIdRoute
+  LayoutSessionIdIndexRoute: typeof LayoutSessionIdIndexRoute
+  LayoutDiscoverIndexRoute: typeof LayoutDiscoverIndexRoute
   LayoutExerciseIndexRoute: typeof LayoutExerciseIndexRoute
+  LayoutHistoryIndexRoute: typeof LayoutHistoryIndexRoute
   LayoutPlansIndexRoute: typeof LayoutPlansIndexRoute
-  LayoutPlansPlanIdIndexRoute: typeof LayoutPlansPlanIdIndexRoute
-  LayoutPlansPlanIdWeekIdIndexRoute: typeof LayoutPlansPlanIdWeekIdIndexRoute
-  LayoutPlansPlanIdWeekIdDayIdIndexRoute: typeof LayoutPlansPlanIdWeekIdDayIdIndexRoute
+  LayoutSettingsIndexRoute: typeof LayoutSettingsIndexRoute
+  LayoutDiscoverPlanPlanIdRoute: typeof LayoutDiscoverPlanPlanIdRoute
+  LayoutPlansPlanIdRoute: typeof LayoutPlansPlanIdRouteWithChildren
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAboutRoute: LayoutAboutRoute,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutExerciseExerciseIdRoute: LayoutExerciseExerciseIdRoute,
+  LayoutSessionIdIndexRoute: LayoutSessionIdIndexRoute,
+  LayoutDiscoverIndexRoute: LayoutDiscoverIndexRoute,
   LayoutExerciseIndexRoute: LayoutExerciseIndexRoute,
+  LayoutHistoryIndexRoute: LayoutHistoryIndexRoute,
   LayoutPlansIndexRoute: LayoutPlansIndexRoute,
-  LayoutPlansPlanIdIndexRoute: LayoutPlansPlanIdIndexRoute,
-  LayoutPlansPlanIdWeekIdIndexRoute: LayoutPlansPlanIdWeekIdIndexRoute,
-  LayoutPlansPlanIdWeekIdDayIdIndexRoute:
-    LayoutPlansPlanIdWeekIdDayIdIndexRoute,
+  LayoutSettingsIndexRoute: LayoutSettingsIndexRoute,
+  LayoutDiscoverPlanPlanIdRoute: LayoutDiscoverPlanPlanIdRoute,
+  LayoutPlansPlanIdRoute: LayoutPlansPlanIdRouteWithChildren,
 }
 
 const LayoutRouteWithChildren =
@@ -181,22 +460,37 @@ export interface FileRoutesByFullPath {
   '/about': typeof LayoutAboutRoute
   '/': typeof LayoutIndexRoute
   '/exercise/$exerciseId': typeof LayoutExerciseExerciseIdRoute
+  '/$sessionId': typeof LayoutSessionIdIndexRoute
+  '/discover': typeof LayoutDiscoverIndexRoute
   '/exercise': typeof LayoutExerciseIndexRoute
+  '/history': typeof LayoutHistoryIndexRoute
   '/plans': typeof LayoutPlansIndexRoute
-  '/plans/$planId': typeof LayoutPlansPlanIdIndexRoute
-  '/plans/$planId/$weekId': typeof LayoutPlansPlanIdWeekIdIndexRoute
-  '/plans/$planId/$weekId/$dayId': typeof LayoutPlansPlanIdWeekIdDayIdIndexRoute
+  '/settings': typeof LayoutSettingsIndexRoute
+  '/discover/plan/$planId': typeof LayoutDiscoverPlanPlanIdRoute
+  '/plans/$planId': typeof LayoutPlansPlanIdLayoutRouteWithChildren
+  '/plans/$planId/': typeof LayoutPlansPlanIdLayoutIndexRoute
+  '/plans/$planId/$weekId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutRouteWithChildren
+  '/plans/$planId/$weekId/': typeof LayoutPlansPlanIdLayoutWeekIdLayoutIndexRoute
+  '/plans/$planId/$weekId/$dayId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRouteWithChildren
+  '/plans/$planId/$weekId/$dayId/': typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexRoute
+  '/plans/$planId/$weekId/$dayId/$sessionId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutSessionIdIndexRoute
 }
 
 export interface FileRoutesByTo {
   '/about': typeof LayoutAboutRoute
   '/': typeof LayoutIndexRoute
   '/exercise/$exerciseId': typeof LayoutExerciseExerciseIdRoute
+  '/$sessionId': typeof LayoutSessionIdIndexRoute
+  '/discover': typeof LayoutDiscoverIndexRoute
   '/exercise': typeof LayoutExerciseIndexRoute
+  '/history': typeof LayoutHistoryIndexRoute
   '/plans': typeof LayoutPlansIndexRoute
-  '/plans/$planId': typeof LayoutPlansPlanIdIndexRoute
-  '/plans/$planId/$weekId': typeof LayoutPlansPlanIdWeekIdIndexRoute
-  '/plans/$planId/$weekId/$dayId': typeof LayoutPlansPlanIdWeekIdDayIdIndexRoute
+  '/settings': typeof LayoutSettingsIndexRoute
+  '/discover/plan/$planId': typeof LayoutDiscoverPlanPlanIdRoute
+  '/plans/$planId': typeof LayoutPlansPlanIdLayoutIndexRoute
+  '/plans/$planId/$weekId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutIndexRoute
+  '/plans/$planId/$weekId/$dayId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexRoute
+  '/plans/$planId/$weekId/$dayId/$sessionId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutSessionIdIndexRoute
 }
 
 export interface FileRoutesById {
@@ -205,11 +499,23 @@ export interface FileRoutesById {
   '/_layout/about': typeof LayoutAboutRoute
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/exercise/$exerciseId': typeof LayoutExerciseExerciseIdRoute
+  '/_layout/$sessionId/': typeof LayoutSessionIdIndexRoute
+  '/_layout/discover/': typeof LayoutDiscoverIndexRoute
   '/_layout/exercise/': typeof LayoutExerciseIndexRoute
+  '/_layout/history/': typeof LayoutHistoryIndexRoute
   '/_layout/plans/': typeof LayoutPlansIndexRoute
-  '/_layout/plans/$planId/': typeof LayoutPlansPlanIdIndexRoute
-  '/_layout/plans/$planId/$weekId/': typeof LayoutPlansPlanIdWeekIdIndexRoute
-  '/_layout/plans/$planId/$weekId/$dayId/': typeof LayoutPlansPlanIdWeekIdDayIdIndexRoute
+  '/_layout/settings/': typeof LayoutSettingsIndexRoute
+  '/_layout/discover/plan/$planId': typeof LayoutDiscoverPlanPlanIdRoute
+  '/_layout/plans/$planId': typeof LayoutPlansPlanIdRouteWithChildren
+  '/_layout/plans/$planId/_layout': typeof LayoutPlansPlanIdLayoutRouteWithChildren
+  '/_layout/plans/$planId/_layout/': typeof LayoutPlansPlanIdLayoutIndexRoute
+  '/_layout/plans/$planId/_layout/$weekId': typeof LayoutPlansPlanIdLayoutWeekIdRouteWithChildren
+  '/_layout/plans/$planId/_layout/$weekId/_layout': typeof LayoutPlansPlanIdLayoutWeekIdLayoutRouteWithChildren
+  '/_layout/plans/$planId/_layout/$weekId/_layout/': typeof LayoutPlansPlanIdLayoutWeekIdLayoutIndexRoute
+  '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdRouteWithChildren
+  '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout': typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutRouteWithChildren
+  '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/': typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexRoute
+  '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/$sessionId/': typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutSessionIdIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -219,32 +525,59 @@ export interface FileRouteTypes {
     | '/about'
     | '/'
     | '/exercise/$exerciseId'
+    | '/$sessionId'
+    | '/discover'
     | '/exercise'
+    | '/history'
     | '/plans'
+    | '/settings'
+    | '/discover/plan/$planId'
     | '/plans/$planId'
+    | '/plans/$planId/'
     | '/plans/$planId/$weekId'
+    | '/plans/$planId/$weekId/'
     | '/plans/$planId/$weekId/$dayId'
+    | '/plans/$planId/$weekId/$dayId/'
+    | '/plans/$planId/$weekId/$dayId/$sessionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/about'
     | '/'
     | '/exercise/$exerciseId'
+    | '/$sessionId'
+    | '/discover'
     | '/exercise'
+    | '/history'
     | '/plans'
+    | '/settings'
+    | '/discover/plan/$planId'
     | '/plans/$planId'
     | '/plans/$planId/$weekId'
     | '/plans/$planId/$weekId/$dayId'
+    | '/plans/$planId/$weekId/$dayId/$sessionId'
   id:
     | '__root__'
     | '/_layout'
     | '/_layout/about'
     | '/_layout/'
     | '/_layout/exercise/$exerciseId'
+    | '/_layout/$sessionId/'
+    | '/_layout/discover/'
     | '/_layout/exercise/'
+    | '/_layout/history/'
     | '/_layout/plans/'
-    | '/_layout/plans/$planId/'
-    | '/_layout/plans/$planId/$weekId/'
-    | '/_layout/plans/$planId/$weekId/$dayId/'
+    | '/_layout/settings/'
+    | '/_layout/discover/plan/$planId'
+    | '/_layout/plans/$planId'
+    | '/_layout/plans/$planId/_layout'
+    | '/_layout/plans/$planId/_layout/'
+    | '/_layout/plans/$planId/_layout/$weekId'
+    | '/_layout/plans/$planId/_layout/$weekId/_layout'
+    | '/_layout/plans/$planId/_layout/$weekId/_layout/'
+    | '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId'
+    | '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout'
+    | '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/'
+    | '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/$sessionId/'
   fileRoutesById: FileRoutesById
 }
 
@@ -275,11 +608,14 @@ export const routeTree = rootRoute
         "/_layout/about",
         "/_layout/",
         "/_layout/exercise/$exerciseId",
+        "/_layout/$sessionId/",
+        "/_layout/discover/",
         "/_layout/exercise/",
+        "/_layout/history/",
         "/_layout/plans/",
-        "/_layout/plans/$planId/",
-        "/_layout/plans/$planId/$weekId/",
-        "/_layout/plans/$planId/$weekId/$dayId/"
+        "/_layout/settings/",
+        "/_layout/discover/plan/$planId",
+        "/_layout/plans/$planId"
       ]
     },
     "/_layout/about": {
@@ -294,25 +630,94 @@ export const routeTree = rootRoute
       "filePath": "_layout/exercise/$exerciseId.tsx",
       "parent": "/_layout"
     },
+    "/_layout/$sessionId/": {
+      "filePath": "_layout/$sessionId/index.tsx",
+      "parent": "/_layout"
+    },
+    "/_layout/discover/": {
+      "filePath": "_layout/discover/index.tsx",
+      "parent": "/_layout"
+    },
     "/_layout/exercise/": {
       "filePath": "_layout/exercise/index.tsx",
+      "parent": "/_layout"
+    },
+    "/_layout/history/": {
+      "filePath": "_layout/history/index.tsx",
       "parent": "/_layout"
     },
     "/_layout/plans/": {
       "filePath": "_layout/plans/index.tsx",
       "parent": "/_layout"
     },
-    "/_layout/plans/$planId/": {
-      "filePath": "_layout/plans/$planId/index.tsx",
+    "/_layout/settings/": {
+      "filePath": "_layout/settings/index.tsx",
       "parent": "/_layout"
     },
-    "/_layout/plans/$planId/$weekId/": {
-      "filePath": "_layout/plans/$planId/$weekId/index.tsx",
+    "/_layout/discover/plan/$planId": {
+      "filePath": "_layout/discover/plan/$planId.tsx",
       "parent": "/_layout"
     },
-    "/_layout/plans/$planId/$weekId/$dayId/": {
-      "filePath": "_layout/plans/$planId/$weekId/$dayId/index.tsx",
-      "parent": "/_layout"
+    "/_layout/plans/$planId": {
+      "filePath": "_layout/plans/$planId",
+      "parent": "/_layout",
+      "children": [
+        "/_layout/plans/$planId/_layout"
+      ]
+    },
+    "/_layout/plans/$planId/_layout": {
+      "filePath": "_layout/plans/$planId/_layout.tsx",
+      "parent": "/_layout/plans/$planId",
+      "children": [
+        "/_layout/plans/$planId/_layout/",
+        "/_layout/plans/$planId/_layout/$weekId"
+      ]
+    },
+    "/_layout/plans/$planId/_layout/": {
+      "filePath": "_layout/plans/$planId/_layout/index.tsx",
+      "parent": "/_layout/plans/$planId/_layout"
+    },
+    "/_layout/plans/$planId/_layout/$weekId": {
+      "filePath": "_layout/plans/$planId/_layout/$weekId",
+      "parent": "/_layout/plans/$planId/_layout",
+      "children": [
+        "/_layout/plans/$planId/_layout/$weekId/_layout"
+      ]
+    },
+    "/_layout/plans/$planId/_layout/$weekId/_layout": {
+      "filePath": "_layout/plans/$planId/_layout/$weekId/_layout.tsx",
+      "parent": "/_layout/plans/$planId/_layout/$weekId",
+      "children": [
+        "/_layout/plans/$planId/_layout/$weekId/_layout/",
+        "/_layout/plans/$planId/_layout/$weekId/_layout/$dayId"
+      ]
+    },
+    "/_layout/plans/$planId/_layout/$weekId/_layout/": {
+      "filePath": "_layout/plans/$planId/_layout/$weekId/_layout/index.tsx",
+      "parent": "/_layout/plans/$planId/_layout/$weekId/_layout"
+    },
+    "/_layout/plans/$planId/_layout/$weekId/_layout/$dayId": {
+      "filePath": "_layout/plans/$planId/_layout/$weekId/_layout/$dayId",
+      "parent": "/_layout/plans/$planId/_layout/$weekId/_layout",
+      "children": [
+        "/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout"
+      ]
+    },
+    "/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout": {
+      "filePath": "_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout.tsx",
+      "parent": "/_layout/plans/$planId/_layout/$weekId/_layout/$dayId",
+      "children": [
+        "/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/",
+        "/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/$sessionId/"
+      ]
+    },
+    "/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/": {
+      "filePath": "_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/index.tsx",
+      "parent": "/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout"
+    },
+    "/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/$sessionId/": {
+      "filePath": "_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/$sessionId/index.tsx",
+      "parent": "/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout"
     }
   }
 }

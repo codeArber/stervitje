@@ -14,6 +14,8 @@ import {
 import { UserDropdown } from "./UserDropdown";
 import { TeamDropdown } from "./TeamDropdown";
 import { Link } from "@tanstack/react-router";
+import { useIsPersonalContext } from "@/store/useTeamStore";
+import { title } from "process";
 
 // Menu items.
 const items = [
@@ -33,13 +35,18 @@ const items = [
     icon: Calendar,
   },
   {
-    title: "Search",
-    url: "#",
+    title: "History",
+    url: "/history",
+    icon: Search,
+  },
+  {
+    title: 'Discover',
+    url: '/discover',
     icon: Search,
   },
   {
     title: "Settings",
-    url: "#",
+    url: "/settings",
     icon: Settings,
   },
 ]
@@ -71,7 +78,6 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <TeamDropdown />
       </SidebarFooter>
     </Sidebar>
   )

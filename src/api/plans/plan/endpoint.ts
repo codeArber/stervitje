@@ -118,6 +118,30 @@ export const fetchUserCreatedPlans = async (): Promise<Plan[]> => {
       if (fetchError) { throw new Error(fetchError.message); }
       return (data as Plan[]) || [];
 };
+/**
+ * Fetches all plans associated with a specific team.
+ */
+export const fetchTeamPlans = async (teamId: string): Promise<Plan[]> => {
+    if (!teamId) {
+        throw new Error("Team ID is required to fetch team plans.");
+    }
+
+    const selectString = `id, title, description, difficulty_level, duration_weeks, visibility, fork_count, like_count, created_at, updated_at`;
+
+    const { data, error } = await supabase
+        .from('plans')
+        .select(selectString)
+        .eq('team_id', teamId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error(`API Error fetchTeamPlans (Team ID: ${teamId}):`, error);
+        throw new Error(error.message);
+    }
+
+    return (data as Plan[]) || [];
+};
+
 
 /**
  * Fetches discoverable plans for browsing (uses RPC).

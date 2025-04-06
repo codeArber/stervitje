@@ -1,6 +1,6 @@
 // src/api/plans/day/endpoint.ts
 import { supabase } from '@/lib/supabase/supabaseClient';
-import type { PlanDay } from '@/types/planTypes'; // Adjust path if needed
+import type { PlanDay, PlanDayDetails } from '@/types/planTypes'; // Adjust path if needed
 
 // Payload type for creating a day
 // (plan_week_id and day_number often determined programmatically)
@@ -77,4 +77,30 @@ export const deletePlanDay = async (dayId: string): Promise<{ success: boolean }
         throw new Error(error.message);
     }
     return { success: true };
+};
+
+
+/**
+ * Fetches the detailed structure (sessions, exercises, sets) for a specific plan day.
+ * Calls the get_plan_day_details RPC function.
+ */
+export const getPlanDayDetails = async (planDayId: string): Promise<PlanDayDetails | null> => {
+    if (!planDayId) {
+        console.warn("getPlanDayDetails called without planDayId");
+        return null;
+    }
+
+    const { data, error } = await supabase.rpc('get_plan_day_details', {
+        _plan_day_id: planDayId
+    });
+
+    if (error) {
+        console.error(`API Error getPlanDayDetails (ID: ${planDayId}):`, error);
+        // Decide if specific errors should return null vs throw
+        // For example, if RLS prevents access, the RPC might return null or error
+        throw new Error(error.message); // Or return null based on expected errors
+    }
+
+    // The RPC returns a single JSONB object or NULL if not found/accessible
+    return data as PlanDayDetails | null;
 };

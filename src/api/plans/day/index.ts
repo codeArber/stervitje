@@ -1,11 +1,17 @@
 // src/api/plans/day/index.ts
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as dayApi from './endpoint'; // Relative import
-import type { PlanDay, PlanDetail } from '@/types/planTypes'; // Adjust path
+import type { PlanDay, PlanDayDetails, PlanDetail } from '@/types/planTypes'; // Adjust path
 import type { CreateDayPayload, UpdateDayPayload } from './endpoint'; // Import payload types
 
 // Import planKeys from the shared location or parent
 import { planKeys } from '../plan'; // Assuming keys are exported from ../plan/index.ts
+
+export const planDayKeys = {
+    all: ['planDays'] as const,
+    details: () => [...planDayKeys.all, 'detail'] as const,
+    detail: (planDayId: string | undefined) => [...planDayKeys.details(), planDayId] as const,
+};
 
 /**
  * Hook for creating a new day within a plan week.
@@ -88,5 +94,22 @@ export const useDeletePlanDay = () => {
             console.error(`Mutation Error useDeletePlanDay (ID: ${variables.dayId}):`, error);
             alert(`Delete Day Error: ${error.message}`); // Replace UI
         },
+    });
+};
+
+
+export const useGetPlanDayDetails = (planDayId: string | undefined) => {
+    return useQuery<PlanDayDetails | null, Error>({ // Return type can be PlanDayDetails or null
+        // Use a specific query key for this day's details
+        queryKey: planDayKeys.detail(planDayId),
+
+        // Function to fetch data using the endpoint
+        queryFn: () => dayApi.getPlanDayDetails(planDayId!), // Pass the ID
+
+        // Only run the query if planDayId is available
+        enabled: !!planDayId,
+
+        // Optional: Configuration like staleTime
+        // staleTime: 10 * 60 * 1000, // e.g., 10 minutes
     });
 };

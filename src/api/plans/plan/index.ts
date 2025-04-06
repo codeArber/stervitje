@@ -36,6 +36,16 @@ export const usePlanDetails = (planId: string | null | undefined) => {
     });
 };
 
+/** Hook for fetching plans associated with a specific team */
+export const useTeamPlans = (teamId: string | null | undefined) => {
+    return useQuery<Plan[], Error>({
+        queryKey: [...planKeys.all, 'team', teamId] as const, // Key for team-specific plans
+        queryFn: () => planApi.fetchTeamPlans(teamId || ''),
+        enabled: !!teamId, // Only fetch if teamId is provided
+        staleTime: 1000 * 60 * 5, // Cache list for 5 minutes
+    });
+};
+
 /** Hook for fetching plans created by the current user (basic info list) */
 export const useUserCreatedPlans = () => {
     return useQuery<Plan[], Error>({
