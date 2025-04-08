@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface TeamWorkspaceProps {
     teamName: string;
@@ -21,18 +22,18 @@ export const TeamWorkspace = ({ teamName, publicPlans, users }: TeamWorkspacePro
             {/* Team Members */}
             <div>
                 <h2 className="text-xl font-semibold mb-4">Team Members</h2>
-                <div className="flex flex-col gap-2 ">
+                <div className="flex flex-row gap-2 ">
                     {users.map((user) => (
-                        <Card key={user.id} >
+                        <Card key={user.id} className={cn(user.role === 'Coach' && 'border bg-blue-100 border-blue-200')} >
                             <CardHeader>
                                 <CardTitle className="text-base font-medium flex flex-row gap-2 items-center">
                                     <Avatar>
                                         <AvatarImage src={user.avatarUrl} alt={user.name} />
-                                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                        <AvatarFallback className={cn(user.role === 'Coach' && 'border !bg-blue-200 border-blue-300')}>{user.name.charAt(0)}</AvatarFallback>
                                     </Avatar>
                                     <div className="flex flex-col gap-2">
                                         {user.name}
-                                        {user.role === 'Coach' && <Badge variant="outline" className="text-xs">{user.role}</Badge>}
+                                        {user.role === 'Coach' && <Badge variant='destructive' className="text-xs bg-blue-400">{user.role}</Badge>}
                                         {user.role === 'Student' && <Badge variant='secondary' className="text-xs">{user.role}</Badge>}
                                     </div>
                                 </CardTitle>

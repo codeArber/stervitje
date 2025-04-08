@@ -65,7 +65,7 @@ export const fetchTeamMembers = async (teamId: string | null | undefined): Promi
         throw new Error(error.message);
     }
      // Clean up data structure if profiles is null for some reason
-     return (data?.map(m => ({...m, profile: m.profiles })) || []) as TeamMemberWithProfile[];
+     return (data?.map(m => ({ ...m, profile: m.profiles })) || []) as unknown as TeamMemberWithProfile[];
 }
 
 // --- Team Management Endpoints (Examples - Require 'coach' role checks) ---
@@ -147,3 +147,18 @@ export const removeTeamMember = async ({ teamId, userId }: { teamId: string, use
 }
 
 // Add updateTeam, updateMemberRole endpoints similarly, always including permission checks
+
+/** Fetches all public teams */
+export const fetchAllPublicTeams = async (): Promise<Team[]> => {
+    const { data, error } = await supabase
+        .from('teams')
+        .select('*')
+        .eq('is_private', false);
+
+    if (error) {
+        console.error(`API Error fetchAllPublicTeams:`, error);
+        throw new Error(error.message);
+    }
+
+    return data as Team[];
+};

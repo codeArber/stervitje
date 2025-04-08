@@ -120,3 +120,11 @@ export const useRemoveTeamMember = () => {
 };
 
 // Add hooks for updateTeam, updateMemberRole etc.
+
+/** Hook to fetch all public teams */
+export const usePublicTeams = () => {
+    return useQuery<Team[], Error>({
+        queryKey: [...teamKeys.all, 'public'],
+        queryFn: teamsApi.fetchAllPublicTeams,
+    });
+};

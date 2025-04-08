@@ -18,14 +18,16 @@ import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutAboutImport } from './routes/_layout/about'
 import { Route as LayoutSettingsIndexImport } from './routes/_layout/settings/index'
 import { Route as LayoutPlansIndexImport } from './routes/_layout/plans/index'
+import { Route as LayoutPerformanceIndexImport } from './routes/_layout/performance/index'
 import { Route as LayoutHistoryIndexImport } from './routes/_layout/history/index'
 import { Route as LayoutExerciseIndexImport } from './routes/_layout/exercise/index'
 import { Route as LayoutDiscoverIndexImport } from './routes/_layout/discover/index'
 import { Route as LayoutSessionIdIndexImport } from './routes/_layout/$sessionId/index'
 import { Route as LayoutExerciseExerciseIdImport } from './routes/_layout/exercise/$exerciseId'
 import { Route as LayoutPlansPlanIdLayoutImport } from './routes/_layout/plans/$planId/_layout'
-import { Route as LayoutDiscoverPlanPlanIdImport } from './routes/_layout/discover/plan/$planId'
+import { Route as LayoutDiscoverTeamTeamIdImport } from './routes/_layout/discover/team/$teamId'
 import { Route as LayoutPlansPlanIdLayoutIndexImport } from './routes/_layout/plans/$planId/_layout/index'
+import { Route as LayoutDiscoverUserUserIdIndexImport } from './routes/_layout/discover/user/$userId/index'
 import { Route as LayoutPlansPlanIdLayoutWeekIdLayoutImport } from './routes/_layout/plans/$planId/_layout/$weekId/_layout'
 import { Route as LayoutPlansPlanIdLayoutWeekIdLayoutIndexImport } from './routes/_layout/plans/$planId/_layout/$weekId/_layout/index'
 import { Route as LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutImport } from './routes/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout'
@@ -79,6 +81,12 @@ const LayoutPlansIndexRoute = LayoutPlansIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutPerformanceIndexRoute = LayoutPerformanceIndexImport.update({
+  id: '/performance/',
+  path: '/performance/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutHistoryIndexRoute = LayoutHistoryIndexImport.update({
   id: '/history/',
   path: '/history/',
@@ -114,9 +122,9 @@ const LayoutPlansPlanIdLayoutRoute = LayoutPlansPlanIdLayoutImport.update({
   getParentRoute: () => LayoutPlansPlanIdRoute,
 } as any)
 
-const LayoutDiscoverPlanPlanIdRoute = LayoutDiscoverPlanPlanIdImport.update({
-  id: '/discover/plan/$planId',
-  path: '/discover/plan/$planId',
+const LayoutDiscoverTeamTeamIdRoute = LayoutDiscoverTeamTeamIdImport.update({
+  id: '/discover/team/$teamId',
+  path: '/discover/team/$teamId',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -132,6 +140,13 @@ const LayoutPlansPlanIdLayoutIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => LayoutPlansPlanIdLayoutRoute,
+  } as any)
+
+const LayoutDiscoverUserUserIdIndexRoute =
+  LayoutDiscoverUserUserIdIndexImport.update({
+    id: '/discover/user/$userId/',
+    path: '/discover/user/$userId/',
+    getParentRoute: () => LayoutRoute,
   } as any)
 
 const LayoutPlansPlanIdLayoutWeekIdLayoutRoute =
@@ -234,6 +249,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutHistoryIndexImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/performance/': {
+      id: '/_layout/performance/'
+      path: '/performance'
+      fullPath: '/performance'
+      preLoaderRoute: typeof LayoutPerformanceIndexImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/plans/': {
       id: '/_layout/plans/'
       path: '/plans'
@@ -248,11 +270,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/discover/plan/$planId': {
-      id: '/_layout/discover/plan/$planId'
-      path: '/discover/plan/$planId'
-      fullPath: '/discover/plan/$planId'
-      preLoaderRoute: typeof LayoutDiscoverPlanPlanIdImport
+    '/_layout/discover/team/$teamId': {
+      id: '/_layout/discover/team/$teamId'
+      path: '/discover/team/$teamId'
+      fullPath: '/discover/team/$teamId'
+      preLoaderRoute: typeof LayoutDiscoverTeamTeamIdImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/plans/$planId': {
@@ -268,6 +290,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/plans/$planId'
       preLoaderRoute: typeof LayoutPlansPlanIdLayoutImport
       parentRoute: typeof LayoutPlansPlanIdRoute
+    }
+    '/_layout/discover/user/$userId/': {
+      id: '/_layout/discover/user/$userId/'
+      path: '/discover/user/$userId'
+      fullPath: '/discover/user/$userId'
+      preLoaderRoute: typeof LayoutDiscoverUserUserIdIndexImport
+      parentRoute: typeof LayoutImport
     }
     '/_layout/plans/$planId/_layout/': {
       id: '/_layout/plans/$planId/_layout/'
@@ -432,10 +461,12 @@ interface LayoutRouteChildren {
   LayoutDiscoverIndexRoute: typeof LayoutDiscoverIndexRoute
   LayoutExerciseIndexRoute: typeof LayoutExerciseIndexRoute
   LayoutHistoryIndexRoute: typeof LayoutHistoryIndexRoute
+  LayoutPerformanceIndexRoute: typeof LayoutPerformanceIndexRoute
   LayoutPlansIndexRoute: typeof LayoutPlansIndexRoute
   LayoutSettingsIndexRoute: typeof LayoutSettingsIndexRoute
-  LayoutDiscoverPlanPlanIdRoute: typeof LayoutDiscoverPlanPlanIdRoute
+  LayoutDiscoverTeamTeamIdRoute: typeof LayoutDiscoverTeamTeamIdRoute
   LayoutPlansPlanIdRoute: typeof LayoutPlansPlanIdRouteWithChildren
+  LayoutDiscoverUserUserIdIndexRoute: typeof LayoutDiscoverUserUserIdIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
@@ -446,10 +477,12 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutDiscoverIndexRoute: LayoutDiscoverIndexRoute,
   LayoutExerciseIndexRoute: LayoutExerciseIndexRoute,
   LayoutHistoryIndexRoute: LayoutHistoryIndexRoute,
+  LayoutPerformanceIndexRoute: LayoutPerformanceIndexRoute,
   LayoutPlansIndexRoute: LayoutPlansIndexRoute,
   LayoutSettingsIndexRoute: LayoutSettingsIndexRoute,
-  LayoutDiscoverPlanPlanIdRoute: LayoutDiscoverPlanPlanIdRoute,
+  LayoutDiscoverTeamTeamIdRoute: LayoutDiscoverTeamTeamIdRoute,
   LayoutPlansPlanIdRoute: LayoutPlansPlanIdRouteWithChildren,
+  LayoutDiscoverUserUserIdIndexRoute: LayoutDiscoverUserUserIdIndexRoute,
 }
 
 const LayoutRouteWithChildren =
@@ -464,10 +497,12 @@ export interface FileRoutesByFullPath {
   '/discover': typeof LayoutDiscoverIndexRoute
   '/exercise': typeof LayoutExerciseIndexRoute
   '/history': typeof LayoutHistoryIndexRoute
+  '/performance': typeof LayoutPerformanceIndexRoute
   '/plans': typeof LayoutPlansIndexRoute
   '/settings': typeof LayoutSettingsIndexRoute
-  '/discover/plan/$planId': typeof LayoutDiscoverPlanPlanIdRoute
+  '/discover/team/$teamId': typeof LayoutDiscoverTeamTeamIdRoute
   '/plans/$planId': typeof LayoutPlansPlanIdLayoutRouteWithChildren
+  '/discover/user/$userId': typeof LayoutDiscoverUserUserIdIndexRoute
   '/plans/$planId/': typeof LayoutPlansPlanIdLayoutIndexRoute
   '/plans/$planId/$weekId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutRouteWithChildren
   '/plans/$planId/$weekId/': typeof LayoutPlansPlanIdLayoutWeekIdLayoutIndexRoute
@@ -484,10 +519,12 @@ export interface FileRoutesByTo {
   '/discover': typeof LayoutDiscoverIndexRoute
   '/exercise': typeof LayoutExerciseIndexRoute
   '/history': typeof LayoutHistoryIndexRoute
+  '/performance': typeof LayoutPerformanceIndexRoute
   '/plans': typeof LayoutPlansIndexRoute
   '/settings': typeof LayoutSettingsIndexRoute
-  '/discover/plan/$planId': typeof LayoutDiscoverPlanPlanIdRoute
+  '/discover/team/$teamId': typeof LayoutDiscoverTeamTeamIdRoute
   '/plans/$planId': typeof LayoutPlansPlanIdLayoutIndexRoute
+  '/discover/user/$userId': typeof LayoutDiscoverUserUserIdIndexRoute
   '/plans/$planId/$weekId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutIndexRoute
   '/plans/$planId/$weekId/$dayId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexRoute
   '/plans/$planId/$weekId/$dayId/$sessionId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutSessionIdIndexRoute
@@ -503,11 +540,13 @@ export interface FileRoutesById {
   '/_layout/discover/': typeof LayoutDiscoverIndexRoute
   '/_layout/exercise/': typeof LayoutExerciseIndexRoute
   '/_layout/history/': typeof LayoutHistoryIndexRoute
+  '/_layout/performance/': typeof LayoutPerformanceIndexRoute
   '/_layout/plans/': typeof LayoutPlansIndexRoute
   '/_layout/settings/': typeof LayoutSettingsIndexRoute
-  '/_layout/discover/plan/$planId': typeof LayoutDiscoverPlanPlanIdRoute
+  '/_layout/discover/team/$teamId': typeof LayoutDiscoverTeamTeamIdRoute
   '/_layout/plans/$planId': typeof LayoutPlansPlanIdRouteWithChildren
   '/_layout/plans/$planId/_layout': typeof LayoutPlansPlanIdLayoutRouteWithChildren
+  '/_layout/discover/user/$userId/': typeof LayoutDiscoverUserUserIdIndexRoute
   '/_layout/plans/$planId/_layout/': typeof LayoutPlansPlanIdLayoutIndexRoute
   '/_layout/plans/$planId/_layout/$weekId': typeof LayoutPlansPlanIdLayoutWeekIdRouteWithChildren
   '/_layout/plans/$planId/_layout/$weekId/_layout': typeof LayoutPlansPlanIdLayoutWeekIdLayoutRouteWithChildren
@@ -529,10 +568,12 @@ export interface FileRouteTypes {
     | '/discover'
     | '/exercise'
     | '/history'
+    | '/performance'
     | '/plans'
     | '/settings'
-    | '/discover/plan/$planId'
+    | '/discover/team/$teamId'
     | '/plans/$planId'
+    | '/discover/user/$userId'
     | '/plans/$planId/'
     | '/plans/$planId/$weekId'
     | '/plans/$planId/$weekId/'
@@ -548,10 +589,12 @@ export interface FileRouteTypes {
     | '/discover'
     | '/exercise'
     | '/history'
+    | '/performance'
     | '/plans'
     | '/settings'
-    | '/discover/plan/$planId'
+    | '/discover/team/$teamId'
     | '/plans/$planId'
+    | '/discover/user/$userId'
     | '/plans/$planId/$weekId'
     | '/plans/$planId/$weekId/$dayId'
     | '/plans/$planId/$weekId/$dayId/$sessionId'
@@ -565,11 +608,13 @@ export interface FileRouteTypes {
     | '/_layout/discover/'
     | '/_layout/exercise/'
     | '/_layout/history/'
+    | '/_layout/performance/'
     | '/_layout/plans/'
     | '/_layout/settings/'
-    | '/_layout/discover/plan/$planId'
+    | '/_layout/discover/team/$teamId'
     | '/_layout/plans/$planId'
     | '/_layout/plans/$planId/_layout'
+    | '/_layout/discover/user/$userId/'
     | '/_layout/plans/$planId/_layout/'
     | '/_layout/plans/$planId/_layout/$weekId'
     | '/_layout/plans/$planId/_layout/$weekId/_layout'
@@ -612,10 +657,12 @@ export const routeTree = rootRoute
         "/_layout/discover/",
         "/_layout/exercise/",
         "/_layout/history/",
+        "/_layout/performance/",
         "/_layout/plans/",
         "/_layout/settings/",
-        "/_layout/discover/plan/$planId",
-        "/_layout/plans/$planId"
+        "/_layout/discover/team/$teamId",
+        "/_layout/plans/$planId",
+        "/_layout/discover/user/$userId/"
       ]
     },
     "/_layout/about": {
@@ -646,6 +693,10 @@ export const routeTree = rootRoute
       "filePath": "_layout/history/index.tsx",
       "parent": "/_layout"
     },
+    "/_layout/performance/": {
+      "filePath": "_layout/performance/index.tsx",
+      "parent": "/_layout"
+    },
     "/_layout/plans/": {
       "filePath": "_layout/plans/index.tsx",
       "parent": "/_layout"
@@ -654,8 +705,8 @@ export const routeTree = rootRoute
       "filePath": "_layout/settings/index.tsx",
       "parent": "/_layout"
     },
-    "/_layout/discover/plan/$planId": {
-      "filePath": "_layout/discover/plan/$planId.tsx",
+    "/_layout/discover/team/$teamId": {
+      "filePath": "_layout/discover/team/$teamId.tsx",
       "parent": "/_layout"
     },
     "/_layout/plans/$planId": {
@@ -672,6 +723,10 @@ export const routeTree = rootRoute
         "/_layout/plans/$planId/_layout/",
         "/_layout/plans/$planId/_layout/$weekId"
       ]
+    },
+    "/_layout/discover/user/$userId/": {
+      "filePath": "_layout/discover/user/$userId/index.tsx",
+      "parent": "/_layout"
     },
     "/_layout/plans/$planId/_layout/": {
       "filePath": "_layout/plans/$planId/_layout/index.tsx",

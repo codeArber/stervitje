@@ -37,3 +37,44 @@ export const useUpdateProfile = () => {
         },
     });
 };
+
+/** Hook to fetch a list of users */
+export const useUsers = () => {
+    return useQuery<UserProfile[], Error>({
+        queryKey: ['users'],
+        queryFn: userApi.fetchUsers,
+        staleTime: 10 * 60 * 1000,
+        retry: 2,
+    });
+};
+
+/** Hook to fetch the user's teams */
+export const useUserTeams = (userId: string) => {
+    return useQuery<string[], Error>({
+        queryKey: ['userTeams', userId],
+        queryFn: () => userApi.fetchUserTeams(userId),
+        staleTime: 10 * 60 * 1000,
+        retry: 2,
+    });
+};
+
+
+/** Hook to fetch the user's plans */
+export const useUserPlans = (userId: string) => {
+    return useQuery<string[], Error>({
+        queryKey: ['userPlans', userId],
+        queryFn: () => userApi.fetchUserPlans(userId),
+        staleTime: 10 * 60 * 1000,
+        retry: 2,
+    });
+};
+
+/** Hook to fetch the user's public workouts */
+export const useUserPublicWorkouts = (userId: string) => {
+    return useQuery<string[], Error>({
+        queryKey: ['userPublicWorkouts', userId],
+        queryFn: () => userApi.fetchPublicWorkouts(userId),
+        staleTime: 10 * 60 * 1000,
+        retry: 2,
+    });
+};

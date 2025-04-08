@@ -37,3 +37,65 @@ export const updateProfile = async (profileData: Partial<UserProfile>): Promise<
     // Cast the result to UserProfile
     return data as UserProfile;
 }
+
+/** Fetches a list of all users. */
+// Return type is explicitly Promise<UserProfile[]>
+export const fetchUsers = async (): Promise<UserProfile[]> => {
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*'); // Select all fields from the profiles table
+
+    if (error) {
+        console.error("API Error fetchUsers:", error);
+        throw new Error(error.message);
+    }
+    // Cast the result to an array of UserProfile
+    return data as UserProfile[];
+};
+
+/** Fetches the teams the current user is a member of. */
+// Return type is explicitly Promise<any[]> (replace `any` with a specific type if available)
+export const fetchUserTeams = async (userId: string): Promise<any[]> => {
+
+    const { data, error } = await supabase
+        .from('team_members')
+        .select('*, team:teams(*)') // Adjust fields as needed
+        .eq('user_id', userId)
+
+    if (error) {
+        console.error("API Error fetchUserTeams:", error);
+        throw new Error(error.message);
+    }
+    return data || [];
+};
+
+/** Fetches the plans associated with the current user. */
+// Return type is explicitly Promise<any[]> (replace `any` with a specific type if available)
+export const fetchUserPlans = async (userId: string): Promise<any[]> => {
+    const { data, error } = await supabase
+        .from('user_plans')
+        .select('*, plan:plans(*)') // Adjust fields as needed
+        .eq('user_id', userId);
+
+    if (error) {
+        console.error("API Error fetchUserPlans:", error);
+        throw new Error(error.message);
+    }
+    return data || [];
+};
+
+/** Fetches a list of public workouts. */
+// Return type is explicitly Promise<any[]> (replace `any` with a specific type if available)
+export const fetchPublicWorkouts = async (userId: string): Promise<any[]> => {
+    const { data, error } = await supabase
+        .from('workout_logs')
+        .select('*') // Adjust fields as needed
+        .eq('privacy_level', 'public') // Filter for public workouts
+        .eq('user_id', userId); // Filter by user ID
+
+    if (error) {
+        console.error("API Error fetchPublicWorkouts:", error);
+        throw new Error(error.message);
+    }
+    return data || [];
+};

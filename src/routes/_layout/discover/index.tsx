@@ -1,4 +1,6 @@
 import { useInfiniteDiscoverablePlans } from '@/api/plans/plan'
+import { usePublicTeams } from '@/api/teams';
+import { useUsers, useUserTeams } from '@/api/user';
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import Model, { IExerciseData, IMuscleStats } from 'react-body-highlighter';
@@ -6,25 +8,26 @@ import Model, { IExerciseData, IMuscleStats } from 'react-body-highlighter';
 export const Route = createFileRoute('/_layout/discover/')({
   component: RouteComponent,
 })
+export const exercises: IExerciseData[] = [
+  { name: 'Bench Press', muscles: ['chest', 'triceps', 'front-deltoids'] },
+  { name: 'Push Ups', muscles: ['chest', 'triceps', 'front-deltoids'] },
+  { name: 'Pull Ups', muscles: ['upper-back', 'biceps', 'back-deltoids'] },
+  { name: 'Deadlift', muscles: ['hamstring', 'gluteal', 'lower-back', 'forearm'] },
+  { name: 'Squats', muscles: ['quadriceps', 'gluteal', 'hamstring'] },
+  { name: 'Overhead Press', muscles: ['front-deltoids', 'triceps', 'trapezius'] },
+  { name: 'Barbell Row', muscles: ['upper-back', 'back-deltoids', 'biceps'] },
+  { name: 'Bicep Curls', muscles: ['biceps', 'forearm'] },
+  { name: 'Tricep Dips', muscles: ['triceps', 'chest'] },
+  { name: 'Lunges', muscles: ['quadriceps', 'gluteal', 'hamstring', 'calves'] },
+  { name: 'Plank', muscles: ['abs', 'obliques'] },
+  { name: 'Russian Twists', muscles: ['obliques', 'abs'] },
+]
 
 function RouteComponent() {
   const { data } = useInfiniteDiscoverablePlans()
-  const exercises: IExerciseData[] = [
-    { name: 'Bench Press', muscles: ['chest', 'triceps', 'front-deltoids'] },
-    { name: 'Push Ups', muscles: ['chest', 'triceps', 'front-deltoids'] },
-    { name: 'Pull Ups', muscles: ['upper-back', 'biceps', 'back-deltoids'] },
-    { name: 'Deadlift', muscles: ['hamstring', 'gluteal', 'lower-back', 'forearm'] },
-    { name: 'Squats', muscles: ['quadriceps', 'gluteal', 'hamstring'] },
-    { name: 'Overhead Press', muscles: ['front-deltoids', 'triceps', 'trapezius'] },
-    { name: 'Barbell Row', muscles: ['upper-back', 'back-deltoids', 'biceps'] },
-    { name: 'Bicep Curls', muscles: ['biceps', 'forearm'] },
-    { name: 'Tricep Dips', muscles: ['triceps', 'chest'] },
-    { name: 'Lunges', muscles: ['quadriceps', 'gluteal', 'hamstring', 'calves'] },
-    { name: 'Plank', muscles: ['abs', 'obliques'] },
-    { name: 'Russian Twists', muscles: ['obliques', 'abs'] },
-  ]
-  
-  
+  const {data: users} = useUsers()
+  const {data: teams} = usePublicTeams()
+  console.log(teams)
   return (
     <div className="space-y-12 p-4">
       <section>
@@ -46,15 +49,17 @@ function RouteComponent() {
         <h2 className="text-2xl font-bold mb-4">Featured Creators</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {/* Replace with real data */}
-          {['code.arber@gmail.com', 'emma.fit', 'coach.jake'].map((creator) => (
-            <Card key={creator}>
+          {users?.map((creator) => (
+        <Link to='/discover/user/$userId' params={{ userId: creator.id }} >
+            <Card key={creator.id}>
               <CardContent className="p-4">
-                <CardTitle className="text-base font-medium">{creator}</CardTitle>
+                <CardTitle className="text-base font-medium">{creator.username}</CardTitle>
                 <CardDescription className="text-sm text-muted-foreground">
                   12 plans · 430 views
                 </CardDescription>
               </CardContent>
             </Card>
+            </Link>
           ))}
         </div>
       </section>
@@ -63,11 +68,11 @@ function RouteComponent() {
         <h2 className="text-2xl font-bold mb-4">Public Collections</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {/* Replace with real data */}
-          {['Team Alpha', 'Mobility Club', 'Strength Builders'].map((team) => (
-            <Link to={'/discover/plan/$planId'} params={{ planId: '123' }} >
-              <Card key={team}>
+          {teams?.map((team) => (
+            <Link to={'/discover/team/$teamId'} params={{ teamId: team.id }} key={team.id}>
+              <Card >
                 <CardContent className="p-4">
-                  <CardTitle className="text-base font-medium">{team}</CardTitle>
+                  <CardTitle className="text-base font-medium">{team.name}</CardTitle>
                   <CardDescription className="text-sm text-muted-foreground">
                     8 plans · 4 contributors
                   </CardDescription>
