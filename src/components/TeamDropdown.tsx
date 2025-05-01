@@ -1,25 +1,29 @@
-import { Plus, Users } from "lucide-react";
+import { Plus, Users, Users2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "./ui/dialog";
 import { Input } from "./ui/input";
 // Corrected Import Path (adjust if your path structure is different)
-import { useCreateTeam, useFetchAllTeamsForMember } from "@/api/teams"; // Assuming these exist
 import { useSession } from "@supabase/auth-helpers-react";
 import { useTeamStore } from "@/store/useTeamStore";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useUsers } from "@/api/user";
+import { useAddTeamMember, useFetchAllTeamsForMember, useMemberInTeam } from "../api/teams";
+import { Badge } from "./ui/badge";
 
 export const TeamDropdown = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [inputValue, setInputValue] = useState("");
+    const [role, setRole] = useState<'coach' | 'student'>('student');
     const user = useSession()?.user; // Already getting user here
     const selectedTeamId = useTeamStore((state) => state.selectedTeamId); // Zustand store for selected team ID
+    const { data: users } = useUsers()
+    const addTeamMember = useAddTeamMember();
+    const thisUser = useMemberInTeam(selectedTeamId, user?.id);
 
-    const createTeam = useCreateTeam(user?.id || '');
-    
     // Assuming useFetchAllTeamsForMember returns { data: Team[] | undefined, isLoading, error }
     const { data: userTeams, isLoading: isLoadingTeams } = useFetchAllTeamsForMember(user?.id);
-
 
     // --- Find the selected team's name ---
     const selectedTeam = userTeams?.find(team => team.id === selectedTeamId);
@@ -34,32 +38,78 @@ export const TeamDropdown = () => {
         setIsDialogOpen(false); // Close dialog if open
     };
 
-    const handleCreateTeam = () => {
-        if (!inputValue.trim()) return; // Prevent creating empty names
-        createTeam.mutate(
-            { name: inputValue.trim() },
-            {
-                onSuccess: () => {
-                    // Optional: Invalidate teams query cache here if using React Query
-                    // queryClient.invalidateQueries(['teams', user?.id]);
-                    setIsDialogOpen(false);
-                    setInputValue(""); // Clear input on success
-                },
-                onError: (error) => {
-                    console.error("Failed to create team:", error);
-                    // Handle error display if needed
-                }
-            }
-        );
+    const handleAddTeamMember = () => {
+        addTeamMember.mutate({
+            teamId: selectedTeamId || '',
+            userId: inputValue,
+            role: role
+        })
     };
 
+    console.log(thisUser)
     return (
-        <>
+        <div className="flex flex-row gap-2 items-center">
+            {selectedTeam &&
+                <div className="flex flex-row gap-1 items-center">
+                    <Dialog>
+                        <DialogTrigger asChild>
+                            <Button variant={'outline'}>
+                                <Users2 />
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Add Member to Team</DialogTitle>
+                            </DialogHeader>
+                            <div className="my-4">
+                                <label htmlFor="user-select" className="block text-sm font-medium text-gray-700">
+                                    Select User
+                                </label>
+                                <Select onValueChange={(value) => setInputValue(value)} >
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select a user" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {users?.map((user) => (
+                                            <SelectItem key={user.id} value={user.id}>
+                                                {user.username}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="my-4">
+                                <label htmlFor="role-select" className="block text-sm font-medium text-gray-700">
+                                    Select Role
+                                </label>
+                                <Select value={role} onValueChange={(value)=>setRole(value as 'coach' | 'student')}>
+                                    <SelectTrigger className="w-full">
+                                        <SelectValue placeholder="Select a role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="coach">Coach</SelectItem>
+                                        <SelectItem value="student">Student</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <DialogFooter>
+                                <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button onClick={() => handleAddTeamMember()}>
+                                    Add Member
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            }
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     {/* Display actual selected context name */}
-                    <Button variant="ghost" className="w-full justify-start mb-4" disabled={isLoadingTeams}>
-                        <Users className="mr-2 h-4 w-4" />
+                    <Button variant={'outline'} className="w-full h-full" disabled={isLoadingTeams}>
+                        {/* <Users className="mr-2 h-4 w-4" /> */}
+                        <div className="w-4 h-4 bg-blue-200 rounded"></div>
                         {isLoadingTeams ? "Loading..." : displayLabel}
                     </Button>
                 </DropdownMenuTrigger>
@@ -86,29 +136,16 @@ export const TeamDropdown = () => {
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+          {thisUser?.role && selectedTeamId &&   <RoleBadge role={thisUser?.role} />}
 
-            {/* Dialog for Creating Team */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Create New Team</DialogTitle>
-                    </DialogHeader>
-                    <Input
-                        placeholder="Enter team name"
-                        className="my-4" // Added margin
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                    />
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsDialogOpen(false)} >
-                            Cancel
-                        </Button>
-                        <Button onClick={handleCreateTeam} disabled={ !inputValue.trim()}>
-                        Create
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </>
+        </div>
+    );
+};
+
+const RoleBadge = ({ role }: { role: 'coach' | 'student' }) => {
+    return (
+        <Badge variant={role === 'coach' ? 'destructive' : 'default'}>
+            {role === 'coach' ? 'Coach' : 'Student'}
+        </Badge>
     );
 };

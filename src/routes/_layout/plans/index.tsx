@@ -12,36 +12,41 @@ import {
 import { SessionContextProvider } from '@supabase/auth-helpers-react'
 import { supabase } from '@/lib/supabase/supabaseClient'
 import { TeamDropdown } from '@/components/TeamDropdown'
+import { useTeamStore } from '@/store/useTeamStore'
 
 export const Route = createFileRoute('/_layout/plans/')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  return <div className="py-6 w-full items-center">
-    <div className='w-full flex flex-row items-center gap-32'>
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink >
-              <Link to='/'>
-                Home
-              </Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
 
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Plans</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-      <div className='flex items-center gap-2'>
-        <TeamDropdown />
+  return (
+    <div className="flex flex-1 flex-col ">
+      <div className='flex flex-row '>
+        <div className=' bg-sidebar flex items-center shadow px-4 py-4 z-10 w-full justify-between h-18'>
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>
+                <BreadcrumbLink >
+                  <Link to='/'>
+                    Home
+                  </Link>
+                </BreadcrumbLink>
+              </BreadcrumbItem>
+
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>Plans</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+          <TeamDropdown />
+        </div>
       </div>
 
-    </div>
 
-    <TrainingPlansDashboard />
-  </div>
+      <TrainingPlansDashboard />
+    </div>
+  )
+
 }

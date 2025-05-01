@@ -32,7 +32,8 @@ export const fetchPlanDetails = async (planId: string | null | undefined): Promi
                 )
             )
         ),
-        team:teams ( id, name )
+        team:teams ( id, name ),
+        created_by:profiles(*)
     `;
 
     const { data, error } = await supabase

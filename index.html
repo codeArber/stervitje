@@ -6,6 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React + TS</title>
     <link href="./output.css" rel="stylesheet">
+    <script>
+      (() => {
+          const storedTheme = localStorage.getItem('theme');
+          const html = document.documentElement;
+          if (storedTheme === 'dark') {
+              html.classList.add('dark');
+          } else if (window.matchMedia('(prefers-color-scheme: dark)').matches && !storedTheme) {
+              html.classList.add('dark');
+          }
+      })();
+  </script>
 
   </head>
   <body>

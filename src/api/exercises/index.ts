@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery, QueryKey, Infi
 import * as exercisesApi from './endpoint';
 // import { FetchExercisesParams } from '@/types/type';
 import type { Exercise, ExercisePayload, FetchExercisesParams } from '@/types/type'; // Adjust path
+import { supabase } from '@/lib/supabase/supabaseClient';
 
 // --- Query Keys ---
 const exerciseKeys = {
@@ -135,3 +136,41 @@ export const useDeleteExercise = () => {
         },
     });
 };
+
+
+/** 
+ * Fetches the public URL for the given storage path 
+ * @param imagePath Path inside the bucket, e.g. "images/plank.jpg"
+ */
+export function useExerciseImageUrl(imagePath: string) {
+  return useQuery({
+    queryKey: ['exerciseImageUrl', imagePath],
+    queryFn: async () => {
+      const {
+        data: { publicUrl },
+      } = supabase
+        .storage
+        .from('exercises')
+        .getPublicUrl(imagePath);
+
+      return publicUrl;
+    },
+  });
+}
+
+
+export function userExerciseReferences(exerciseId: string, userId: string) {
+  return useQuery({
+    queryKey: ['exerciseReferences', exerciseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('exercise_reference')
+        .select('*')
+        .eq('exercise_id', exerciseId)
+        .eq('user_id', userId)
+
+      if (error) throw new Error(error.message);
+      return data;
+    },
+  });
+}

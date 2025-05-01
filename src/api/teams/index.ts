@@ -2,7 +2,8 @@
 import { useQuery, useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
 import * as teamsApi from './endpoint';
 import type { Team, TeamMemberWithProfile } from '@/types'; // Define these types
-import { useUserContext } from '@/api/user'; // Import user context hook if needed for checks
+import { useUserQuery } from '@/api/user'; // Import user context hook if needed for checks
+import { useSession } from '@supabase/auth-helpers-react';
 
 // --- Query Keys ---
 const teamKeys = {
@@ -89,7 +90,7 @@ export const useCreateTeam = (userId: string) => {
 export const useAddTeamMember = () => {
     const queryClient = useQueryClient();
 
-    return useMutation<any, Error, { teamId: string, userId: string, role: 'assistant_coach' | 'member'}>({
+    return useMutation<any, Error, { teamId: string, userId: string, role: string}>({
         mutationFn: teamsApi.addTeamMember,
         onSuccess: (data, variables) => {
             // Invalidate the members list for the specific team
@@ -128,3 +129,47 @@ export const usePublicTeams = () => {
         queryFn: teamsApi.fetchAllPublicTeams,
     });
 };
+
+
+// New Hook: useMemberInTeam
+/**
+ * Fetches members for a given team and finds a specific member by userId.
+ * @param teamId The ID of the team to check.
+ * @param userId The ID of the user to find within the team.
+ * @returns The team member object if found, otherwise undefined.
+ */
+export const useMemberInTeam = (teamId: string | null, userId?: string) => {
+    const user = useSession()?.user
+    const { data: members, isLoading, error } = useTeamMembers(teamId);
+    if (isLoading || error || !members || !user?.id) {
+      return undefined; // Return undefined during loading, on error, or if data/userId is missing
+    }
+  
+    // Find the member with the matching user ID
+    const member = members.find(m => m.user_id === userId);
+  
+    return member; // Returns the found member object or undefined
+  };
+  
+
+  
+// New Hook: useMemberInTeam
+/**
+ * Fetches members for a given team and finds a specific member by userId.
+ * @param teamId The ID of the team to check.
+ * @param userId The ID of the user to find within the team.
+ * @returns The team member object if found, otherwise undefined.
+ */
+export const useActiveMemberInTeam = (teamId: string | null) => {
+    const user = useSession()?.user
+    const { data: members, isLoading, error } = useTeamMembers(teamId);
+    if (isLoading || error || !members || !user?.id) {
+      return undefined; // Return undefined during loading, on error, or if data/userId is missing
+    }
+  
+    // Find the member with the matching user ID
+    const member = members.find(m => m.user_id === user.id);
+  
+    return member; // Returns the found member object or undefined
+  };
+  

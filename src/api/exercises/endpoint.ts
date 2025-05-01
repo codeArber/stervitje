@@ -17,10 +17,9 @@ export const fetchExerciseById = async (exerciseId: string): Promise<Exercise | 
         .from('exercises')
         .select(`
             *,
-            categories: exercise_category_mapping (
-                exercise_categories (id, name)
-            )
-        `)
+            exercise_reference(*),
+            exercise_muscle(*)
+            `)
         .eq('id', exerciseId)
         .single(); // Use .single() for fetching by unique ID
 
@@ -36,11 +35,11 @@ export const fetchExerciseById = async (exerciseId: string): Promise<Exercise | 
     // Transform the nested structure returned by Supabase for categories
     const exerciseData = data as any; // Use intermediate 'any' or a more specific fetch type
     if (exerciseData && Array.isArray(exerciseData.categories)) {
-         exerciseData.categories = exerciseData.categories
-             // The result is [{ exercise_categories: {id: ..., name: ...} }, ...]
-             .map((mapping: any) => mapping.exercise_categories)
-             // Filter out any potential nulls if relationships weren't found (shouldn't happen with INNER join default)
-             .filter(Boolean);
+        exerciseData.categories = exerciseData.categories
+            // The result is [{ exercise_categories: {id: ..., name: ...} }, ...]
+            .map((mapping: any) => mapping.exercise_categories)
+            // Filter out any potential nulls if relationships weren't found (shouldn't happen with INNER join default)
+            .filter(Boolean);
     } else {
         // Ensure categories array exists even if empty
         exerciseData.categories = [];
@@ -120,8 +119,8 @@ export const fetchExercises = async (params: FetchExercisesParams = {}): Promise
         // Find exercises whose 'id' is present in the 'exercise_category_mapping' table
         // where the 'category_id' matches the one we're filtering by.
         query = query.filter('exercise_category_mapping.category_id', 'eq', categoryId);
-         // Note: This implicitly requires Supabase to join `exercise_category_mapping`.
-         // If performance is an issue, an RPC or DB view might be better.
+        // Note: This implicitly requires Supabase to join `exercise_category_mapping`.
+        // If performance is an issue, an RPC or DB view might be better.
     }
 
     const { data, error } = await query;
@@ -140,7 +139,7 @@ export const createExercise = async (payload: ExercisePayload): Promise<Exercise
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated.");
 
-    const { category_ids, ...exerciseData } = payload;
+    const { category, ...exerciseData } = payload;
 
     const { data: newExercise, error: insertError } = await supabase
         .from('exercises')
@@ -156,99 +155,52 @@ export const createExercise = async (payload: ExercisePayload): Promise<Exercise
         throw new Error(insertError.message);
     }
     if (!newExercise) {
-         throw new Error("Failed to create exercise or retrieve the created record.");
-    }
-
-    // Handle category mapping
-    if (category_ids && category_ids.length > 0) {
-        const mappings = category_ids.map(catId => ({
-            exercise_id: newExercise.id,
-            category_id: catId
-        }));
-        const { error: mappingError } = await supabase
-            .from('exercise_category_mapping')
-            .insert(mappings);
-
-        if (mappingError) {
-            // Log warning - decide if this is critical enough to undo the exercise creation
-            console.warn(`API Warning createExercise: Failed to map categories for exercise ${newExercise.id}:`, mappingError.message);
-        }
+        throw new Error("Failed to create exercise or retrieve the created record.");
     }
 
     // Fetch the newly created exercise *with* categories included for a complete return object
-     const createdExerciseWithDetails = await fetchExerciseById(newExercise.id);
-     if (!createdExerciseWithDetails) {
-         // This shouldn't happen if insert succeeded, but handle defensively
-         console.warn("Could not re-fetch created exercise with details, returning basic object.");
-         return newExercise as Exercise;
-     }
-     return createdExerciseWithDetails;
+    const createdExerciseWithDetails = await fetchExerciseById(newExercise.id);
+    if (!createdExerciseWithDetails) {
+        // This shouldn't happen if insert succeeded, but handle defensively
+        console.warn("Could not re-fetch created exercise with details, returning basic object.");
+        return newExercise as Exercise;
+    }
+    return createdExerciseWithDetails;
 };
 
 
 /** Updates an existing exercise */
-export const updateExercise = async (exerciseId: string, payload: Partial<ExercisePayload>): Promise<Exercise> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("User not authenticated.");
+export const updateExercise = async (
+    exerciseId: string,
+    payload: Partial<ExercisePayload>
+): Promise<Exercise> => {
 
-    const { category_ids, ...exerciseData } = payload;
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("User not authenticated.")
 
-    // Update main exercise data
-    // Only include fields that are actually in the payload
-    const { data: updatedExercisePartial, error: updateError } = await supabase
-        .from('exercises')
-        .update(exerciseData) // Pass only the fields to update
-        .eq('id', exerciseId)
-        // RLS should handle permissions, but you could add .eq('created_by', user.id) for extra safety
-        .select() // Select the updated row
-        .single();
+    /** 🔑 Remove keys whose value is `undefined`, but keep *all* others */
+    const updateData = Object.fromEntries(
+        Object.entries(payload).filter(([, v]) => v !== undefined)
+    )
 
-    if (updateError) {
-        console.error(`API Error updateExercise (ID: ${exerciseId}):`, updateError);
-        throw new Error(updateError.message);
-    }
-     if (!updatedExercisePartial) {
-         throw new Error("Failed to update exercise or retrieve the updated record (maybe RLS blocked?).");
+    if (Object.keys(updateData).length === 0) {
+        throw new Error("updateExercise called with an empty payload.")
     }
 
-    // Handle category updates if category_ids array was passed
-    if (category_ids !== undefined) {
-         // 1. Delete existing mappings for this exercise
-         const { error: deleteError } = await supabase
-            .from('exercise_category_mapping')
-            .delete()
-            .eq('exercise_id', exerciseId);
+    const { data, error } = await supabase
+        .from("exercises")
+        .update(updateData)
+        .eq("id", exerciseId)
+        .select()
+        .single()
 
-         if (deleteError) {
-             console.warn(`API Warning updateExercise: Failed to delete old categories for exercise ${exerciseId}:`, deleteError.message);
-             // Decide if this should halt the update
-         }
-
-         // 2. Insert new mappings if the array isn't empty
-         if (category_ids.length > 0) {
-             const mappings = category_ids.map(catId => ({
-                exercise_id: exerciseId,
-                category_id: catId
-            }));
-            const { error: insertError } = await supabase
-                .from('exercise_category_mapping')
-                .insert(mappings);
-             if (insertError) {
-                console.warn(`API Warning updateExercise: Failed to insert new categories for exercise ${exerciseId}:`, insertError.message);
-             }
-         }
+    if (error) {
+        console.error(`API Error updateExercise (ID: ${exerciseId}):`, error)
+        throw new Error(error.message)
     }
 
-    // Re-fetch the exercise with updated categories included for a consistent return object
-    const updatedExerciseWithDetails = await fetchExerciseById(exerciseId);
-    if (!updatedExerciseWithDetails) {
-        // This shouldn't happen if update succeeded, but handle defensively
-        console.warn("Could not re-fetch updated exercise with details, returning partial object.");
-        // The updatedExercisePartial doesn't have categories, so this might be incomplete
-        return updatedExercisePartial as Exercise;
-    }
-    return updatedExerciseWithDetails;
-};
+    return data
+}
 
 
 /** Deletes an exercise */

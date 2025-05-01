@@ -9,7 +9,7 @@ const userKeys = {
 };
 
 // --- Query Hooks --- (Keep these as they were)
-export const useUserContext = () => {
+export const useUserQuery = () => {
     return useQuery<UserContext, Error>({
         queryKey: userKeys.context,
         queryFn: userApi.fetchUserContext,
@@ -43,6 +43,19 @@ export const useUsers = () => {
     return useQuery<UserProfile[], Error>({
         queryKey: ['users'],
         queryFn: userApi.fetchUsers,
+        staleTime: 10 * 60 * 1000,
+        retry: 2,
+    });
+};
+
+/** Hook to fetch a single user by userId */
+export const useUser = (userId: string) => {
+    return useQuery<UserProfile | undefined, Error>({
+        queryKey: ['user', userId],
+        queryFn: async () => {
+            const users = await userApi.fetchUsers();
+            return users.find(user => user.id === userId);
+        },
         staleTime: 10 * 60 * 1000,
         retry: 2,
     });

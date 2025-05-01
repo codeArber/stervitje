@@ -1,5 +1,7 @@
 // src/types/index.ts (or wherever you define your types)
 
+export type Metric = 'metric' | 'imperial';
+
 // Based on public.profiles table
 export interface UserProfile {
     id: string; // UUID
@@ -9,6 +11,7 @@ export interface UserProfile {
     profile_image_url?: string | null;
     updated_at?: string | null; // ISO Date String
     created_at?: string | null; // ISO Date String
+    unit: Metric; // User's preferred units
 }
 
 // Based on public.teams table

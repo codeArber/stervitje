@@ -2,11 +2,11 @@ import { LogOut, Settings, User } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu"
 import { Button } from "./ui/button"
 import { useQuery } from "@tanstack/react-query"
-import { useUserContext } from "@/api/user"
+import { useUserQuery } from "@/api/user"
 
 export const UserDropdown = () => {
 
-    const user =  useUserContext()
+    const user =  useUserQuery()
 
     const handleLogout = () => {
         // Implement logout logic here

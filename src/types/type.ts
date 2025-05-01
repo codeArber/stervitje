@@ -1,4 +1,5 @@
 // src/types/exerciseTypes.ts (or your central types file)
+import { ExerciseCategory } from "@/lib/data";
 import { z } from "zod";
 
 // Interface for a fetched Exercise, potentially including category details
@@ -15,7 +16,7 @@ export interface Exercise {
     created_at?: string | null; // ISO Date string
     updated_at?: string | null; // ISO Date string
     // Joined categories (if fetched)
-    categories?: Array<{ id: string; name: string }>;
+    category?: ExerciseCategory | null; // FK to exercise_categories
 }
 
 // Interface for the payload when creating/updating an exercise
@@ -29,7 +30,7 @@ export interface ExercisePayload {
     image_url?: string | null;
     is_public?: boolean; // Default to true in DB? Or required here?
     // We'll handle category mapping separately if needed, or expect IDs here
-    category_ids?: string[]; // Optional: If you want to set categories during create/update
+    category?: ExerciseCategory; // Optional: If you want to set categories during create/update
 }
 
 // Interface for fetch parameters (optional filtering/pagination)

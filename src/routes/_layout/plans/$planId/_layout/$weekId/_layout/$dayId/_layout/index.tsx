@@ -63,7 +63,7 @@ interface PlanSessionExerciseItemProps {
 function DayDetailsPage() {
     return(
       <div>
-        hey
+        Overview of the session here
       </div>
     )
 }

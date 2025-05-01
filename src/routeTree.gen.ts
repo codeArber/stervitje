@@ -28,6 +28,7 @@ import { Route as LayoutPlansPlanIdLayoutImport } from './routes/_layout/plans/$
 import { Route as LayoutDiscoverTeamTeamIdImport } from './routes/_layout/discover/team/$teamId'
 import { Route as LayoutPlansPlanIdLayoutIndexImport } from './routes/_layout/plans/$planId/_layout/index'
 import { Route as LayoutDiscoverUserUserIdIndexImport } from './routes/_layout/discover/user/$userId/index'
+import { Route as LayoutDiscoverPlanPlanIdIndexImport } from './routes/_layout/discover/plan/$planId/index'
 import { Route as LayoutPlansPlanIdLayoutWeekIdLayoutImport } from './routes/_layout/plans/$planId/_layout/$weekId/_layout'
 import { Route as LayoutPlansPlanIdLayoutWeekIdLayoutIndexImport } from './routes/_layout/plans/$planId/_layout/$weekId/_layout/index'
 import { Route as LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutImport } from './routes/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout'
@@ -146,6 +147,13 @@ const LayoutDiscoverUserUserIdIndexRoute =
   LayoutDiscoverUserUserIdIndexImport.update({
     id: '/discover/user/$userId/',
     path: '/discover/user/$userId/',
+    getParentRoute: () => LayoutRoute,
+  } as any)
+
+const LayoutDiscoverPlanPlanIdIndexRoute =
+  LayoutDiscoverPlanPlanIdIndexImport.update({
+    id: '/discover/plan/$planId/',
+    path: '/discover/plan/$planId/',
     getParentRoute: () => LayoutRoute,
   } as any)
 
@@ -290,6 +298,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/plans/$planId'
       preLoaderRoute: typeof LayoutPlansPlanIdLayoutImport
       parentRoute: typeof LayoutPlansPlanIdRoute
+    }
+    '/_layout/discover/plan/$planId/': {
+      id: '/_layout/discover/plan/$planId/'
+      path: '/discover/plan/$planId'
+      fullPath: '/discover/plan/$planId'
+      preLoaderRoute: typeof LayoutDiscoverPlanPlanIdIndexImport
+      parentRoute: typeof LayoutImport
     }
     '/_layout/discover/user/$userId/': {
       id: '/_layout/discover/user/$userId/'
@@ -466,6 +481,7 @@ interface LayoutRouteChildren {
   LayoutSettingsIndexRoute: typeof LayoutSettingsIndexRoute
   LayoutDiscoverTeamTeamIdRoute: typeof LayoutDiscoverTeamTeamIdRoute
   LayoutPlansPlanIdRoute: typeof LayoutPlansPlanIdRouteWithChildren
+  LayoutDiscoverPlanPlanIdIndexRoute: typeof LayoutDiscoverPlanPlanIdIndexRoute
   LayoutDiscoverUserUserIdIndexRoute: typeof LayoutDiscoverUserUserIdIndexRoute
 }
 
@@ -482,6 +498,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutSettingsIndexRoute: LayoutSettingsIndexRoute,
   LayoutDiscoverTeamTeamIdRoute: LayoutDiscoverTeamTeamIdRoute,
   LayoutPlansPlanIdRoute: LayoutPlansPlanIdRouteWithChildren,
+  LayoutDiscoverPlanPlanIdIndexRoute: LayoutDiscoverPlanPlanIdIndexRoute,
   LayoutDiscoverUserUserIdIndexRoute: LayoutDiscoverUserUserIdIndexRoute,
 }
 
@@ -502,6 +519,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof LayoutSettingsIndexRoute
   '/discover/team/$teamId': typeof LayoutDiscoverTeamTeamIdRoute
   '/plans/$planId': typeof LayoutPlansPlanIdLayoutRouteWithChildren
+  '/discover/plan/$planId': typeof LayoutDiscoverPlanPlanIdIndexRoute
   '/discover/user/$userId': typeof LayoutDiscoverUserUserIdIndexRoute
   '/plans/$planId/': typeof LayoutPlansPlanIdLayoutIndexRoute
   '/plans/$planId/$weekId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutRouteWithChildren
@@ -524,6 +542,7 @@ export interface FileRoutesByTo {
   '/settings': typeof LayoutSettingsIndexRoute
   '/discover/team/$teamId': typeof LayoutDiscoverTeamTeamIdRoute
   '/plans/$planId': typeof LayoutPlansPlanIdLayoutIndexRoute
+  '/discover/plan/$planId': typeof LayoutDiscoverPlanPlanIdIndexRoute
   '/discover/user/$userId': typeof LayoutDiscoverUserUserIdIndexRoute
   '/plans/$planId/$weekId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutIndexRoute
   '/plans/$planId/$weekId/$dayId': typeof LayoutPlansPlanIdLayoutWeekIdLayoutDayIdLayoutIndexRoute
@@ -546,6 +565,7 @@ export interface FileRoutesById {
   '/_layout/discover/team/$teamId': typeof LayoutDiscoverTeamTeamIdRoute
   '/_layout/plans/$planId': typeof LayoutPlansPlanIdRouteWithChildren
   '/_layout/plans/$planId/_layout': typeof LayoutPlansPlanIdLayoutRouteWithChildren
+  '/_layout/discover/plan/$planId/': typeof LayoutDiscoverPlanPlanIdIndexRoute
   '/_layout/discover/user/$userId/': typeof LayoutDiscoverUserUserIdIndexRoute
   '/_layout/plans/$planId/_layout/': typeof LayoutPlansPlanIdLayoutIndexRoute
   '/_layout/plans/$planId/_layout/$weekId': typeof LayoutPlansPlanIdLayoutWeekIdRouteWithChildren
@@ -573,6 +593,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/discover/team/$teamId'
     | '/plans/$planId'
+    | '/discover/plan/$planId'
     | '/discover/user/$userId'
     | '/plans/$planId/'
     | '/plans/$planId/$weekId'
@@ -594,6 +615,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/discover/team/$teamId'
     | '/plans/$planId'
+    | '/discover/plan/$planId'
     | '/discover/user/$userId'
     | '/plans/$planId/$weekId'
     | '/plans/$planId/$weekId/$dayId'
@@ -614,6 +636,7 @@ export interface FileRouteTypes {
     | '/_layout/discover/team/$teamId'
     | '/_layout/plans/$planId'
     | '/_layout/plans/$planId/_layout'
+    | '/_layout/discover/plan/$planId/'
     | '/_layout/discover/user/$userId/'
     | '/_layout/plans/$planId/_layout/'
     | '/_layout/plans/$planId/_layout/$weekId'
@@ -662,6 +685,7 @@ export const routeTree = rootRoute
         "/_layout/settings/",
         "/_layout/discover/team/$teamId",
         "/_layout/plans/$planId",
+        "/_layout/discover/plan/$planId/",
         "/_layout/discover/user/$userId/"
       ]
     },
@@ -723,6 +747,10 @@ export const routeTree = rootRoute
         "/_layout/plans/$planId/_layout/",
         "/_layout/plans/$planId/_layout/$weekId"
       ]
+    },
+    "/_layout/discover/plan/$planId/": {
+      "filePath": "_layout/discover/plan/$planId/index.tsx",
+      "parent": "/_layout"
     },
     "/_layout/discover/user/$userId/": {
       "filePath": "_layout/discover/user/$userId/index.tsx",

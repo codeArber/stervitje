@@ -51,10 +51,8 @@ export const fetchTeamMembers = async (teamId: string | null | undefined): Promi
      const { data, error } = await supabase
         .from('team_members')
         .select(`
-            role,
-            joined_at,
-            user_id,
-            profiles ( id, username, full_name, profile_image_url )
+         *,
+            profiles ( * )
         `)
         .eq('team_id', teamId)
         // Ensure profiles relation returns data, filter out memberships without profiles if needed
@@ -107,7 +105,7 @@ export const createTeam = async (teamData: Pick<Team, 'name' | 'description' | '
 }
 
 /** Adds a user to a team (requires caller to be coach) */
-export const addTeamMember = async ({ teamId, userId, role }: { teamId: string, userId: string, role: 'assistant_coach' | 'member'}) => {
+export const addTeamMember = async ({ teamId, userId, role }: { teamId: string, userId: string, role: string}) => {
      // !! IMPORTANT: Add server-side check (RPC or Edge Function) to verify
      // !! that the calling user is a 'coach' of this teamId before proceeding.
      // !! Relying only on RLS might not be enough if members can invite members.

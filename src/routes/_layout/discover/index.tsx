@@ -1,6 +1,8 @@
 import { useInfiniteDiscoverablePlans } from '@/api/plans/plan'
 import { usePublicTeams } from '@/api/teams';
 import { useUsers, useUserTeams } from '@/api/user';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import Model, { IExerciseData, IMuscleStats } from 'react-body-highlighter';
@@ -25,57 +27,56 @@ export const exercises: IExerciseData[] = [
 
 function RouteComponent() {
   const { data } = useInfiniteDiscoverablePlans()
-  const {data: users} = useUsers()
-  const {data: teams} = usePublicTeams()
-  console.log(teams)
+  const { data: users } = useUsers()
+  const { data: teams } = usePublicTeams()
+
   return (
-    <div className="space-y-12 p-4">
-      <section>
-        <h2 className="text-2xl font-bold mb-4">Trending Exercises</h2>
-        <div className="flex flex-wrap gap-2">
-          {/* Replace with real data */}
-          {['Squats', 'Planks', 'Push Ups', 'Deadlifts'].map((exercise) => (
-            <span
-              key={exercise}
-              className="px-3 py-1 bg-muted rounded-full text-sm text-muted-foreground"
-            >
-              {exercise}
-            </span>
-          ))}
+    <div className=" flex-1 flex flex-col">
+      <section >
+        <div className='w-full fixed bg-sidebar shadow px-2 py-4 z-10'>
+          <Breadcrumb>
+            <BreadcrumbList>
+              {/* <BreadcrumbItem>
+              <BreadcrumbLink >
+                <Link to='/discover'>
+                  Discover
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem> */}
+
+              <BreadcrumbItem>
+                <BreadcrumbPage>
+                  <h2 className='text-lg font-bold'>
+                    Discover
+                  </h2>
+                </BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
         </div>
       </section>
 
-      <section>
+      <section className='p-4 pt-20'>
         <h2 className="text-2xl font-bold mb-4">Featured Creators</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {/* Replace with real data */}
           {users?.map((creator) => (
-        <Link to='/discover/user/$userId' params={{ userId: creator.id }} >
-            <Card key={creator.id}>
-              <CardContent className="p-4">
-                <CardTitle className="text-base font-medium">{creator.username}</CardTitle>
-                <CardDescription className="text-sm text-muted-foreground">
-                  12 plans · 430 views
-                </CardDescription>
-              </CardContent>
-            </Card>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-2xl font-bold mb-4">Public Collections</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-          {/* Replace with real data */}
-          {teams?.map((team) => (
-            <Link to={'/discover/team/$teamId'} params={{ teamId: team.id }} key={team.id}>
-              <Card >
-                <CardContent className="p-4">
-                  <CardTitle className="text-base font-medium">{team.name}</CardTitle>
-                  <CardDescription className="text-sm text-muted-foreground">
-                    8 plans · 4 contributors
-                  </CardDescription>
+            <Link to='/discover/user/$userId' params={{ userId: creator.id }} >
+              <Card key={creator.id} className='overflow-hidden border-border'>
+                <CardContent className="p-4 flex flex-row gap-2">
+                  <div>
+                    <Avatar>
+                      <AvatarFallback>
+                        A
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div className="flex flex-col">
+                    <CardTitle className="text-base font-medium">{creator.username}</CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground">
+                      12 plans · 430 views
+                    </CardDescription>
+                  </div>
                 </CardContent>
               </Card>
             </Link>
@@ -83,13 +84,39 @@ function RouteComponent() {
         </div>
       </section>
 
-      <section>
+      <section className='p-4 '>
+        <h2 className="text-2xl font-bold mb-4">Public Collections</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {/* Replace with real data */}
+          {teams?.map((team) => (
+            <Link to={'/discover/team/$teamId'} params={{ teamId: team.id }} key={team.id}>
+              <Card className='border-border'>
+                <div className="flex flex-row gap-1 items-center pl-4">
+                  <div className="w-8 h-8 rounded bg-blue-300">
+
+                  </div>
+                  <div className="flex flex-col">
+                    <CardContent className="py-4">
+                      <CardTitle className="text-base font-medium">{team.name}</CardTitle>
+                      <CardDescription className="text-sm text-muted-foreground">
+                        8 plans · 4 contributors
+                      </CardDescription>
+                    </CardContent>
+                  </div>
+                </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className='p-4'>
         <h2 className="text-2xl font-bold mb-4">Discover Plans</h2>
         {data?.pages.map((page, index) => (
-          <div key={index} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div key={index} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {page.map((plan) => (
-              <Link key={plan.id} to='/plans/$planId' params={{ planId: plan.id }}>
-                <Card >
+              <Link key={plan.id} to='/discover/plan/$planId' params={{ planId: plan.id }}>
+                <Card className='border-border'>
                   <CardContent className="p-4">
                     <CardTitle className="text-xl font-semibold mb-1">
                       {plan.title}
@@ -125,8 +152,8 @@ function RouteComponent() {
                       <Model
                         data={exercises}
                         style={{ width: '10rem', padding: '1rem' }}
-                   
-                        // onClick={handleClick}
+
+                      // onClick={handleClick}
                       />
                       <Model
                         data={exercises}

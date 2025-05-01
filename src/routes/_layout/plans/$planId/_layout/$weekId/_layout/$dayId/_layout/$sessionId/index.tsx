@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { createFileRoute } from '@tanstack/react-router'
-import { Plus, PlusCircle, Trash2 } from 'lucide-react';
+import { Clock, Plus, PlusCircle, Trash2 } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -22,6 +22,11 @@ import { useCreatePlanSet, useUpdatePlanSet } from '@/api/plans/session_set';
 import { useCreatePlanSessionExercise, useUpdatePlanSessionExercise } from '@/api/plans/exercise_entry';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useInfiniteExercises } from '@/api/exercises';
+import { Badge } from '@/components/ui/badge';
+import { useTeamStore } from '@/store/useTeamStore';
+import { useActiveMemberInTeam, useMemberInTeam } from '@/api/teams';
+import { useAuthStore } from '@/hooks/useAuthStore';
+import { kgToLbs } from '@/lib/unitConversion';
 
 
 export const Route = createFileRoute(
@@ -53,78 +58,112 @@ function RouteComponent() {
   const addExercise = useCreatePlanSessionExercise()
 
   const selectedExercise = thisSession?.plan_session_exercises?.find(ex => ex.id === selectedEx);
-  console.log(thisSession)
   const createSet = useCreatePlanSet()
+  const { selectedTeamId } = useTeamStore()
+  const thisUser = useActiveMemberInTeam(selectedTeamId);
+  const unit = useAuthStore().getPreferredUnit();
+  
+
 
   return (
     <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
 
-        {thisSession.plan_session_exercises?.map((exercise) => (
-          <Card key={exercise.id} onClick={() => { setEditSession(true); setSelectedEx(exercise.id) }} className={cn("cursor-pointer", exercise.id === selectedEx ? "bg-green-100" : "bg-white")}>
-            <CardHeader>
-              <CardTitle>{exercise.exercise.name}</CardTitle>
-              <CardDescription>{exercise.notes}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-between gap-2">
-                <div>
-                  <img src="https://hips.hearstapps.com/hmg-prod/images/man-training-with-weights-royalty-free-image-1718637105.jpg?crop=0.670xw:1.00xh;0.138xw,0&resize=1200:*" alt="" className='w-24' />
-                </div>
-                <div className="flex flex-col gap-2">
-                  {exercise?.plan_session_exercise_sets?.map((set) => (
-                    <div key={set.id} className='flex flex-row items-center justify-between   rounded-md p-2'>
-                      {/* Render set details here */}
-                      <p>Set {set.set_number}: {set.target_reps} reps at {set.target_weight} {set.target_weight_unit}</p>
-
-
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Card className='cursor-pointer'>
+        {thisSession.plan_session_exercises?.map((exercise) => {
+          console.log(exercise)
+          return (
+            <Card key={exercise.id} onClick={() => { setEditSession(true); setSelectedEx(exercise.id) }} className={cn("cursor-pointer", exercise.id === selectedEx && "border-blue-200" )}>
               <CardHeader>
-                <CardTitle>
-                  <Plus className='mr-2' />
-                </CardTitle>
-                <CardDescription></CardDescription>
+                <CardTitle>{exercise.exercise.name}</CardTitle>
+                <CardDescription>{exercise.notes}</CardDescription>
               </CardHeader>
               <CardContent>
+                <div className="flex flex-row items-center justify-between gap-2">
+                  <div className='rounded-md overflow-hidden'>
+                    <img src="https://hips.hearstapps.com/hmg-prod/images/man-training-with-weights-royalty-free-image-1718637105.jpg?crop=0.670xw:1.00xh;0.138xw,0&resize=1200:*" alt="" className='w-20' />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {exercise?.plan_session_exercise_sets?.map((set) => (
+                      <div key={set.id} className="flex items-center gap-4 text-sm">
+                        <Badge variant="outline" >
+                          {set.set_number}
+                        </Badge>
+
+                        {set.target_duration_seconds && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            {/* <span>{formatDuration(set.target_duration_seconds)}</span> */}
+                          </div>
+                        )}
+
+                        {set.target_reps && (
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">{set.target_reps} reps</span>
+                          </div>
+                        )}
+
+                        {set.target_weight && (
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">
+                              {unit === 'imperial' ? kgToLbs(set.target_weight) : set.target_weight} {unit === 'imperial' ? 'lb' : 'kg'}
+                            </span>
+                          </div>
+                        )}
+
+                        {set.target_distance_meters && (
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium">{set.target_distance_meters}m</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          </PopoverTrigger>
-          <PopoverContent>
-            <div className="flex flex-col gap-2">
-              <div>Select an exercise to add to the plan</div>
-              <div>
-                hey
-              </div>
-              <div>
-                {allExercises?.pages?.map((page) => (
-                  page?.map((exercise) => (
-                    <Button key={exercise.id} variant={'outline'} className='flex flex-row items-center justify-between   rounded-md p-2' onClick={() => {
-                      addExercise.mutate({
-                        plan_session_id: thisSession.id,
-                        exercise_id: exercise.id,
-                        order_index: Math.max(0, ...thisSession.plan_session_exercises.map(ex => ex.order_index)) + 1,
-                        planId: planId
-                      });
-                    }}>
-                      <p>{exercise.name}</p>
-                      <div  >
-                        Add
-                      </div>
-                    </Button>
-                  ))
-                ))}
+          )
+        })}
+        {thisUser?.role === 'coach' &&
+          <Popover>
+            <PopoverTrigger asChild>
+              <Card className='cursor-pointer'>
+                <CardHeader>
+                  <CardTitle>
+                    <Plus className='mr-2' />
+                  </CardTitle>
+                  <CardDescription></CardDescription>
+                </CardHeader>
+                <CardContent>
+                </CardContent>
+              </Card>
+            </PopoverTrigger>
+            <PopoverContent>
+              <div className="flex flex-col gap-2">
+                <div>Select an exercise to add to the plan</div>
+                <div>
+                  hey
+                </div>
+                <div>
+                  {allExercises?.pages?.map((page) => (
+                    page?.map((exercise) => (
+                      <Button key={exercise.id} variant={'outline'} className='flex flex-row items-center justify-between   rounded-md p-2' onClick={() => {
+                        addExercise.mutate({
+                          plan_session_id: thisSession.id,
+                          exercise_id: exercise.id,
+                          order_index: Math.max(0, ...thisSession.plan_session_exercises.map(ex => ex.order_index)) + 1,
+                          planId: planId
+                        });
+                      }}>
+                        <p>{exercise.name}</p>
+                        <div  >
+                          Add
+                        </div>
+                      </Button>
+                    ))
+                  ))}
 
-              </div>
-              {/* {planData?.exercises?.map((exercise) => (
+                </div>
+                {/* {planData?.exercises?.map((exercise) => (
               <Button
               key={exercise.id}
               variant="outline"
@@ -139,9 +178,10 @@ function RouteComponent() {
               {exercise.name}
               </Button>
             ))} */}
-            </div>
-          </PopoverContent>
-        </Popover>
+              </div>
+            </PopoverContent>
+          </Popover>
+        }
       </div>
       <Sheet open={editSession} onOpenChange={(open) => {
         setEditSession(open);
@@ -157,7 +197,7 @@ function RouteComponent() {
             <SheetDescription>
               {/* This action cannot be undone. This will permanently delete your account
               and remove your data from our servers. */}
-              <div className='px-2 py-6'>
+              <div className='px-2 py-6 rounded overflow-hidden'>
                 <img src="https://hips.hearstapps.com/hmg-prod/images/man-training-with-weights-royalty-free-image-1718637105.jpg?crop=0.670xw:1.00xh;0.138xw,0&resize=1200:*" alt="" />
 
               </div>

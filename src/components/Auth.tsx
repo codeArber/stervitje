@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Terminal } from "lucide-react"; // Example icon for Alert
 import { supabase } from '@/lib/supabase/supabaseClient';
+import { useAuthStore } from '@/hooks/useAuthStore';
 
 export const Auth: React.FC = () => {
     const [loading, setLoading] = useState(false);
@@ -25,6 +26,7 @@ export const Auth: React.FC = () => {
     const [isSignUp, setIsSignUp] = useState(false); // Start in Sign In mode
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    
 
     const handleAuthAction = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -65,6 +67,7 @@ export const Auth: React.FC = () => {
                 const { error: signInError } = response;
                 if (signInError) throw signInError;
                 setMessage("Sign in successful!");
+
                 // Login success normally triggers onAuthStateChange listener
             }
         } catch (error: any) {

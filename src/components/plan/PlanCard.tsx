@@ -28,7 +28,7 @@ export const PlanCard = ({ id, title, description }: PlanCardProps) => {
 
     return (
         <Link to="/plans/$planId" params={{ planId: id }} className="w-full  rounded-lg">
-            <Card className="p-4">
+            <Card className="p-4 border-border">
                 <CardTitle>{title}</CardTitle>
                 <CardDescription>{description}</CardDescription>
                 <CardContent>

@@ -49,8 +49,12 @@ export const Route = createFileRoute('/_layout/plans/$planId/_layout/$weekId/_la
 // --- Main Page Component ---
 function DayDetailsPage() {
  return(
-   <div>
-      {/* hey */}
+   <div className='py-8'>
+    <Separator />
+
+    <div>
+      Overview of the days here
+    </div>
       <Outlet />
    </div>
  );

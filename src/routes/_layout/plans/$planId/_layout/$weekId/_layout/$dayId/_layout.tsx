@@ -41,6 +41,8 @@ import { AddExerciseToSessionForm } from '@/components/AddExerciseToSession';
 import { AddEditSetForm } from '@/components/AddEditSet';
 import { PlanSessionExerciseItem } from '@/components/PlanSessionExercise';
 import { cn } from '@/lib/utils';
+import { useTeamStore } from '@/store/useTeamStore';
+import { useActiveMemberInTeam, useMemberInTeam } from '@/api/teams';
 
 export const Route = createFileRoute(
   '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout',
@@ -129,10 +131,13 @@ function DayDetailsPage() {
 
   // --- Calculations ---
   const nextSessionOrderIndex = currentSessions.length + 1;
+  const { selectedTeamId } = useTeamStore()
+  const thisUser = useActiveMemberInTeam(selectedTeamId);
+
 
   // --- Render Page ---
   return (
-    <div className="w-full py-6 space-y-6">
+    <div className="w-full py-2 space-y-2">
 
 
       <Separator />
@@ -141,38 +146,40 @@ function DayDetailsPage() {
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Planned Sessions</h2>
         {/* Add Session Button + Dialog */}
-        <Dialog open={isAddSessionDialogOpen} onOpenChange={setIsAddSessionDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" variant="outline" disabled={day.is_rest_day}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Session
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Add New Session to Day {day.day_number}</DialogTitle>
-            </DialogHeader>
-            <CreateSessionForm
-              planId={planId}
-              dayId={dayId}
-              nextOrderIndex={nextSessionOrderIndex}
-              onSuccess={() => setIsAddSessionDialogOpen(false)}
-            />
-          </DialogContent>
-        </Dialog>
+        {thisUser?.role === 'coach' &&
+          <Dialog open={isAddSessionDialogOpen} onOpenChange={setIsAddSessionDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" variant="outline" disabled={day.is_rest_day}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Add Session
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Add New Session to Day {day.day_number}</DialogTitle>
+              </DialogHeader>
+              <CreateSessionForm
+                planId={planId}
+                dayId={dayId}
+                nextOrderIndex={nextSessionOrderIndex}
+                onSuccess={() => setIsAddSessionDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+        }
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
 
         {currentSessions.map((session) => (
           <Link key={session.id} to='/plans/$planId/$weekId/$dayId/$sessionId' params={{ planId: planId, weekId: weekId, dayId: dayId, sessionId: session.id }} className="w-full">
-            <Card className={cn("overflow-hidden", session.id === sessionId ? "border-2 border-primary" : "border")}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-muted/50 p-4">
+            <Card className={cn("overflow-hidden", session.id === sessionId ? "border-2  border-blue-300" : "border")}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-muted/50 p-2">
                 <CardTitle className="text-lg font-medium">
                   {session.title || `Session ${session.order_index}`}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-4 pt-2">
-                sda
-              </CardContent>
+              {/* <CardContent className="p-4 pt-2"> */}
+              {/* sda */}
+              {/* </CardContent> */}
             </Card>
           </Link>
 

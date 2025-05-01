@@ -26,7 +26,7 @@ const items = [
     icon: Home,
   },
   {
-    title: "Plans",
+    title: "Workspace",
     url: "/plans",
     icon: Inbox,
   },
