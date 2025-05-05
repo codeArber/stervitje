@@ -1,4 +1,5 @@
 import { useGetTodaysPlanSummary } from '@/api/schedule'
+import { MarqueeDemo } from '@/components/MarqueExample';
 import WorkoutDayDetailsView from '@/components/WorkoutTodayDetails';
 import { useSession } from '@supabase/auth-helpers-react';
 import { createFileRoute, Link } from '@tanstack/react-router'
@@ -28,6 +29,8 @@ function TodaysWorkoutWidget() {
             <div className="p-4 border rounded shadow-sm">
                 <h3 className="font-semibold mb-2">Today's Workout</h3>
                 <p className="text-sm text-muted-foreground">No workout scheduled for today. Enjoy your rest!</p>
+                <MarqueeDemo />
+
             </div>
         );
     }
@@ -41,7 +44,7 @@ function TodaysWorkoutWidget() {
                     <li key={summary.plan_day_id}>
                         <Link
                             // Example link - adjust path to your workout detail page
-                            to='/$sessionId' params={{sessionId: summary.plan_day_id}}
+                            to='/$sessionId' params={{ sessionId: summary.plan_day_id }}
                             className="text-blue-600 hover:underline"
                         >
                             {summary.day_title || `Workout Day ${summary.day_number}`}
@@ -57,8 +60,8 @@ function TodaysWorkoutWidget() {
                 {todaysSummaries.map((day) => {
                     return (
                         <div key={day.plan_id}>
-                            
-                            <WorkoutDayDetailsView planId={day.plan_day_id}  />
+
+                            <WorkoutDayDetailsView planId={day.plan_day_id} />
                         </div>
                     )
                 })}

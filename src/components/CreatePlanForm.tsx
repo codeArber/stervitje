@@ -16,52 +16,77 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-// Import Select components if needed for fields like visibility, difficulty
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CreatePlanSchema, CreatePlanPayload } from '@/types/type'; // Adjust path
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { useCreatePlan } from '@/api/plans/plan';
 import { useTeamStore } from '@/store/useTeamStore';
+import { CreatePlanPayload, CreatePlanSchema } from '@/types/planTypes';
 
 interface CreatePlanFormProps {
   onSuccess?: () => void; // Optional callback on successful creation
 }
 
+// Sports options
+const SPORTS_OPTIONS = [
+  "Weightlifting",
+  "Bodybuilding",
+  "CrossFit",
+  "Running",
+  "Swimming",
+  "Cycling",
+  "Yoga",
+  "Pilates",
+  "HIIT",
+  "Calisthenics",
+  "Other"
+];
+
 export function CreatePlanForm({ onSuccess }: CreatePlanFormProps) {
   const createPlanMutation = useCreatePlan();
-  const selectedTeamId = useTeamStore((state) => state.selectedTeamId); // Assuming temp is a team ID or similar
+  const selectedTeamId = useTeamStore((state) => state.selectedTeamId);
 
   const form = useForm<CreatePlanPayload>({
     resolver: zodResolver(CreatePlanSchema),
     defaultValues: {
       title: "",
       description: "",
-      // Initialize other fields if they are part of the schema
-      // visibility: 'private',
+      difficulty_level: 3,
+      duration_weeks: 4,
+      sport: undefined,
+      visibility: 'private',
+      allow_public_forking: false,
     },
   });
 
   function onSubmit(values: CreatePlanPayload) {
     console.log("Submitting Plan Data:", values);
+
+    let payload 
     if (selectedTeamId) {
-      createPlanMutation.mutate(
-        {
-          title: values.title,
-          description: values.description,
-          visibility: 'team',
-          allow_public_forking: false,
-          team_id: selectedTeamId // Include team ID if available,
-        }
-      )
+      payload = {
+        ...values,
+        visibility: 'team',
+        team_id: selectedTeamId,
+      };
     } else {
-      createPlanMutation.mutate(
-        {
-          title: values.title,
-          description: values.description,
-          visibility: 'private',
-          allow_public_forking: false
-        }
-      )
+      payload = values;
     }
+    
+
+    // Submit the mutation
+    createPlanMutation.mutate(payload as CreatePlanPayload, {
+      onSuccess: () => {
+        form.reset(); // Reset form on success
+        onSuccess?.(); // Call the success callback if provided
+      }
+    });
   }
 
   return (
@@ -98,44 +123,164 @@ export function CreatePlanForm({ onSuccess }: CreatePlanFormProps) {
                   placeholder="Briefly describe the goal or focus of this plan..."
                   className="resize-none"
                   {...field}
-                  // Assign value explicitly to handle potential null from optional field
-                  value={field.value ?? ''}
+                  value={field.value || ''}
                 />
               </FormControl>
+              <FormDescription>
+                Provide details about what this plan aims to achieve.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        {/* Add other FormFields here for difficulty, duration, sport, visibility etc. */}
-        {/* Example for Visibility using Select: */}
-        {/*
+        {/* Difficulty Level Field */}
         <FormField
           control={form.control}
-          name="visibility"
+          name="difficulty_level"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Visibility</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select who can see this plan" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="private">Private (Only You)</SelectItem>
-                  <SelectItem value="public">Public (Everyone)</SelectItem>
-                   <SelectItem value="team">Team (Requires Team Selection - more complex)</SelectItem>
-                </SelectContent>
-              </Select>
-               <FormDescription>
-                 Default is Private. Public plans can be discovered by others.
-               </FormDescription>
+              <FormLabel>Difficulty Level</FormLabel>
+              <FormControl>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Beginner</span>
+                    <span>Intermediate</span>
+                    <span>Advanced</span>
+                  </div>
+                  <Slider
+                    min={1}
+                    max={5}
+                    step={1}
+                    defaultValue={[field.value || 3]}
+                    onValueChange={(vals) => field.onChange(vals[0])}
+                  />
+                  <div className="text-center text-sm">
+                    Level: {field.value || 3}/5
+                  </div>
+                </div>
+              </FormControl>
+              <FormDescription>
+                Set the difficulty level of your training plan.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        */}
+
+        {/* Duration Weeks Field */}
+        <FormField
+          control={form.control}
+          name="duration_weeks"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Duration (Weeks)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number" 
+                  min={1} 
+                  max={52} 
+                  placeholder="4" 
+                  {...field}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  value={field.value || ''}
+                />
+              </FormControl>
+              <FormDescription>
+                How many weeks will this plan run for?
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Sport Field */}
+        <FormField
+          control={form.control}
+          name="sport"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Sport/Activity Type</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a sport or activity type" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {SPORTS_OPTIONS.map((sport) => (
+                    <SelectItem key={sport} value={sport}>
+                      {sport}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                What type of training does this plan focus on?
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Only show visibility if not in team context */}
+        {!selectedTeamId && (
+          <FormField
+            control={form.control}
+            name="visibility"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Visibility</FormLabel>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select visibility" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="private">Private (Only you)</SelectItem>
+                    <SelectItem value="public">Public (Everyone)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  Control who can see your training plan.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        {/* Public Forking Field - only relevant for public plans */}
+        {(form.watch("visibility") === "public" || selectedTeamId) && (
+          <FormField
+            control={form.control}
+            name="allow_public_forking"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                <div className="space-y-0.5">
+                  <FormLabel>Allow Others to Fork</FormLabel>
+                  <FormDescription>
+                    Let others create their own version based on your plan.
+                  </FormDescription>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         <Button type="submit" disabled={createPlanMutation.isPending}>
           {createPlanMutation.isPending ? 'Creating Plan...' : 'Create Plan'}

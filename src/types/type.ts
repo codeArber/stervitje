@@ -40,7 +40,6 @@ export interface FetchExercisesParams {
     searchTerm?: string;
     categoryId?: string;
     difficulty?: number;
-    isPublic?: boolean;
     createdByUserId?: string; // To fetch only user's exercises
 }
 

@@ -115,7 +115,7 @@ function WeekDetailsPage() {
       </div>
 
       {/* Days List */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2">
+      <div className="flex flex-row gap-6 ">
         {currentDays.length > 0 ? (
           currentDays.map((day: PlanDay) => (
             <Link
@@ -125,8 +125,8 @@ function WeekDetailsPage() {
               className="w-full"
             >
 
-              <Card className={cn("flex flex-col", dayId && dayId === day.id ? "border-2  border-blue-300" : "border", day.is_rest_day && 'border-green-200 bg-green-100')}>
-                <CardHeader className="pb-2">
+              <Card className={cn("flex flex-col w-fit", dayId && dayId === day.id ? "border-2  border-blue-300" : "border", day.is_rest_day && 'border-green-200 bg-green-100')}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-muted/50 px-10 py-8 ">
                   <div className="flex justify-between items-start gap-2">
                     <CardTitle className="text-base font-medium">
                       {/* Link Day Title */}

@@ -25,7 +25,6 @@ const TrainingPlansDashboard = () => {
    const selectedTeamId = useTeamStore((state) => state.selectedTeamId); // Get selected team from store
    const thisUser = useActiveMemberInTeam(selectedTeamId);
 
-console.log(selectedTeamId)
    return (
       <div className='p-4'>
          <div className="flex justify-between items-center">

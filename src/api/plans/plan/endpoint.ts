@@ -1,7 +1,7 @@
 // src/api/plans/plan/endpoint.ts
 import { supabase } from '@/lib/supabase/supabaseClient';
+import { Plan } from '@/lib/supabase/types';
 import type {
-    Plan,
     PlanDetail,
     DiscoverablePlan,
     CreatePlanPayload,
@@ -127,11 +127,9 @@ export const fetchTeamPlans = async (teamId: string): Promise<Plan[]> => {
         throw new Error("Team ID is required to fetch team plans.");
     }
 
-    const selectString = `id, title, description, difficulty_level, duration_weeks, visibility, fork_count, like_count, created_at, updated_at`;
-
     const { data, error } = await supabase
         .from('plans')
-        .select(selectString)
+        .select('*')
         .eq('team_id', teamId)
         .order('created_at', { ascending: false });
 

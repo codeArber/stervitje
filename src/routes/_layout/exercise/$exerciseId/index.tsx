@@ -11,8 +11,10 @@ import { useState } from 'react';
 import { ExerciseCategory, exerciseTypes } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { updateExercise } from '@/api/exercises/endpoint';
+import ExerciseInstructions from '@/components/ExerciseInstructions';
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 
-export const Route = createFileRoute('/_layout/exercise/$exerciseId')({
+export const Route = createFileRoute('/_layout/exercise/$exerciseId/')({
   component: ExercisePage,
   // Optional: Add loader for SSR/metadata or error handling before component mounts
   // loader: async ({ params }) => { ... },
@@ -111,76 +113,44 @@ function ExercisePage() {
 
   // Render the exercise details if data is successfully loaded
   return (
-    <div className="flex flex-col w-full px-4 py-8">
+    <div className="flex flex-col w-full ">
       {/* Back Button */}
-      <div className="mb-6">
-        <Link to="/exercise"> {/* Adjust link if your list page is elsewhere */}
-          <Button variant="ghost" size="sm" className="gap-1">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Exercises
-          </Button>
-        </Link>
-      </div>
+       <div className='flex flex-row '>
+              <div className=' bg-sidebar flex items-center shadow px-4 py-6 z-10 w-full justify-between h-18'>
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink >
+                        <Link to='/'>
+                          Home
+                        </Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+      
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbLink >
+                        <Link to='/exercise'>
+                          Exercises
+                        </Link>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>{exercise?.name}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                  </BreadcrumbList>
+                </Breadcrumb>
+                <div></div>
+              </div>
+            </div>
 
       {/* Render the display component only if exercise data exists */}
       {/* This check might be redundant if notFoundComponent works correctly, but adds safety */}
       {exercise ? (
         <div className='flex flex-row w-full gap-4'>
-          <ExerciseDisplay exercise={exercise} />
-          <div className='border border-border flex flex-col items-start rounded shadow px-4 py-6 z-10 w-full justify-between h-18'>
-            <div className=" ">
-              <h3 className="text-xl font-semibold mb-4">Exercise Details</h3>
-              <p>{exercise.description}</p>
-              {/* Add more details as needed */}
-              <div className="mt-4">
-                <h4 className="text-lg font-medium">Muscle Group</h4>
-                {exercise?.exercise_muscle?.map((muscle, index) => (
-                  <p key={index} className="text-sm text-muted-foreground">
-                    {muscle.muscle_group}
-                  </p>
-                ))}
-              </div>
-              <div className="mt-4">
-                <h4 className="text-lg font-medium">Equipment</h4>
-                <p>{"N/A"}</p>
-              </div>
-              <div className="mt-4">
-                <h4 className="text-lg font-medium">Exercise Type</h4>
-
-                <ExerciseTypeDropdown exerciseId={exercise.id} category={exercise.category} type={exercise.exercise_type} />
-
-              </div>
-              <div className="mt-4">
-                <h4 className="text-lg font-medium">Category</h4>
-                <ExerciseCategoryDropdown exerciseId={exercise.id} category={exercise.category} />
-              </div>
-              <div className="mt-4">
-                <h4 className="text-lg font-medium">Benefits</h4>
-                <ul className="list-disc pl-5">
-                  <li>Improves strength</li>
-                  <li>Enhances flexibility</li>
-                  <li>Boosts endurance</li>
-                  {/* Add more benefits as needed */}
-                </ul>
-              </div>
-            </div>
-            <div className="flex flex-row w-full gap-4 justify-center">
-              <Model
-                data={exercises.find(ex => ex.name === exercise.name) ? [exercises.find(ex => ex.name === exercise.name)] : exercises} // Fallback to all exercises if not found
-                style={{ width: '10rem', padding: '1rem' }}
-              // onClick={handleClick}
-              />
-              <Model
-                data={exercises.find(ex => ex.name === exercise.name) ? [exercises.find(ex => ex.name === exercise.name)] : exercises} // Fallback to all exercises if not found
-                style={{ width: '10rem', padding: '1rem' }}
-                type="posterior"
-
-              // onClick={handleClick}
-              />
-
-
-            </div>
-          </div>
+          <ExerciseDisplay {...exercise} />
+         
         </div>
       ) : (
         // Fallback if data is null after loading without an error state being triggered

@@ -15,7 +15,7 @@ export const TeamPlans = ({ teamId }: { teamId: string }) => {
         <div className="w-full py-4 rounded-lg gap-4 flex flex-col">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {teamPlans?.map((plan) => (
-                    <PlanCard id={plan.id} title={plan.title} description={plan.description} key={plan.id} />
+                    <PlanCard key={plan.id} {...plan} />
                 ))}
             </div>
             <div className="flex flex-col gap-2">

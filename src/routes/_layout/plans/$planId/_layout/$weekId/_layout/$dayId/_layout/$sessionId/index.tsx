@@ -21,12 +21,13 @@ import { Input } from '@/components/ui/input';
 import { useCreatePlanSet, useUpdatePlanSet } from '@/api/plans/session_set';
 import { useCreatePlanSessionExercise, useUpdatePlanSessionExercise } from '@/api/plans/exercise_entry';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useInfiniteExercises } from '@/api/exercises';
+import { useExerciseImageUrl, useInfiniteExercises } from '@/api/exercises';
 import { Badge } from '@/components/ui/badge';
 import { useTeamStore } from '@/store/useTeamStore';
 import { useActiveMemberInTeam, useMemberInTeam } from '@/api/teams';
 import { useAuthStore } from '@/hooks/useAuthStore';
 import { kgToLbs } from '@/lib/unitConversion';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 
 export const Route = createFileRoute(
@@ -62,27 +63,36 @@ function RouteComponent() {
   const { selectedTeamId } = useTeamStore()
   const thisUser = useActiveMemberInTeam(selectedTeamId);
   const unit = useAuthStore().getPreferredUnit();
-  
-
+  const exImg = useExerciseImageUrl(selectedExercise?.exercise.image_url || '')
+  if(!exImg.data) return null;
 
   return (
     <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
+      <div className="flex flex-row flex-wrap gap-4">
 
         {thisSession.plan_session_exercises?.map((exercise) => {
           console.log(exercise)
           return (
-            <Card key={exercise.id} onClick={() => { setEditSession(true); setSelectedEx(exercise.id) }} className={cn("cursor-pointer", exercise.id === selectedEx && "border-blue-200" )}>
+            <Card key={exercise.id} onClick={() => { setEditSession(true); setSelectedEx(exercise.id) }} className={cn("cursor-pointer", exercise.id === selectedEx && "border-blue-200")}>
               <CardHeader>
                 <CardTitle>{exercise.exercise.name}</CardTitle>
                 <CardDescription>{exercise.notes}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-row items-center justify-between gap-2">
-                  <div className='rounded-md overflow-hidden'>
-                    <img src="https://hips.hearstapps.com/hmg-prod/images/man-training-with-weights-royalty-free-image-1718637105.jpg?crop=0.670xw:1.00xh;0.138xw,0&resize=1200:*" alt="" className='w-20' />
-                  </div>
-                  <div className="flex flex-col gap-2">
+
+                <div className="flex flex-row flex-nowrap items-start gap-2 w-full">
+                  <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden flex-shrink-0 w-32">
+
+                    <img
+                      // Use image_url from DB, provide a fallback
+                      src={exImg?.data || '/placeholder.svg'}
+                      // Use object-cover for better filling, ensure parent has overflow-hidden
+                      className="object-cover w-full h-full"
+                      // Add error handling for broken images (optional)
+                      onError={(e) => (e.currentTarget.src = '/placeholder.svg')}
+                    />
+                  </AspectRatio>
+                  <div className="flex flex-col gap-2 flex-1 min-w-0">
                     {exercise?.plan_session_exercise_sets?.map((set) => (
                       <div key={set.id} className="flex items-center gap-4 text-sm">
                         <Badge variant="outline" >
@@ -197,9 +207,18 @@ function RouteComponent() {
             <SheetDescription>
               {/* This action cannot be undone. This will permanently delete your account
               and remove your data from our servers. */}
-              <div className='px-2 py-6 rounded overflow-hidden'>
-                <img src="https://hips.hearstapps.com/hmg-prod/images/man-training-with-weights-royalty-free-image-1718637105.jpg?crop=0.670xw:1.00xh;0.138xw,0&resize=1200:*" alt="" />
+              <div className='px-2 py-6 rounded '>
+                <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden">
 
+                  <img
+                    // Use image_url from DB, provide a fallback
+                    src={exImg?.data || '/placeholder.svg'}
+                    // Use object-cover for better filling, ensure parent has overflow-hidden
+                    className="object-cover w-full h-full"
+                    // Add error handling for broken images (optional)
+                    onError={(e) => (e.currentTarget.src = '/placeholder.svg')}
+                  />
+                </AspectRatio>
               </div>
             </SheetDescription>
           </SheetHeader>

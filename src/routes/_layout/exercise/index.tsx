@@ -1,12 +1,15 @@
 import { ExerciseList } from '@/components/ExerciseList'
-import { createFileRoute } from '@tanstack/react-router'
+import { TeamDropdown } from '@/components/TeamDropdown'
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb'
+import { createFileRoute, Link } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_layout/exercise/')({
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  return <div className='px-4 py-8'>
-       <ExerciseList />
+  return <div className=' w-full'>
+
+    <ExerciseList />
   </div>
 }

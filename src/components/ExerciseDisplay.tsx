@@ -2,147 +2,146 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Exercise } from '@/types/type'; // Adjust path to your types
-import { AspectRatio } from "./ui/aspect-ratio";
-import { useExerciseImageUrl, userExerciseReferences } from "@/api/exercises";
-import { TikTokEmbed } from "./TikTokEmbed";
 import { useAuthStore } from "@/hooks/useAuthStore";
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import ExerciseInstructions from "./ExerciseInstructions";
+import { ExerciseWithRelations } from "@/lib/supabase/types";
+// Label is now used in ExerciseCategorySelector
+import Model, { IExerciseData, Muscle } from "react-body-highlighter";
+import { exercises } from "@/routes/_layout/discover";
+import { ExerciseCategoryDropdown, ExerciseTypeDropdown, ExerciseDifficultyDropdown, ExerciseEnvironmentDropdown, ExerciseImage, ExerciseReferences } from "./ExerciseCategorySelector";
+import { ExerciseCategory, muscleGroups } from "@/lib/data";
+import { useCreateExerciseMuscleGroup, useExerciseImageUrl, useRemoveExerciseMuscleGroup } from "@/api/exercises";
+import { MultiSelectMuscleGroup } from "./ExerciseMuscleGroup";
+import { Database } from "@/lib/database.types";
 
-interface ExerciseDisplayProps {
-  exercise: Exercise; // Expects the fully fetched exercise object
-}
 
-// Helper function (can be shared in a utils file)
-const getDifficultyText = (level: number | null | undefined): string => {
-  if (level === null || level === undefined) return 'N/A';
-  switch (level) {
-    case 1: return 'Very Easy';
-    case 2: return 'Easy';
-    case 3: return 'Medium';
-    case 4: return 'Hard';
-    case 5: return 'Very Hard';
-    default: return 'N/A';
-  }
-};
-
-export function ExerciseDisplay({ exercise }: ExerciseDisplayProps) {
+export function ExerciseDisplay(exercise: ExerciseWithRelations) {
   // Basic check if exercise data is somehow missing (should be handled by parent)
   if (!exercise) {
     return <p>Exercise data is missing.</p>;
   }
 
-  const [openDialog, setOpenDialog] = useState(false);
-  const [selectedReference, setSelectedReference] = useState<string | null>(null);
-  const userId = useAuthStore(state => state.getId); // Assuming you have a userId in your auth store
   const exImg = useExerciseImageUrl(exercise.image_url || ''); // Fetch image URL based on exercise ID or name
-  const { data: references } = userExerciseReferences(exercise.id, userId() || ''); // Assuming this is a hook to fetch or process references
+
+  const muscleAsList = exercise?.exercise_muscle?.map((muscle) => muscle.muscle_group)
+
+  const targetMuscleGroups: IExerciseData[] = [{
+    name: exercise.name,
+    muscles: muscleAsList || []
+  }]
+  const addMuscle = useCreateExerciseMuscleGroup()
+  const removeMuscle = useRemoveExerciseMuscleGroup()
+
+  const toggleSelection = (option: string) => {
+    if (exercise.exercise_muscle?.find((s) => s.muscle_group === option)) {
+      removeMuscle.mutate({ id: exercise.exercise_muscle?.find((s) => s.muscle_group === option)?.id || '', exerciseId: exercise.id })
+    } else {
+      addMuscle.mutate({
+        muscleGroup: {
+          muscle_group: option as Database['public']['Enums']['muscle_group_enum'],
+          exercise_id: exercise.id
+        }
+      });
+    }
+  };
 
   return (
-    <Card className="w-full max-w-3xl mx-auto"> {/* Adjust max-width as needed */}
-      <CardHeader>
+    <Card className="w-full mx-auto rounded-none border-none"> {/* Adjust max-width as needed */}
+      <CardHeader className="pb-2">
         <CardTitle className="text-2xl font-bold">{exercise.name}</CardTitle>
         {exercise.description && (
           <CardDescription>{exercise.description}</CardDescription>
         )}
-        <div className="flex flex-wrap gap-2 pt-2">
-          {exercise.difficulty_level !== null && exercise.difficulty_level !== undefined && (
-            <Badge variant="outline">
-              Difficulty: {getDifficultyText(exercise.difficulty_level)}
-            </Badge>
-          )}
+        <div className="flex flex-wrap gap-8 pt-4 items-center">
 
-          {/* Display is_public status if desired */}
-          {exercise.is_public !== null && exercise.is_public !== undefined && (
-            <Badge variant={exercise.is_public ? "default" : "destructive"}>
-              {exercise.is_public ? 'Public' : 'Private'}
-            </Badge>
-          )}
+          <div className="flex flex-col h-24">
+            <h4 className="text-lg font-medium mb-2">Difficulty</h4>
+            <ExerciseDifficultyDropdown exerciseId={exercise.id} difficultyLevel={exercise.difficulty_level} />
+          </div>
+
+          <div className="flex flex-col h-24">
+            <h4 className="text-lg font-medium mb-2">Exercise Type</h4>
+            <ExerciseTypeDropdown
+              exerciseId={exercise.id}
+              category={exercise.category as ExerciseCategory}
+              type={exercise.exercise_type as ExerciseCategory}
+            />
+          </div>
+
+          <div className="flex flex-col h-24">
+            <h4 className="text-lg font-medium mb-2">Category</h4>
+            <ExerciseCategoryDropdown exerciseId={exercise.id} category={exercise.category || ""} />
+          </div>
+
+          <div className="flex flex-col h-24">
+            <h4 className="text-lg font-medium mb-2">Environment</h4>
+            <ExerciseEnvironmentDropdown exerciseId={exercise.id} environment={exercise.environment} />
+          </div>
+
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Optional Image */}
         {exercise.image_url && (
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Image</h3>
-            <AspectRatio ratio={3 / 2} className="bg-muted rounded-md overflow-hidden flex items-center justify-center">
-              <img
-                src={exImg.data}
-                alt={`Image for ${exercise.name}`}
-                className="object-scale-down  w-full h-full rounded-xl"
-                onError={(e) => (e.currentTarget.src = '/placeholder.svg')} // Fallback
-              />
-            </AspectRatio>
-          </div>
-        )}
-
-        {/* Optional Video */}
-        {exercise.video_url && (
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Video Guide</h3>
-            <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden">
-              <iframe
-                className="w-full h-full"
-                src={exercise.video_url} // Consider sanitizing or using a safe embed component
-                title={`Video for ${exercise.name}`}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </AspectRatio>
-          </div>
-        )}
-        {references &&
-          references.map((reference) => (
-            <div key={reference.id} className="flex flex-col gap-2">
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {references &&
-                  references.map((reference) => (
-                    <div key={reference.id} className="flex flex-col gap-2">
-                      <h3 className="text-lg font-semibold mb-2">Reference</h3>
-                      <p
-                        className="text-sm text-muted-foreground whitespace-pre-wrap cursor-pointer"
-                        onClick={() => {
-                          setSelectedReference(reference.url);
-                          setOpenDialog(true);
-                        }}
-                      >
-                        {reference.title}
-                      </p>
-                    </div>
-                  ))
-                }
-
-                <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Reference Video</DialogTitle>
-                    </DialogHeader>
-                    {selectedReference && <TikTokEmbed url={selectedReference} />}
-                  </DialogContent>
-                </Dialog>
-              </p>
-              {/* <TikTokEmbed url={reference.url} /> */}
+          <div className="flex flex-col gap-2">
+            <div className="w-full flex flex-row justify-between h-fit overflow-hidden ">
+              <div className="w-5/12">
+                <ExerciseImage url={exImg.data || ''} alt={`Image for ${exercise.name}`} />
+              </div>
+              <div className="w-7/12 h-full overflow-hidden ">
+                <ExerciseReferences exercise={exercise.exercise_reference_global || []} exerciseId={exercise.id} />
+              </div>
             </div>
-          ))
-        }
-
-
-        {/* <TikTokEmbed url={exercise?.exercise_reference.url || ''} />  */}
-
-
-
-
-        {/* Instructions */}
-        {exercise.instructions && (
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Instructions</h3>
-            {/* Using pre-wrap to respect newlines in the instructions text */}
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-              {exercise.instructions}
-            </p>
           </div>
         )}
+
+        <div className="flex flex-row gap-2">
+          <div className="w-full flex flex-row justify-between h-fit overflow-hidden ">
+            <div className="w-5/12">
+              <div className="flex flex-col xl:flex-row gap-2">
+                <div className="flex flex-row gap-2" >
+                  <Model
+                    data={targetMuscleGroups} // Fallback to all exercises if not found
+                    style={{ width: '10rem', padding: '1rem' }}
+                    onClick={(muscle) => {
+                      toggleSelection(muscle.muscle)
+                    }}
+                  // onClick={handleClick}
+                  />
+                  <Model
+                    data={targetMuscleGroups} // Fallback to all exercises if not found
+                    style={{ width: '10rem', padding: '1rem' }}
+                    type="posterior"
+                    onClick={(muscle) => {
+                      toggleSelection(muscle.muscle)
+                    }}
+                  // onClick={handleClick}
+                  />
+                </div>
+                <MultiSelectMuscleGroup options={muscleGroups} selected={exercise.exercise_muscle || []} exerciseId={exercise.id} />
+
+              </div>
+            </div>
+            <div className="w-7/12 h-full flex flex-col px-4 gap-4">
+
+              <h3 className="text-xl font-semibold mb-4">Instructions</h3>
+
+              <div className="flex flex-row w-full gap-4">
+                {/* Instructions */}
+                {exercise.instructions && (
+                  <div>
+                    <ExerciseInstructions title={exercise.name} instructions={exercise.instructions} />
+                  </div>
+                )}
+
+
+              </div>
+            </div>
+          </div>
+
+
+
+        </div>
 
       </CardContent>
       {/* Add CardFooter here if needed for actions like Edit/Delete later */}

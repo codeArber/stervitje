@@ -1,20 +1,16 @@
 export enum ExerciseCategory {
-    STRENGTH = 'strength',            // Building muscular force
-    HYPERTROPHY = 'hypertrophy',      // Muscle size/growth
-    ENDURANCE = 'endurance',          // Muscular or aerobic endurance
-    CARDIO = 'cardio',                // Heart/lung health, aerobic fitness
-    MOBILITY = 'mobility',            // Joint range of motion
-    FLEXIBILITY = 'flexibility',      // Muscle length/stretch
-    POWER = 'power',                  // Explosive force (e.g., jumps)
-    SPEED = 'speed',                  // Sprinting, fast footwork
-    AGILITY = 'agility',              // Quick directional changes
-    BALANCE = 'balance',              // Stability and control
-    COORDINATION = 'coordination',    // Complex motor skills, timing
-    RECOVERY = 'recovery',            // Active rest, rehab, cooldowns
-    REHAB = 'rehab',                  // Injury recovery or therapy
-    FUNCTIONAL = 'functional',        // Real-world movement patterns
-    CORE_STABILITY = 'core_stability' // Deep core and anti-rotation focus
-  }
+  STRENGTH = 'strength',            // Building muscular force
+  ENDURANCE = 'endurance',          // Muscular or aerobic endurance
+  MOBILITY = 'mobility',            // Joint range of motion
+  POWER = 'power',                  // Explosive force (e.g., jumps)
+  SPEED = 'speed',                  // Sprinting, fast footwork
+  AGILITY = 'agility',              // Quick directional changes
+  BALANCE = 'balance',              // Stability and control
+  COORDINATION = 'coordination',    // Complex motor skills, timing
+  RECOVERY = 'recovery',            // Active rest, cooldowns
+  CORE_STABILITY = 'core_stability' // Deep core and anti-rotation focus
+}
+
   
 
   // libs/data.ts
@@ -52,6 +48,7 @@ export enum ExerciseType {
   ROTATIONAL  = "rotational",
   DYNAMIC     = "dynamic"
 }
+
 
 // runtime array if you need to map/UI–over it:
 export const exerciseTypes = Object.values(ExerciseType) as ExerciseType[]

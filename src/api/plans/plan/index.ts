@@ -2,12 +2,12 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery, QueryKey, InfiniteData } from '@tanstack/react-query';
 import * as planApi from './endpoint'; // Relative import
 import type {
-    Plan,
     PlanDetail,
     DiscoverablePlan,
     CreatePlanPayload,
     UpdatePlanPayload
 } from '@/types/planTypes'; // Adjust path
+import { Plan } from '@/lib/supabase/types';
 
 // --- Query Keys ---
 // Consider placing keys in a shared file like 'src/api/plans/keys.ts'

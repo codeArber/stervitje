@@ -1,8 +1,7 @@
-import { createFileRoute, Link, Outlet, useLocation, useParams } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, useLocation } from '@tanstack/react-router'
 import {
   Breadcrumb,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -10,10 +9,9 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, AlertCircle, PlusCircle, CalendarDays, Users } from 'lucide-react'; // Added icons
+import { ArrowLeft, AlertCircle, PlusCircle,  BarChartIcon, CalendarIcon, DumbbellIcon, EyeIcon, GitForkIcon } from 'lucide-react'; // Added icons
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton"; // For loading
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 // Import Dialog components
 import {
   Dialog,
@@ -23,13 +21,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { CreateWeekForm } from '@/components/CreateWeek';
 import { PlanWeek } from '@/types/type';
 import { usePlanDetails } from '@/api/plans/plan';
 import { cn } from '@/lib/utils';
 import { useTeamStore } from '@/store/useTeamStore';
-import { useActiveMemberInTeam, useMemberInTeam } from '@/api/teams';
+import { useActiveMemberInTeam } from '@/api/teams';
+import { TeamDropdown } from '@/components/TeamDropdown';
+import { Plan } from '@/lib/supabase/types';
+import { formatDistanceToNow } from 'date-fns';
+import { PlanInfoBadge } from '@/components/plan/PlanCard';
 
 export const Route = createFileRoute('/_layout/plans/$planId/_layout')({
   component: PlanDetailsPage,
@@ -42,12 +44,13 @@ function PlanDetailsPage() {
 
   const selectedTeamId = useTeamStore(state => state.selectedTeamId);
 
-  const weekMatch = Route.useMatch({
-    to: '/_layout/plans/$planId/_layout/$weekId/_layout',
-    params: { planId: planId },
-  });
-  const weekId = weekMatch?.params.weekId;
 
+const weekMatch = Route.useMatch({
+  to: '/_layout/plans/$planId/_layout/$weekId/_layout',
+  params: { planId: planId },
+});
+
+  const weekId = weekMatch?.params.weekId;
 
 
   const location = useLocation();
@@ -118,7 +121,7 @@ function PlanDetailsPage() {
       {/* <div className="mb-6">
       
       </div> */}
-      <div className='flex flex-row '>
+      <div className='flex flex-row w-full justify-between'>
         <div className=' bg-sidebar flex items-center shadow px-4 py-6 z-10 w-full justify-between h-18'>
           <Breadcrumb>
             <BreadcrumbList>
@@ -136,15 +139,21 @@ function PlanDetailsPage() {
             </BreadcrumbList>
           </Breadcrumb>
           {/* <TeamDropdown /> */}
+          <TeamDropdown />
         </div>
       </div>
 
       <div className="flex flex-col p-4 ">
-
-        <div className="mb-4 flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Plan Weeks</h2>
+        <div className='flex flex-col gap-4 py-2'>
+          <h2 className="text-xl font-semibold">Plan Info</h2>
+          <div className='flex flex-row gap-4 w-full border border-blue-300 rounded-md p-2'>
+            <PlanInfoSection plan={planData} />
+          </div>
+        </div>
+        <div className="mb-4 flex justify-between items-center p-2">
+          <h2 className="text-lg ">Weeks</h2>
           {/* Add Week Button + Dialog */}
-          {(thisUser?.role === 'coach' || !selectedTeamId ) &&
+          {(thisUser?.role === 'coach' || !selectedTeamId) &&
             <Dialog open={isAddWeekDialogOpen} onOpenChange={setIsAddWeekDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline">
@@ -171,24 +180,18 @@ function PlanDetailsPage() {
         </div>
 
         {/* Weeks List */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2">
+        <div className="flex flex-row gap-6">
           {currentWeeks.length > 0 ? (
             currentWeeks.map((week: PlanWeek) => (
               <Link to='/plans/$planId/$weekId' params={{ planId: planId, weekId: week.id }} className="hover:underline">
 
                 <Card key={week.id} className={cn("overflow-hidden", weekId === week.id ? "border-2 border-blue-300" : "border")}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-muted/50 p-2">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-muted/50 px-8 py-8 ">
                     <CardTitle className="text-lg font-medium">
                       {/* Link the week title */}
                       Week {week.week_number}
-
                     </CardTitle>
-                    <div>
-                      {/* Placeholders for Edit/Delete Week buttons */}
-                      <Button variant="ghost" size="icon" className="h-7 w-7 mr-1" title="Edit Week (coming soon)" disabled><AlertCircle className="h-4 w-4" /></Button>
-                    </div>
                   </CardHeader>
-
                 </Card>
               </Link>
             ))
@@ -227,3 +230,56 @@ function PlanDetailsPage() {
   );
 }
 
+
+
+
+// Component to organize plan info badges
+const PlanInfoSection = ({ plan }: { plan: Plan }) => {
+  // Format the date
+  const formattedDate = plan.created_at
+    ? formatDistanceToNow(new Date(plan.created_at), { addSuffix: true })
+    : '';
+
+  return (
+    <Link className="flex flex-row gap-4 w-full h-full p-4" to={'/plans/$planId'} params={{ planId: plan.id }}>
+      <PlanInfoBadge
+        icon={BarChartIcon}
+        label="Difficulty"
+        value={plan.difficulty_level}
+      />
+      <PlanInfoBadge
+        icon={DumbbellIcon}
+        label="Sport"
+        value={plan.sport}
+      />
+      <PlanInfoBadge
+        icon={EyeIcon}
+        label="Visibility"
+        value={plan.visibility}
+      />
+      <PlanInfoBadge
+        icon={GitForkIcon}
+        label="Public Forking"
+        value={plan.allow_public_forking}
+      />
+      <PlanInfoBadge
+        icon={GitForkIcon}
+        label="Form Count"
+        value={plan.fork_count}
+      />
+      {plan.forked_from && (
+        <PlanInfoBadge
+          icon={GitForkIcon}
+          label="Forked From"
+          value={plan.forked_from}
+        />
+      )}
+      <PlanInfoBadge
+        icon={CalendarIcon}
+        label="Created"
+        value={formattedDate}
+        className="col-span-2"
+      />
+    </Link>
+  );
+};

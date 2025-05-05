@@ -1,11 +1,11 @@
 // src/api/exercises/endpoint.ts
 import { supabase } from '@/lib/supabase/supabaseClient'; // Adjust path
-import type { Exercise, ExercisePayload, FetchExercisesParams } from '@/types/type'; // Adjust path
+import { Exercise, ExerciseMuscle, ExercisePayload, ExerciseReferenceGlobal, ExerciseWithRelations, FetchExercisesParams, InsertExerciseMuscle, InsertExerciseReferenceGlobal } from '@/lib/supabase/types';
 
 const DEFAULT_LIMIT = 20;
 
 /** Fetches a single exercise by its ID, including categories */
-export const fetchExerciseById = async (exerciseId: string): Promise<Exercise | null> => {
+export const fetchExerciseById = async (exerciseId: string): Promise<ExerciseWithRelations | null> => {
     if (!exerciseId) return null;
 
     // Cleaned-up select statement without internal comments
@@ -17,8 +17,8 @@ export const fetchExerciseById = async (exerciseId: string): Promise<Exercise | 
         .from('exercises')
         .select(`
             *,
-            exercise_reference(*),
-            exercise_muscle(*)
+            exercise_muscle(*),
+            exercise_reference_global(*)
             `)
         .eq('id', exerciseId)
         .single(); // Use .single() for fetching by unique ID
@@ -45,7 +45,7 @@ export const fetchExerciseById = async (exerciseId: string): Promise<Exercise | 
         exerciseData.categories = [];
     }
 
-    return exerciseData as Exercise;
+    return exerciseData as ExerciseWithRelations;
 };
 
 /** Fetches a list of exercises (id, name) suitable for selection components */
@@ -54,7 +54,6 @@ export const fetchExerciseListForSelector = async (searchTerm?: string): Promise
     let query = supabase
         .from('exercises')
         .select('id, name')
-        .eq('is_public', true) // Typically only show public exercises for selection
         .order('name', { ascending: true })
         .limit(50); // Limit initial results, add search later if needed
 
@@ -93,7 +92,7 @@ export const fetchExercises = async (params: FetchExercisesParams = {}): Promise
         // Avoid fetching categories here unless absolutely necessary for the list view itself,
         // as it adds overhead for each item.
         .select(`
-            id, name, description, difficulty_level, image_url, is_public, created_at
+            *
         `)
         .order('name', { ascending: true })
         .range(offset, offset + limit - 1);
@@ -106,9 +105,6 @@ export const fetchExercises = async (params: FetchExercisesParams = {}): Promise
     }
     if (difficulty) {
         query = query.eq('difficulty_level', difficulty);
-    }
-    if (isPublic !== undefined) {
-        query = query.eq('is_public', isPublic);
     }
     if (createdByUserId) {
         query = query.eq('created_by', createdByUserId);
@@ -219,4 +215,55 @@ export const deleteExercise = async (exerciseId: string): Promise<{ success: boo
         throw new Error(error.message);
     }
     return { success: true };
+};
+
+export const addExercisGlobalReference = async (exerciseId: string, reference: InsertExerciseReferenceGlobal): Promise<ExerciseReferenceGlobal> => {
+    const { data, error } = await supabase
+        .from("exercise_reference_global")
+        .insert({
+            ...reference,
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error(`API Error addExercisGlobalReference (ID: ${exerciseId}):`, error);
+        throw new Error(error.message);
+    }
+
+    return data;
+};
+
+export const addExerciseMuscleGroup = async (payload: InsertExerciseMuscle): Promise<ExerciseMuscle> => {
+    const { data, error } = await supabase
+        .from("exercise_muscle")
+        .insert(payload)
+        .select()
+        .single();
+
+    if (error) {
+        console.error(`API Error addExerciseMuscleGroup (ID: ${payload.exercise_id}):`, error);
+        throw new Error(error.message);
+    }
+
+    return data;
+};
+
+
+//remove musclegroup
+export const removeExerciseMuscleGroup = async (id: string, exerciseId: string): Promise<{ success: boolean, exercise_id: string }> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User not authenticated.");
+
+    // RLS should enforce ownership/permissions for deletion
+    const { error } = await supabase
+        .from('exercise_muscle')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error(`API Error removeExerciseMuscleGroup (ID: ${id}):`, error);
+        throw new Error(error.message);
+    }
+    return { success: true , exercise_id: exerciseId };
 };
