@@ -18,6 +18,7 @@ import {
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import type { PlanSessionExercise } from '@/types/planTypes';
 import { useCreatePlanSet, useUpdatePlanSet } from '@/api/plans/session_set';
 import { useCreatePlanSessionExercise, useUpdatePlanSessionExercise } from '@/api/plans/exercise_entry';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -28,6 +29,67 @@ import { useActiveMemberInTeam, useMemberInTeam } from '@/api/teams';
 import { useAuthStore } from '@/hooks/useAuthStore';
 import { kgToLbs } from '@/lib/unitConversion';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+
+interface SessionExerciseCardProps {
+  exercise: PlanSessionExercise;
+  isSelected: boolean;
+  onClick: () => void;
+  unit: 'imperial' | 'metric';
+}
+
+function SessionExerciseCard({ exercise, isSelected, onClick, unit }: SessionExerciseCardProps) {
+  const exImg = useExerciseImageUrl(exercise.exercise?.image_url || '');
+
+  return (
+    <Card onClick={onClick} className={cn('cursor-pointer', isSelected && 'border-blue-200')}>
+      <CardHeader>
+        <CardTitle>{exercise.exercise?.name}</CardTitle>
+        <CardDescription>{exercise.notes}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-row flex-nowrap items-start gap-2 w-full">
+          <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden flex-shrink-0 w-32">
+            <img
+              src={exImg.data || '/placeholder.svg'}
+              className="object-cover w-full h-full"
+              onError={(e) => (e.currentTarget.src = '/placeholder.svg')}
+            />
+          </AspectRatio>
+          <div className="flex flex-col gap-2 flex-1 min-w-0">
+            {exercise?.plan_session_exercise_sets?.map((set) => (
+              <div key={set.id} className="flex items-center gap-4 text-sm">
+                <Badge variant="outline">{set.set_number}</Badge>
+                {set.target_duration_seconds && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                )}
+                {set.target_reps && (
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium">{set.target_reps} reps</span>
+                  </div>
+                )}
+                {set.target_weight && (
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium">
+                      {unit === 'imperial' ? kgToLbs(set.target_weight) : set.target_weight}{' '}
+                      {unit === 'imperial' ? 'lb' : 'kg'}
+                    </span>
+                  </div>
+                )}
+                {set.target_distance_meters && (
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium">{set.target_distance_meters}m</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 
 export const Route = createFileRoute(
@@ -64,75 +126,23 @@ function RouteComponent() {
   const thisUser = useActiveMemberInTeam(selectedTeamId);
   const unit = useAuthStore().getPreferredUnit();
   const exImg = useExerciseImageUrl(selectedExercise?.exercise.image_url || '')
-  if(!exImg.data) return null;
 
   return (
     <div>
       <div className="flex flex-row flex-wrap gap-4">
 
-        {thisSession.plan_session_exercises?.map((exercise) => {
-          console.log(exercise)
-          return (
-            <Card key={exercise.id} onClick={() => { setEditSession(true); setSelectedEx(exercise.id) }} className={cn("cursor-pointer", exercise.id === selectedEx && "border-blue-200")}>
-              <CardHeader>
-                <CardTitle>{exercise.exercise.name}</CardTitle>
-                <CardDescription>{exercise.notes}</CardDescription>
-              </CardHeader>
-              <CardContent>
-
-                <div className="flex flex-row flex-nowrap items-start gap-2 w-full">
-                  <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden flex-shrink-0 w-32">
-
-                    <img
-                      // Use image_url from DB, provide a fallback
-                      src={exImg?.data || '/placeholder.svg'}
-                      // Use object-cover for better filling, ensure parent has overflow-hidden
-                      className="object-cover w-full h-full"
-                      // Add error handling for broken images (optional)
-                      onError={(e) => (e.currentTarget.src = '/placeholder.svg')}
-                    />
-                  </AspectRatio>
-                  <div className="flex flex-col gap-2 flex-1 min-w-0">
-                    {exercise?.plan_session_exercise_sets?.map((set) => (
-                      <div key={set.id} className="flex items-center gap-4 text-sm">
-                        <Badge variant="outline" >
-                          {set.set_number}
-                        </Badge>
-
-                        {set.target_duration_seconds && (
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            {/* <span>{formatDuration(set.target_duration_seconds)}</span> */}
-                          </div>
-                        )}
-
-                        {set.target_reps && (
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">{set.target_reps} reps</span>
-                          </div>
-                        )}
-
-                        {set.target_weight && (
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">
-                              {unit === 'imperial' ? kgToLbs(set.target_weight) : set.target_weight} {unit === 'imperial' ? 'lb' : 'kg'}
-                            </span>
-                          </div>
-                        )}
-
-                        {set.target_distance_meters && (
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium">{set.target_distance_meters}m</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+        {thisSession.plan_session_exercises?.map((exercise) => (
+          <SessionExerciseCard
+            key={exercise.id}
+            exercise={exercise as PlanSessionExercise}
+            isSelected={exercise.id === selectedEx}
+            onClick={() => {
+              setEditSession(true);
+              setSelectedEx(exercise.id);
+            }}
+            unit={unit}
+          />
+        ))}
         {thisUser?.role === 'coach' &&
           <Popover>
             <PopoverTrigger asChild>
