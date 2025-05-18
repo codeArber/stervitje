@@ -172,6 +172,52 @@ export type Database = {
           },
         ]
       }
+      exercise_saved_references: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          global_reference: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          global_reference: string
+          id?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          global_reference?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_saved_references_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_saved_references_global_reference_fkey"
+            columns: ["global_reference"]
+            isOneToOne: false
+            referencedRelation: "exercise_reference_global"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_saved_references_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercises: {
         Row: {
           category: Database["public"]["Enums"]["exercise_category"] | null
@@ -1145,19 +1191,14 @@ export type Database = {
     Enums: {
       exercise_category:
         | "strength"
-        | "hypertrophy"
         | "endurance"
-        | "cardio"
         | "mobility"
-        | "flexibility"
         | "power"
         | "speed"
         | "agility"
         | "balance"
         | "coordination"
         | "recovery"
-        | "rehab"
-        | "functional"
         | "core_stability"
       exercise_environment: "gym" | "outdoor" | "home" | "studio"
       exercise_type_enum:
@@ -1309,19 +1350,14 @@ export const Constants = {
     Enums: {
       exercise_category: [
         "strength",
-        "hypertrophy",
         "endurance",
-        "cardio",
         "mobility",
-        "flexibility",
         "power",
         "speed",
         "agility",
         "balance",
         "coordination",
         "recovery",
-        "rehab",
-        "functional",
         "core_stability",
       ],
       exercise_environment: ["gym", "outdoor", "home", "studio"],

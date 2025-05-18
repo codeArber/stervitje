@@ -1,6 +1,6 @@
 // src/api/exercises/endpoint.ts
 import { supabase } from '@/lib/supabase/supabaseClient'; // Adjust path
-import { Exercise, ExerciseMuscle, ExercisePayload, ExerciseReferenceGlobal, ExerciseWithRelations, FetchExercisesParams, InsertExerciseMuscle, InsertExerciseReferenceGlobal } from '@/lib/supabase/types';
+import { Exercise, ExerciseMuscle, ExercisePayload, ExerciseReferenceGlobal, ExerciseSavedReference, ExerciseWithRelations, FetchExercisesParams, InsertExerciseMuscle, InsertExerciseReferenceGlobal, InsertExerciseSavedReference } from '@/lib/supabase/types';
 
 const DEFAULT_LIMIT = 20;
 
@@ -18,7 +18,8 @@ export const fetchExerciseById = async (exerciseId: string): Promise<ExerciseWit
         .select(`
             *,
             exercise_muscle(*),
-            exercise_reference_global(*)
+            exercise_reference_global(*),
+            exercise_saved_references(*, exercise_reference_global(*))
             `)
         .eq('id', exerciseId)
         .single(); // Use .single() for fetching by unique ID
@@ -263,6 +264,41 @@ export const removeExerciseMuscleGroup = async (id: string, exerciseId: string):
 
     if (error) {
         console.error(`API Error removeExerciseMuscleGroup (ID: ${id}):`, error);
+        throw new Error(error.message);
+    }
+    return { success: true , exercise_id: exerciseId };
+};
+
+
+export const addExerciseSavedReference = async (reference: InsertExerciseSavedReference): Promise<ExerciseSavedReference> => {
+    const { data, error } = await supabase
+        .from("exercise_saved_references")
+        .insert({
+            ...reference,
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error(`API Error addExerciseSavedReference (ID: ${reference.exercise_id}):`, error);
+        throw new Error(error.message);
+    }
+
+    return data;
+};
+
+export const removeExerciseSavedReference = async (id: string, exerciseId: string): Promise<{ success: boolean, exercise_id: string }> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User not authenticated.");
+    console.log(id, exerciseId)
+    // RLS should enforce ownership/permissions for deletion
+    const { error } = await supabase
+        .from('exercise_saved_references')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error(`API Error removeExerciseSavedReference (ID: ${id}):`, error);
         throw new Error(error.message);
     }
     return { success: true , exercise_id: exerciseId };

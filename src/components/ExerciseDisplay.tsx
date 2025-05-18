@@ -97,7 +97,23 @@ export function ExerciseDisplay(exercise: ExerciseWithRelations) {
 
         <div className="flex flex-row gap-2">
           <div className="w-full flex flex-row justify-between h-fit overflow-hidden ">
-            <div className="w-5/12">
+            <div className="w-5/12 p-1">
+
+              <h3 className="text-xl font-semibold mb-4">Instructions</h3>
+
+              <div className="flex flex-row w-full gap-4">
+                {/* Instructions */}
+                {exercise.instructions && (
+                  <div>
+                    <ExerciseInstructions title={exercise.name} instructions={exercise.instructions} />
+                  </div>
+                )}
+
+
+              </div>
+
+            </div>
+            <div className="w-7/12 h-full flex flex-col px-4 gap-4">
               <div className="flex flex-col xl:flex-row gap-2">
                 <div className="flex flex-row gap-2" >
                   <Model
@@ -119,21 +135,6 @@ export function ExerciseDisplay(exercise: ExerciseWithRelations) {
                   />
                 </div>
                 <MultiSelectMuscleGroup options={muscleGroups} selected={exercise.exercise_muscle || []} exerciseId={exercise.id} />
-
-              </div>
-            </div>
-            <div className="w-7/12 h-full flex flex-col px-4 gap-4">
-
-              <h3 className="text-xl font-semibold mb-4">Instructions</h3>
-
-              <div className="flex flex-row w-full gap-4">
-                {/* Instructions */}
-                {exercise.instructions && (
-                  <div>
-                    <ExerciseInstructions title={exercise.name} instructions={exercise.instructions} />
-                  </div>
-                )}
-
 
               </div>
             </div>

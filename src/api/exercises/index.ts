@@ -4,7 +4,7 @@ import * as exercisesApi from './endpoint';
 // import { FetchExercisesParams } from '@/types/type';
 import type { Exercise, ExercisePayload, FetchExercisesParams } from '@/types/type'; // Adjust path
 import { supabase } from '@/lib/supabase/supabaseClient';
-import { ExerciseWithRelations, InsertExerciseMuscle, InsertExerciseReferenceGlobal } from '@/lib/supabase/types';
+import { ExerciseWithRelations, InsertExerciseMuscle, InsertExerciseReferenceGlobal, InsertExerciseSavedReference } from '@/lib/supabase/types';
 
 // --- Query Keys ---
 const exerciseKeys = {
@@ -226,6 +226,33 @@ export function useRemoveExerciseMuscleGroup() {
   return useMutation({
     mutationFn: ({ id, exerciseId }: { id: string, exerciseId: string }) =>
       exercisesApi.removeExerciseMuscleGroup(id, exerciseId),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: exerciseKeys.detail(data.exercise_id) });
+      queryClient.invalidateQueries({ queryKey: ['exerciseReferences', data.exercise_id] });
+    },
+    
+  });
+}
+
+export function useCreateExerciseSavedReference() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ reference }: { reference: InsertExerciseSavedReference }) =>
+      exercisesApi.addExerciseSavedReference(reference),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: exerciseKeys.detail(data.exercise_id) });
+      queryClient.invalidateQueries({ queryKey: ['exerciseReferences', data.exercise_id] });
+    },
+    
+  });
+}
+
+
+export function useRemoveExerciseSavedReference() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, exerciseId }: { id: string, exerciseId: string }) =>
+      exercisesApi.removeExerciseSavedReference(id, exerciseId),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: exerciseKeys.detail(data.exercise_id) });
       queryClient.invalidateQueries({ queryKey: ['exerciseReferences', data.exercise_id] });

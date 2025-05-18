@@ -8,7 +8,9 @@ export type Exercise = Tables<'exercises'>;
 export type ExerciseWithRelations = Exercise & {
     exercise_muscle?: ExerciseMuscle[];
     exercise_reference_global?: ExerciseReferenceGlobal[];
-    exercise_reference_private?: ExerciseReferencePrivate[];
+    exercise_saved_references?: (ExerciseSavedReference & { exercise_reference_global?: ExerciseReferenceGlobal })[] ;
+    
+    
 };
 
 // Exercise muscle type from the database schema
@@ -16,7 +18,8 @@ export type ExerciseMuscle = Tables<'exercise_muscle'>;
 
 // Exercise reference type from the database schema
 export type ExerciseReferenceGlobal = Tables<'exercise_reference_global'>;
-export type ExerciseReferencePrivate = Tables<'exercise_reference_private'>;
+export type ExerciseSavedReference = Tables<'exercise_saved_references'>;
+export type InsertExerciseSavedReference = TablesInsert<'exercise_saved_references'>;
 
 // Parameters for fetching exercises
 export interface FetchExercisesParams {
