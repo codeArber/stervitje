@@ -64,8 +64,7 @@ export const useCreateTeam = (userId: string) => {
 
             // 1. Most Important: Invalidate the list of teams the user is a member of
             if (userId) {
-                // *** Replace with the ACTUAL query key used by useFetchAllTeamsForMember ***
-                queryClient.invalidateQueries({ queryKey: ['teams', 'member', userId] });
+                // Invalidate the query listing the user's teams
                 queryClient.invalidateQueries({ queryKey: ['teams', 'forMember', userId] });
                 // Example alternative key structures: ['userTeams', userId], ['teams', { userId }]
             } else {
@@ -76,7 +75,7 @@ export const useCreateTeam = (userId: string) => {
             // queryClient.invalidateQueries({ queryKey: ['userContext'] });
 
             // 3. Optional: You could potentially add the newTeam to the cache optimistically here
-            // using queryClient.setQueryData(['teams', 'member', userId], (oldData) => ...);
+            // using queryClient.setQueryData(['teams', 'forMember', userId], (oldData) => ...);
         },
         onError: (error) => {
             // Log the error for debugging. Avoid alert().
