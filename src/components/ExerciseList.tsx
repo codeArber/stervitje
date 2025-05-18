@@ -1,10 +1,11 @@
 "use client"
 
-import React from 'react'; // Import React for Fragment
-import { useInfiniteExercises } from "@/api/exercises"; // Adjust path if needed
-import { ExerciseCard } from "./ExerciseCard"; // Adjust path if needed
-import { Button } from "@/components/ui/button"; // Import Button for Load More
-import { Skeleton } from "@/components/ui/skeleton"; // Optional: for loading state
+import React, { useState } from 'react';
+import { useInfiniteExercises } from "@/api/exercises";
+import { ExerciseCard } from "./ExerciseCard";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ExerciseFilter, ExerciseFilterValues } from "./filters/ExerciseFilter";
 
 // Helper for Skeleton Loading Cards
 function ExerciseCardSkeleton() {
@@ -65,12 +66,28 @@ export function ExerciseList() {
   //   );
   // }
 
+  const [filters, setFilters] = useState<ExerciseFilterValues>({});
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-semibold tracking-tight">Exercise Library</h2>
 
-     
+      <ExerciseFilter values={filters} onChange={setFilters} />
 
+      {/* Placeholder for exercise grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {/* Example static card while API logic is disabled */}
+        <ExerciseCard
+          exercise={{
+            id: '1',
+            name: 'Placeholder Exercise',
+            description: 'Example description',
+            difficulty_level: 3,
+            image_url: '',
+            is_public: true,
+          }}
+        />
+      </div>
     </div>
   );
 }
