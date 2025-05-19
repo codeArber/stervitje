@@ -94,7 +94,6 @@ function PlanDetailsPage() {
   // --- Render Plan Details ---
   return (
     <div className="py-6 w-full items-center flex flex-col">
-      Select a week to view or edit its details.
       <pre className="text-left p-4 rounded w-full overflow-auto">
          <PlanOverviewWithWeeks plan={planData}/>
       </pre>

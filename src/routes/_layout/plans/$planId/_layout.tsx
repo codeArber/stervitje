@@ -9,9 +9,9 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, AlertCircle, PlusCircle,  BarChartIcon, CalendarIcon, DumbbellIcon, EyeIcon, GitForkIcon } from 'lucide-react'; // Added icons
+import { ArrowLeft, AlertCircle, PlusCircle,  BarChartIcon, CalendarIcon, DumbbellIcon, EyeIcon, GitForkIcon, CheckSquare, CalendarCheck, Coffee, ClipboardList, Dumbbell } from 'lucide-react'; // Added icons
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 // Import Dialog components
 import {
   Dialog,
@@ -181,19 +181,54 @@ const weekMatch = Route.useMatch({
         {/* Weeks List */}
         <div className="flex flex-row gap-6">
           {currentWeeks.length > 0 ? (
-            currentWeeks.map((week: PlanWeek) => (
+            currentWeeks.map((week: PlanWeek) => {
+              const numDaysWeek = week.plan_days?.length ?? 0;
+              const workoutDaysWeek = week.plan_days?.filter(day => !day.is_rest_day)?.length ?? 0;
+              const restDaysWeek = numDaysWeek - workoutDaysWeek;
+              const numSessionsWeek = week.plan_days?.reduce((daySum, day) => daySum + (day.plan_sessions?.length ?? 0), 0) ?? 0;
+              const numExercisesWeek = week.plan_days?.reduce((daySum, day) =>
+                  daySum + (day.plan_sessions?.reduce((sessionSum, session) =>
+                      sessionSum + (session.plan_session_exercises?.length ?? 0), 0) ?? 0), 0) ?? 0;
+  
+              return(
               <Link to='/plans/$planId/$weekId' params={{ planId: planId, weekId: week.id }} className="hover:underline">
-
-                <Card key={week.id} className={cn("overflow-hidden", weekId === week.id ? "border-2 border-blue-300" : "border")}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 bg-muted/50 px-8 py-8 ">
-                    <CardTitle className="text-lg font-medium">
-                      {/* Link the week title */}
-                      Week {week.week_number}
-                    </CardTitle>
-                  </CardHeader>
+                <Card key={week.id} className="w-full hover:shadow-md transition-shadow duration-150">
+                    <CardHeader className="pb-2"> {/* Reduced padding */}
+                        <CardTitle className="text-lg font-semibold">Week {week.week_number}</CardTitle>
+                        {week.description && (
+                            <CardDescription className="text-sm pt-1">
+                                {week.description}
+                            </CardDescription>
+                        )}
+                    </CardHeader>
+                    <Separator className="my-2" />
+                    <CardContent className="text-sm pt-3"> {/* Reduced padding */}
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                            <div className="flex items-center gap-2">
+                                <CheckSquare className="text-muted-foreground" size={16} />
+                                <div><span className="font-medium">{numDaysWeek}</span> Day{numDaysWeek !== 1 ? 's' : ''}</div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <CalendarCheck className="text-green-600" size={16} />
+                                <div><span className="font-medium">{workoutDaysWeek}</span> Workout</div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Coffee className="text-blue-600" size={16} />
+                                <div><span className="font-medium">{restDaysWeek}</span> Rest</div>
+                            </div>
+                             <div className="flex items-center gap-2">
+                                <ClipboardList className="text-muted-foreground" size={16} />
+                                <div><span className="font-medium">{numSessionsWeek}</span> Session{numSessionsWeek !== 1 ? 's' : ''}</div>
+                            </div>
+                            <div className="flex items-center gap-2 col-span-2">
+                                <Dumbbell className="text-muted-foreground" size={16} />
+                                <div><span className="font-medium">{numExercisesWeek}</span> Exercise Entrie{numExercisesWeek !== 1 ? 's' : ''}</div>
+                            </div>
+                        </div>
+                    </CardContent>
                 </Card>
               </Link>
-            ))
+            )})
           ) : (
             <div className="text-center text-muted-foreground py-6 border border-dashed rounded-md">
               This plan doesn't have any weeks defined yet.
