@@ -22,7 +22,7 @@ import {
 // Adjust import paths as needed
 import { useFetchExerciseListForSelector } from '@/api/exercises';
 import { useCreatePlanSessionExercise } from '@/api/plans/exercise_entry';
-import { PlanExerciseEntryPayload } from '@/types/type';
+import { PlanExerciseEntryPayload } from '@/types/planTypes';
 
 // Define Zod Schema and Type here or import them
 const AddExerciseEntrySchema = z.object({

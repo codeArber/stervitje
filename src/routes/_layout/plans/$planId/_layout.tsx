@@ -23,13 +23,12 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from 'react';
 import { CreateWeekForm } from '@/components/CreateWeek';
-import { PlanWeek } from '@/types/type';
+import { PlanWeek, Plan } from '@/types/planTypes';
 import { usePlanDetails } from '@/api/plans/plan';
 import { cn } from '@/lib/utils';
 import { useTeamStore } from '@/store/useTeamStore';
 import { useActiveMemberInTeam } from '@/api/teams';
 import { TeamDropdown } from '@/components/TeamDropdown';
-import { Plan } from '@/lib/supabase/types';
 import { formatDistanceToNow } from 'date-fns';
 import { PlanInfoBadge } from '@/components/plan/PlanCard';
 

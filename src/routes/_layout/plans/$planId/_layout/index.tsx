@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from 'react';
 import { CreateWeekForm } from '@/components/CreateWeek';
-import { PlanWeek } from '@/types/type';
+import { PlanWeek } from '@/types/planTypes';
 import { usePlanDetails } from '@/api/plans/plan';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';

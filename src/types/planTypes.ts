@@ -248,3 +248,20 @@ export interface PlanDayDetails {
     updated_at?: string | null;
     plan_sessions: PlanSessionDetails[]; // Array of sessions for the day
 }
+export interface PlanExerciseEntryPayload {
+    exercise_id: string;
+    notes?: string | null;
+    target_sets_min?: number | null;
+    target_sets_max?: number | null;
+    target_rest_seconds?: number | null;
+}
+
+export interface PlanSetPayload {
+    target_reps?: number | null;
+    target_weight?: number | null;
+    target_weight_unit?: 'kg' | 'lb' | null;
+    target_duration_seconds?: number | null;
+    target_distance_meters?: number | null;
+    target_rest_seconds?: number | null;
+    notes?: string | null;
+}

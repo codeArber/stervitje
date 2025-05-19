@@ -12,9 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 
 // Also update/create the Zod schema definition (as shown above or in types file)
-import { PlanExerciseSet } from '@/types/planTypes';
+import { PlanExerciseSet, PlanSetPayload } from '@/types/planTypes';
 import { useCreatePlanSet, useUpdatePlanSet } from '@/api/plans/session_set';
-import { PlanSetPayload } from '@/types/type';
 import { CreateSetPayload } from '@/api/plans/session_set/endpoint';
  // Adjust path
  
