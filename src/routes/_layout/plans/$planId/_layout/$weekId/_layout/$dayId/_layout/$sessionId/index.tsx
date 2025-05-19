@@ -1,8 +1,7 @@
 import { usePlanDetails } from '@/api/plans/plan';
-import { PlanSessionExerciseItem } from '@/components/PlanSessionExercise';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { createFileRoute } from '@tanstack/react-router'
 import { Clock, Plus, PlusCircle, Trash2, Repeat, Weight, Timer, Route as RouteIcon } from 'lucide-react';
@@ -28,67 +27,25 @@ import { Badge } from '@/components/ui/badge';
 import { useTeamStore } from '@/store/useTeamStore';
 import { useActiveMemberInTeam, useMemberInTeam } from '@/api/teams';
 import { useAuthStore } from '@/hooks/useAuthStore';
-import { kgToLbs } from '@/lib/unitConversion';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
+import { SessionExerciseListItem } from '@/components/session/SessionExerciseListItem';
 
 interface SessionExerciseCardProps {
   exercise: PlanSessionExercise;
   isSelected: boolean;
   onClick: () => void;
-  unit: 'imperial' | 'metric';
 }
 
-function SessionExerciseCard({ exercise, isSelected, onClick, unit }: SessionExerciseCardProps) {
+function SessionExerciseCard({ exercise, isSelected, onClick }: SessionExerciseCardProps) {
   const exImg = useExerciseImageUrl(exercise.exercise?.image_url || '');
 
   return (
-    <Card onClick={onClick} className={cn('cursor-pointer', isSelected && 'border-blue-200')}>
-      <CardHeader>
-        <CardTitle>{exercise.exercise?.name}</CardTitle>
-        <CardDescription>{exercise.notes}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-row flex-nowrap items-start gap-2 w-full">
-          <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden flex-shrink-0 w-32">
-            <img
-              src={exImg.data || '/placeholder.svg'}
-              className="object-cover w-full h-full"
-              onError={(e) => (e.currentTarget.src = '/placeholder.svg')}
-            />
-          </AspectRatio>
-          <div className="flex flex-col gap-2 flex-1 min-w-0">
-            {exercise?.plan_session_exercise_sets?.map((set) => (
-              <div key={set.id} className="flex items-center gap-4 text-sm">
-                <Badge variant="outline">{set.set_number}</Badge>
-                {set.target_duration_seconds && (
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                )}
-                {set.target_reps && (
-                  <div className="flex items-center gap-1">
-                    <span className="font-medium">{set.target_reps} reps</span>
-                  </div>
-                )}
-                {set.target_weight && (
-                  <div className="flex items-center gap-1">
-                    <span className="font-medium">
-                      {unit === 'imperial' ? kgToLbs(set.target_weight) : set.target_weight}{' '}
-                      {unit === 'imperial' ? 'lb' : 'kg'}
-                    </span>
-                  </div>
-                )}
-                {set.target_distance_meters && (
-                  <div className="flex items-center gap-1">
-                    <span className="font-medium">{set.target_distance_meters}m</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <SessionExerciseListItem
+      sessionExercise={exercise}
+      imageUrl={exImg.data || '/placeholder.svg'}
+      className={cn('cursor-pointer', isSelected && 'border-blue-200')}
+      onClick={onClick}
+    />
   );
 }
 
@@ -161,7 +118,6 @@ function RouteComponent() {
               setEditSession(true);
               setSelectedEx(exercise.id);
             }}
-            unit={unit}
           />
         ))}
         {thisUser?.role === 'coach' &&
