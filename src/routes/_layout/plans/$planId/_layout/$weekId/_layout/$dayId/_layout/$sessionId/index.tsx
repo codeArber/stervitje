@@ -1,5 +1,4 @@
 import { usePlanDetails } from '@/api/plans/plan';
-import { AddExerciseToSessionForm } from '@/components/AddExerciseToSession';
 import { PlanSessionExerciseItem } from '@/components/PlanSessionExercise';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
@@ -18,11 +17,13 @@ import {
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { PlanSessionExercise } from '@/types/planTypes';
+import type { Exercise } from '@/types/type';
 import { useCreatePlanSet, useUpdatePlanSet } from '@/api/plans/session_set';
 import { useCreatePlanSessionExercise, useUpdatePlanSessionExercise } from '@/api/plans/exercise_entry';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useExerciseImageUrl, useInfiniteExercises } from '@/api/exercises';
+import { Constants } from '@/lib/database.types';
 import { Badge } from '@/components/ui/badge';
 import { useTeamStore } from '@/store/useTeamStore';
 import { useActiveMemberInTeam, useMemberInTeam } from '@/api/teams';
@@ -91,6 +92,24 @@ function SessionExerciseCard({ exercise, isSelected, onClick, unit }: SessionExe
   );
 }
 
+interface ExerciseOptionButtonProps {
+  exercise: Exercise;
+  onAdd: () => void;
+}
+
+function ExerciseOptionButton({ exercise, onAdd }: ExerciseOptionButtonProps) {
+  const img = useExerciseImageUrl(exercise.image_url || '');
+  return (
+    <Button variant="outline" className="flex items-center gap-2 min-w-52 py-8 justify-between overflow-hidden " onClick={onAdd}>
+      <AspectRatio ratio={16/9} className="bg-muted rounded w-24 overflow-hidden">
+        <img src={img.data || '/placeholder.svg'} className="object-contain w-full h-full" onError={(e) => (e.currentTarget.src = '/placeholder.svg')} />
+      </AspectRatio>
+     <p className="flex-1 text-right ">{exercise.name}</p>
+      <PlusCircle className="h-4 w-4" />
+    </Button>
+  );
+}
+
 
 export const Route = createFileRoute(
   '/_layout/plans/$planId/_layout/$weekId/_layout/$dayId/_layout/$sessionId/',
@@ -103,6 +122,8 @@ function RouteComponent() {
   const { data: planData, isLoading, isError, error } = usePlanDetails(planId);
   const [editSession, setEditSession] = useState(false);
   const [selectedEx, setSelectedEx] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [filters, setFilters] = useState<{ difficulty?: number; type?: string; category?: string; environment?: string; muscle?: string }>({});
   const updateExercise = useUpdatePlanSet()
   const {
     data: allExercises,
@@ -110,7 +131,7 @@ function RouteComponent() {
     hasNextPage,
     isFetching, // Overall fetching state (initial load + next page)
     isFetchingNextPage, // Specifically fetching the next page
-  } = useInfiniteExercises({}); // Pass filter params here if needed
+  } = useInfiniteExercises(filters);
 
   console.log(allExercises)
   // --- Find current data ---
@@ -144,63 +165,115 @@ function RouteComponent() {
           />
         ))}
         {thisUser?.role === 'coach' &&
-          <Popover>
-            <PopoverTrigger asChild>
-              <Card className='cursor-pointer'>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Card className="cursor-pointer">
                 <CardHeader>
                   <CardTitle>
-                    <Plus className='mr-2' />
+                    <Plus className="mr-2" />
                   </CardTitle>
-                  <CardDescription></CardDescription>
                 </CardHeader>
-                <CardContent>
-                </CardContent>
               </Card>
-            </PopoverTrigger>
-            <PopoverContent>
-              <div className="flex flex-col gap-2">
-                <div>Select an exercise to add to the plan</div>
-                <div>
-                  hey
-                </div>
-                <div>
-                  {allExercises?.pages?.map((page) => (
-                    page?.map((exercise) => (
-                      <Button key={exercise.id} variant={'outline'} className='flex flex-row items-center justify-between   rounded-md p-2' onClick={() => {
-                        addExercise.mutate({
-                          plan_session_id: thisSession.id,
-                          exercise_id: exercise.id,
-                          order_index: Math.max(0, ...thisSession.plan_session_exercises.map(ex => ex.order_index)) + 1,
-                          planId: planId
-                        });
-                      }}>
-                        <p>{exercise.name}</p>
-                        <div  >
-                          Add
-                        </div>
-                      </Button>
-                    ))
-                  ))}
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Add Exercise</DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  <Select value={filters.difficulty?.toString()}
+                    onValueChange={(v) => setFilters(f => ({ ...f, difficulty: v ? Number(v) : undefined }))}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Difficulty" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      {[1,2,3,4,5].map(lvl => (
+                        <SelectItem key={lvl} value={lvl.toString()}>{lvl}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filters.type}
+                    onValueChange={(v) => setFilters(f => ({ ...f, type: v || undefined }))}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      {Constants.public.Enums.exercise_type_enum.map(t => (
+                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filters.category}
+                    onValueChange={(v) => setFilters(f => ({ ...f, category: v || undefined }))}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      {Constants.public.Enums.exercise_category.map(c => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filters.environment}
+                    onValueChange={(v) => setFilters(f => ({ ...f, environment: v || undefined }))}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Environment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      {Constants.public.Enums.exercise_environment.map(env => (
+                        <SelectItem key={env} value={env}>{env}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filters.muscle}
+                    onValueChange={(v) => setFilters(f => ({ ...f, muscle: v || undefined }))}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Muscle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      {Constants.public.Enums.muscle_group_enum.map(m => (
+                        <SelectItem key={m} value={m}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
                 </div>
-                {/* {planData?.exercises?.map((exercise) => (
-              <Button
-              key={exercise.id}
-              variant="outline"
-              onClick={() => {
-                createSet.mutate({
-                plan_session_exercise_id: exercise.id,
-                set_number: 1,
-                planId: planId,
-                });
-              }}
-              >
-              {exercise.name}
-              </Button>
-            ))} */}
+                <div className="max-h-80 overflow-y-auto flex flex-col gap-2">
+                  {allExercises?.pages?.map(page =>
+                    page?.map(exercise => (
+                      <ExerciseOptionButton
+                        key={exercise.id}
+                        exercise={exercise}
+                        onAdd={() => {
+                          addExercise.mutate({
+                            plan_session_id: thisSession.id,
+                            exercise_id: exercise.id,
+                            order_index: Math.max(0, ...thisSession.plan_session_exercises.map(ex => ex.order_index)) + 1,
+                            planId: planId
+                          });
+                          setIsAddDialogOpen(false);
+                        }}
+                      />
+                    ))
+                  )}
+                  {hasNextPage && (
+                    <Button variant="ghost" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+                      {isFetchingNextPage ? 'Loading...' : 'Load more'}
+                    </Button>
+                  )}
+                </div>
               </div>
-            </PopoverContent>
-          </Popover>
+            </DialogContent>
+          </Dialog>
         }
       </div>
       <Sheet open={editSession} onOpenChange={(open) => {
