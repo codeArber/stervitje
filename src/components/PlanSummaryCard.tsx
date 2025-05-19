@@ -220,6 +220,38 @@ export const PlanOverviewWithWeeks: React.FC<{plan: any}> = ({ plan }) => {
     return (
         <div className="space-y-6"> {/* Container for the whole view */}
 
+            {/* === Overall Plan Summary === */}
+            <div>
+                <h2 className="text-xl font-semibold mb-3">Overall Summary</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                        <CalendarDays className="text-muted-foreground" size={18} />
+                        <div>
+                            <span className="font-medium">{numTotalWeeks}</span> Week{numTotalWeeks !== 1 ? 's' : ''}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Target className="text-muted-foreground" size={18} />
+                        <div>
+                            <span className="font-medium">{workoutDaysOverall}</span> Workout Day{workoutDaysOverall !== 1 ? 's' : ''}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Coffee className="text-muted-foreground" size={18} />
+                        <div>
+                            <span className="font-medium">{restDaysOverall}</span> Rest Day{restDaysOverall !== 1 ? 's' : ''}
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 col-span-2 sm:col-span-1">
+                        <Dumbbell className="text-muted-foreground" size={18} />
+                        <div>
+                            <span className="font-medium">{totalExercisesOverall}</span> Exercise Entrie{totalExercisesOverall !== 1 ? 's' : ''}
+                        </div>
+                    </div>
+                </div>
+                <Separator className="my-4" />
+            </div>
+
             {/* === Weekly Breakdown Section === */}
             <div>
                 <h2 className="text-2xl font-semibold tracking-tight mb-4">
