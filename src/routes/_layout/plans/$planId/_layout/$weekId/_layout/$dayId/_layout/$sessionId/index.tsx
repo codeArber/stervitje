@@ -100,11 +100,11 @@ interface ExerciseOptionButtonProps {
 function ExerciseOptionButton({ exercise, onAdd }: ExerciseOptionButtonProps) {
   const img = useExerciseImageUrl(exercise.image_url || '');
   return (
-    <Button variant="outline" className="flex items-center gap-2 justify-between" onClick={onAdd}>
-      <AspectRatio ratio={16/9} className="bg-muted rounded w-16 overflow-hidden">
-        <img src={img.data || '/placeholder.svg'} className="object-cover w-full h-full" onError={(e) => (e.currentTarget.src = '/placeholder.svg')} />
+    <Button variant="outline" className="flex items-center gap-2 min-w-52 py-8 justify-between overflow-hidden " onClick={onAdd}>
+      <AspectRatio ratio={16/9} className="bg-muted rounded w-24 overflow-hidden">
+        <img src={img.data || '/placeholder.svg'} className="object-contain w-full h-full" onError={(e) => (e.currentTarget.src = '/placeholder.svg')} />
       </AspectRatio>
-      <span className="flex-1 text-left truncate">{exercise.name}</span>
+     <p className="flex-1 text-right ">{exercise.name}</p>
       <PlusCircle className="h-4 w-4" />
     </Button>
   );
@@ -187,7 +187,7 @@ function RouteComponent() {
                       <SelectValue placeholder="Difficulty" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
                       {[1,2,3,4,5].map(lvl => (
                         <SelectItem key={lvl} value={lvl.toString()}>{lvl}</SelectItem>
                       ))}
@@ -200,7 +200,7 @@ function RouteComponent() {
                       <SelectValue placeholder="Type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
                       {Constants.public.Enums.exercise_type_enum.map(t => (
                         <SelectItem key={t} value={t}>{t}</SelectItem>
                       ))}
@@ -213,7 +213,7 @@ function RouteComponent() {
                       <SelectValue placeholder="Category" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
                       {Constants.public.Enums.exercise_category.map(c => (
                         <SelectItem key={c} value={c}>{c}</SelectItem>
                       ))}
@@ -226,7 +226,7 @@ function RouteComponent() {
                       <SelectValue placeholder="Environment" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
                       {Constants.public.Enums.exercise_environment.map(env => (
                         <SelectItem key={env} value={env}>{env}</SelectItem>
                       ))}
@@ -239,7 +239,7 @@ function RouteComponent() {
                       <SelectValue placeholder="Muscle" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
                       {Constants.public.Enums.muscle_group_enum.map(m => (
                         <SelectItem key={m} value={m}>{m}</SelectItem>
                       ))}
