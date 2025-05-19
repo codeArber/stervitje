@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { createFileRoute } from '@tanstack/react-router'
-import { Clock, Plus, PlusCircle, Trash2 } from 'lucide-react';
+import { Clock, Plus, PlusCircle, Trash2, Repeat, Weight, Timer, Route as RouteIcon } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -309,38 +309,127 @@ function RouteComponent() {
             <div>
               <div className="flex flex-col gap-2">
                 {selectedExercise?.plan_session_exercise_sets?.map((set) => (
-                  <div key={set.id} className='flex flex-row items-center justify-between gap-2  rounded-md p-2'>
-                    {/* Render set details here */}
-                    <div>
-                      {set.set_number}:
-
+                  <div key={set.id} className="flex flex-col gap-1 border rounded-md p-2">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Badge variant="secondary" className="text-xs w-10 justify-center py-1">
+                        Set {set.set_number}
+                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Repeat className="h-3.5 w-3.5" />
+                        <Input
+                          type="number"
+                          className="h-7 w-16"
+                          value={set.target_reps ?? ''}
+                          onBlur={(e) =>
+                            updateExercise.mutate({
+                              setId: set.id,
+                              updateData: {
+                                target_reps: e.target.value === '' ? null : parseInt(e.target.value),
+                              },
+                              planId: planId,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Weight className="h-3.5 w-3.5" />
+                        <Input
+                          type="number"
+                          className="h-7 w-16"
+                          value={set.target_weight ?? ''}
+                          onBlur={(e) =>
+                            updateExercise.mutate({
+                              setId: set.id,
+                              updateData: {
+                                target_weight: e.target.value === '' ? null : parseFloat(e.target.value),
+                              },
+                              planId: planId,
+                            })
+                          }
+                        />
+                        <Select
+                          value={set.target_weight_unit || ''}
+                          onValueChange={(v) =>
+                            updateExercise.mutate({
+                              setId: set.id,
+                              updateData: { target_weight_unit: v as 'kg' | 'lb' },
+                              planId: planId,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="w-16 h-7">
+                            <SelectValue placeholder="unit" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="kg">kg</SelectItem>
+                            <SelectItem value="lb">lb</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Timer className="h-3.5 w-3.5" />
+                        <Input
+                          type="number"
+                          className="h-7 w-16"
+                          value={set.target_duration_seconds ?? ''}
+                          onBlur={(e) =>
+                            updateExercise.mutate({
+                              setId: set.id,
+                              updateData: {
+                                target_duration_seconds: e.target.value === '' ? null : parseInt(e.target.value),
+                              },
+                              planId: planId,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <RouteIcon className="h-3.5 w-3.5" />
+                        <Input
+                          type="number"
+                          className="h-7 w-16"
+                          value={set.target_distance_meters ?? ''}
+                          onBlur={(e) =>
+                            updateExercise.mutate({
+                              setId: set.id,
+                              updateData: {
+                                target_distance_meters: e.target.value === '' ? null : parseFloat(e.target.value),
+                              },
+                              planId: planId,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5" />
+                        <Input
+                          type="number"
+                          className="h-7 w-16"
+                          value={set.target_rest_seconds ?? ''}
+                          onBlur={(e) =>
+                            updateExercise.mutate({
+                              setId: set.id,
+                              updateData: {
+                                target_rest_seconds: e.target.value === '' ? null : parseInt(e.target.value),
+                              },
+                              planId: planId,
+                            })
+                          }
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <Input value={set.target_reps} onBlur={(e) => updateExercise.mutate({
-
-                        setId: set.id,
-                        updateData: {
-                          target_reps: parseInt(e.target.value),
-                        },
-                        planId: planId,
-                      })} />
-                    </div>
-                    <div>
-                      reps
-                    </div>
-                    <div>
-                      <Input value={set.target_weight} onBlur={(e) => updateExercise.mutate({
-
-                        setId: set.id,
-                        updateData: {
-                          target_weight: parseInt(e.target.value),
-                        },
-                        planId: planId,
-                      })} />
-                    </div>
-                    <div>
-                      {set.target_weight_unit}
-                    </div>
+                    <Input
+                      className="mt-1"
+                      placeholder="Set notes"
+                      value={set.notes ?? ''}
+                      onBlur={(e) =>
+                        updateExercise.mutate({
+                          setId: set.id,
+                          updateData: { notes: e.target.value || null },
+                          planId: planId,
+                        })
+                      }
+                    />
                   </div>
                 ))}
                 <Button variant={'outline'} onClick={() => createSet.mutate({
@@ -348,6 +437,15 @@ function RouteComponent() {
                   set_number: selectedExercise.plan_session_exercise_sets.length + 1,
                   planId: planId
                 })}> Add Set</Button>
+                {selectedExercise?.target_rest_seconds != null && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
+                    <Timer className="h-4 w-4" />
+                    <span>{selectedExercise.target_rest_seconds}s rest after exercise</span>
+                  </div>
+                )}
+                {selectedExercise?.notes && (
+                  <p className="text-sm italic text-muted-foreground mt-1">Notes: {selectedExercise.notes}</p>
+                )}
               </div>
             </div>
           </div>
