@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dialog";
 // Import helper components
 // Import types
-import type { PlanDay, PlanExercise } from '@/types/type'; // Adjust path
+import type { PlanDay, PlanSessionExercise } from '@/types/planTypes';
 import { usePlanDetails } from '@/api/plans/plan';
 import { useDeleteExercise } from '@/api/exercises';
 import { PlanExerciseSet, PlanSessionExercise } from '@/types/planTypes';

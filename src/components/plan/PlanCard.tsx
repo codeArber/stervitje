@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Card, CardContent, CardDescription, CardTitle } from "../ui/card";
 import Model, { IExerciseData } from "react-body-highlighter";
-import { Plan } from "@/lib/supabase/types";
+import { Plan } from "@/types/planTypes";
 import { formatDistanceToNow } from 'date-fns';
 import { BarChartIcon, CalendarIcon, DumbbellIcon, EyeIcon, GitForkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";

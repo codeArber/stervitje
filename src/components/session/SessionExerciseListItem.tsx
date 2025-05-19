@@ -3,13 +3,13 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Timer } from 'lucide-react';
 import { SessionSetListItem } from './SessionSetListItem'; // Import the set item component
-import { PlanExercise } from '@/types/type';
+import { PlanSessionExercise } from '@/types/planTypes';
 import { Button } from '../ui/button';
 
 // Adjust the type to match the structure within your session data
-interface SessionExercise extends Omit<PlanExercise, 'plan_exercise_sets' | 'exercise'> {
-    exercises: PlanExercise['exercise']; // Nested exercise details
-    plan_session_exercise_sets: PlanExercise['plan_exercise_sets']; // Array of sets for the session
+interface SessionExercise extends Omit<PlanSessionExercise, 'plan_session_exercise_sets' | 'exercise'> {
+    exercises: PlanSessionExercise['exercise']; // Nested exercise details
+    plan_session_exercise_sets: PlanSessionExercise['plan_session_exercise_sets']; // Array of sets for the session
     target_rest_seconds?: number | null; // Rest AFTER this exercise block
     // Add any other fields specific to the session exercise if needed
 }

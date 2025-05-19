@@ -1,6 +1,6 @@
 // src/api/plans/plan/endpoint.ts
 import { supabase } from '@/lib/supabase/supabaseClient';
-import { Plan } from '@/lib/supabase/types';
+import { Plan } from '@/types/planTypes';
 import type {
     PlanDetail,
     DiscoverablePlan,

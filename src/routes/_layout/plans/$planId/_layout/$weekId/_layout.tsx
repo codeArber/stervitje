@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useTeamStore } from '@/store/useTeamStore';
-import { PlanDay } from '@/types/type';
+import { PlanDay } from '@/types/planTypes';
 import { createFileRoute, Link, Outlet, useParams } from '@tanstack/react-router'
 import { ArrowLeft, Coffee, PlusCircle } from 'lucide-react';
 import { useActionState, useState } from 'react';
