@@ -320,7 +320,7 @@ function RouteComponent() {
                           type="number"
                           className="h-7 w-16"
                           value={set.target_reps ?? ''}
-                          onBlur={(e) =>
+                          onChange={(e) =>
                             updateExercise.mutate({
                               setId: set.id,
                               updateData: {
@@ -337,7 +337,7 @@ function RouteComponent() {
                           type="number"
                           className="h-7 w-16"
                           value={set.target_weight ?? ''}
-                          onBlur={(e) =>
+                          onChange={(e) =>
                             updateExercise.mutate({
                               setId: set.id,
                               updateData: {
@@ -372,7 +372,7 @@ function RouteComponent() {
                           type="number"
                           className="h-7 w-16"
                           value={set.target_duration_seconds ?? ''}
-                          onBlur={(e) =>
+                          onChange={(e) =>
                             updateExercise.mutate({
                               setId: set.id,
                               updateData: {
@@ -389,7 +389,7 @@ function RouteComponent() {
                           type="number"
                           className="h-7 w-16"
                           value={set.target_distance_meters ?? ''}
-                          onBlur={(e) =>
+                          onChange={(e) =>
                             updateExercise.mutate({
                               setId: set.id,
                               updateData: {
@@ -406,7 +406,7 @@ function RouteComponent() {
                           type="number"
                           className="h-7 w-16"
                           value={set.target_rest_seconds ?? ''}
-                          onBlur={(e) =>
+                          onChange={(e) =>
                             updateExercise.mutate({
                               setId: set.id,
                               updateData: {
@@ -421,8 +421,8 @@ function RouteComponent() {
                     <Input
                       className="mt-1"
                       placeholder="Set notes"
-                      value={set.notes ?? ''}
-                      onBlur={(e) =>
+                      defaultValue={set.notes ?? ''}
+                      onChange={(e) =>
                         updateExercise.mutate({
                           setId: set.id,
                           updateData: { notes: e.target.value || null },
