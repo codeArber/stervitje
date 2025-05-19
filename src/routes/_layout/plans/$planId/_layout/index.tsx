@@ -29,7 +29,7 @@ import { PlanWeek } from '@/types/planTypes';
 import { usePlanDetails } from '@/api/plans/plan';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { PlanDetailSummaryCard, PlanOverviewWithWeeks, PlanSummaryCard } from '@/components/PlanSummaryCard';
+import { PlanDetailSummaryCard, PlanOverviewWithWeeks } from '@/components/PlanSummaryCard';
 
 export const Route = createFileRoute('/_layout/plans/$planId/_layout/')({
   component: PlanDetailsPage,

@@ -32,7 +32,7 @@ import {
 import type { PlanDay, PlanSessionExercise } from '@/types/planTypes';
 import { usePlanDetails } from '@/api/plans/plan';
 import { useDeleteExercise } from '@/api/exercises';
-import { PlanExerciseSet, PlanSessionExercise } from '@/types/planTypes';
+import { PlanExerciseSet } from '@/types/planTypes';
 import { useCreatePlanSession, useDeletePlanSession } from '@/api/plans/plan_session';
 import { useDeletePlanSessionExercise } from '@/api/plans/exercise_entry';
 import { useCreatePlanSet, useDeletePlanSet } from '@/api/plans/session_set';

@@ -63,7 +63,17 @@ export function PlanSessionExerciseItem({
         return [reps, weight, rest,].filter(Boolean).join(', ');
     };
 
-    const formatSetRest = (seconds: number | null | undefined): string | null => { /* ... */ };
+    const formatSetRest = (seconds: number | null | undefined): string | null => {
+        if (!seconds) return null;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        
+        if (minutes > 0) {
+            return `${minutes}m ${remainingSeconds > 0 ? remainingSeconds + 's' : ''}`;
+        } else {
+            return `${seconds}s`;
+        }
+    };
 
     return (
         <Card className="overflow-hidden border border-border/80">
