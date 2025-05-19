@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
+import { InputWithUnit } from "@/components/ui/input-with-unit"
 import { Label } from "@/components/ui/label"
 import useTheme from '@/hooks/use-theme';
 import { useUpdateProfile, useUserQuery } from '@/api/user';
@@ -24,6 +25,7 @@ function RouteComponent() {
   // const user = useUserQuery()
   const { getPreferredUnit } = useAuthStore()
   const updateUser = useUpdateProfile()
+  const unit = getPreferredUnit()
   return (
     <div className="flex flex-1 flex-col p-6 space-y-8 ">
       <h1 className="text-2xl font-bold">Settings</h1>
@@ -65,47 +67,34 @@ function RouteComponent() {
       </section>
 
       {/* Personal Info */}
-      <section >
-        <h2 className="text-xl font-semibold">Your Metrics</h2>
+      <section>
+        <h2 className="text-xl font-semibold mb-4">Your Metrics</h2>
 
-        <div className="space-y-2">
-          <Label>Height</Label>
-          <div className="flex flex-row gap-1 items-center">
-            {getPreferredUnit() === 'imperial' && (
-              <div className="text-sm text-gray-500">
-                inches
-              </div>
-            )}
-            {getPreferredUnit() === 'metric' && (
-              <div className="text-sm text-gray-500">
-                cm
-              </div>
-            )}
-            <Input type="number" placeholder="e.g. 175" />
-
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Height</Label>
+            <InputWithUnit unit={unit === 'imperial' ? 'in' : 'cm'} type="number" placeholder="e.g. 175" />
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label>Weight</Label>
-          <div className="flex flex-row gap-1 items-center">
-            {getPreferredUnit() === 'imperial' && (
-              <div className="text-sm text-gray-500">
-                lb
-              </div>
-            )}
-            {getPreferredUnit() === 'metric' && (
-              <div className="text-sm text-gray-500">
-                kg
-              </div>
-            )}
-          <Input type="number" placeholder="e.g. 70" />
+          <div className="space-y-2">
+            <Label>Weight</Label>
+            <InputWithUnit unit={unit === 'imperial' ? 'lb' : 'kg'} type="number" placeholder="e.g. 70" />
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <Label>Age</Label>
-          <Input type="number" placeholder="e.g. 25" />
+          <div className="space-y-2">
+            <Label>Age</Label>
+            <Input type="number" placeholder="e.g. 25" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Biceps Circ.</Label>
+            <InputWithUnit unit={unit === 'imperial' ? 'in' : 'cm'} type="number" placeholder="e.g. 30" />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Leg Circ.</Label>
+            <InputWithUnit unit={unit === 'imperial' ? 'in' : 'cm'} type="number" placeholder="e.g. 50" />
+          </div>
         </div>
       </section>
     </div>
