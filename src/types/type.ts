@@ -38,7 +38,10 @@ export interface FetchExercisesParams {
     page?: number;
     limit?: number;
     searchTerm?: string;
-    categoryId?: string;
+    category?: string;
     difficulty?: number;
+    type?: string;
+    environment?: string;
+    muscle?: string;
     createdByUserId?: string; // To fetch only user's exercises
 }

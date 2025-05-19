@@ -79,8 +79,11 @@ export const fetchExercises = async (params: FetchExercisesParams = {}): Promise
         page = 1,
         limit = DEFAULT_LIMIT,
         searchTerm,
-        categoryId,
+        category,
         difficulty,
+        type,
+        environment,
+        muscle,
         isPublic,
         createdByUserId,
     } = params;
@@ -110,14 +113,17 @@ export const fetchExercises = async (params: FetchExercisesParams = {}): Promise
     if (createdByUserId) {
         query = query.eq('created_by', createdByUserId);
     }
-    // Filtering by category requires checking the mapping table.
-    if (categoryId) {
-        // This is the correct way to filter based on a many-to-many relationship using the join table.
-        // Find exercises whose 'id' is present in the 'exercise_category_mapping' table
-        // where the 'category_id' matches the one we're filtering by.
-        query = query.filter('exercise_category_mapping.category_id', 'eq', categoryId);
-        // Note: This implicitly requires Supabase to join `exercise_category_mapping`.
-        // If performance is an issue, an RPC or DB view might be better.
+    if (category) {
+        query = query.eq('category', category);
+    }
+    if (type) {
+        query = query.eq('exercise_type', type);
+    }
+    if (environment) {
+        query = query.eq('environment', environment);
+    }
+    if (muscle) {
+        query = query.filter('exercise_muscle.muscle_group', 'eq', muscle);
     }
 
     const { data, error } = await query;
