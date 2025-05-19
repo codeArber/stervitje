@@ -6,7 +6,6 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { SessionExerciseListItem } from '@/components/session/SessionExerciseListItem';
 import { useLogWorkout } from '@/api/workouts';
 import { WorkoutLogger } from '@/components/session/WorkoutLogger';
 // Import your new display components
