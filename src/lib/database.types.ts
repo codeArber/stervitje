@@ -878,6 +878,119 @@ export type Database = {
         }
         Relationships: []
       }
+      user_measurements: {
+        Row: {
+          biceps_left_cm: number | null
+          biceps_left_photo_url: string | null
+          biceps_right_cm: number | null
+          biceps_right_photo_url: string | null
+          body_fat_percentage: number | null
+          body_fat_photo_url: string | null
+          calf_left_cm: number | null
+          calf_left_photo_url: string | null
+          calf_right_cm: number | null
+          calf_right_photo_url: string | null
+          chest_cm: number | null
+          chest_photo_url: string | null
+          created_at: string | null
+          forearm_left_cm: number | null
+          forearm_left_photo_url: string | null
+          forearm_right_cm: number | null
+          forearm_right_photo_url: string | null
+          height_cm: number | null
+          hips_cm: number | null
+          hips_photo_url: string | null
+          id: string
+          measurement_date: string
+          overall_notes: string | null
+          resting_heart_rate: number | null
+          thigh_left_cm: number | null
+          thigh_left_photo_url: string | null
+          thigh_right_cm: number | null
+          thigh_right_photo_url: string | null
+          user_id: string
+          waist_cm: number | null
+          waist_photo_url: string | null
+          weight_kg: number | null
+        }
+        Insert: {
+          biceps_left_cm?: number | null
+          biceps_left_photo_url?: string | null
+          biceps_right_cm?: number | null
+          biceps_right_photo_url?: string | null
+          body_fat_percentage?: number | null
+          body_fat_photo_url?: string | null
+          calf_left_cm?: number | null
+          calf_left_photo_url?: string | null
+          calf_right_cm?: number | null
+          calf_right_photo_url?: string | null
+          chest_cm?: number | null
+          chest_photo_url?: string | null
+          created_at?: string | null
+          forearm_left_cm?: number | null
+          forearm_left_photo_url?: string | null
+          forearm_right_cm?: number | null
+          forearm_right_photo_url?: string | null
+          height_cm?: number | null
+          hips_cm?: number | null
+          hips_photo_url?: string | null
+          id?: string
+          measurement_date?: string
+          overall_notes?: string | null
+          resting_heart_rate?: number | null
+          thigh_left_cm?: number | null
+          thigh_left_photo_url?: string | null
+          thigh_right_cm?: number | null
+          thigh_right_photo_url?: string | null
+          user_id: string
+          waist_cm?: number | null
+          waist_photo_url?: string | null
+          weight_kg?: number | null
+        }
+        Update: {
+          biceps_left_cm?: number | null
+          biceps_left_photo_url?: string | null
+          biceps_right_cm?: number | null
+          biceps_right_photo_url?: string | null
+          body_fat_percentage?: number | null
+          body_fat_photo_url?: string | null
+          calf_left_cm?: number | null
+          calf_left_photo_url?: string | null
+          calf_right_cm?: number | null
+          calf_right_photo_url?: string | null
+          chest_cm?: number | null
+          chest_photo_url?: string | null
+          created_at?: string | null
+          forearm_left_cm?: number | null
+          forearm_left_photo_url?: string | null
+          forearm_right_cm?: number | null
+          forearm_right_photo_url?: string | null
+          height_cm?: number | null
+          hips_cm?: number | null
+          hips_photo_url?: string | null
+          id?: string
+          measurement_date?: string
+          overall_notes?: string | null
+          resting_heart_rate?: number | null
+          thigh_left_cm?: number | null
+          thigh_left_photo_url?: string | null
+          thigh_right_cm?: number | null
+          thigh_right_photo_url?: string | null
+          user_id?: string
+          waist_cm?: number | null
+          waist_photo_url?: string | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_measurements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_plans: {
         Row: {
           created_at: string | null

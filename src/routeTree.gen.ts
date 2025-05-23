@@ -23,6 +23,7 @@ import { Route as LayoutHistoryIndexImport } from './routes/_layout/history/inde
 import { Route as LayoutExerciseIndexImport } from './routes/_layout/exercise/index'
 import { Route as LayoutDiscoverIndexImport } from './routes/_layout/discover/index'
 import { Route as LayoutSessionIdIndexImport } from './routes/_layout/$sessionId/index'
+import { Route as LayoutPerformanceMeasurementIndexImport } from './routes/_layout/performance/measurement/index'
 import { Route as LayoutExerciseExerciseIdIndexImport } from './routes/_layout/exercise/$exerciseId/index'
 import { Route as LayoutPlansPlanIdLayoutImport } from './routes/_layout/plans/$planId/_layout'
 import { Route as LayoutDiscoverTeamTeamIdImport } from './routes/_layout/discover/team/$teamId'
@@ -112,6 +113,13 @@ const LayoutSessionIdIndexRoute = LayoutSessionIdIndexImport.update({
   path: '/$sessionId/',
   getParentRoute: () => LayoutRoute,
 } as any)
+
+const LayoutPerformanceMeasurementIndexRoute =
+  LayoutPerformanceMeasurementIndexImport.update({
+    id: '/performance/measurement/',
+    path: '/performance/measurement/',
+    getParentRoute: () => LayoutRoute,
+  } as any)
 
 const LayoutExerciseExerciseIdIndexRoute =
   LayoutExerciseExerciseIdIndexImport.update({
@@ -308,6 +316,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutExerciseExerciseIdIndexImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/performance/measurement/': {
+      id: '/_layout/performance/measurement/'
+      path: '/performance/measurement'
+      fullPath: '/performance/measurement'
+      preLoaderRoute: typeof LayoutPerformanceMeasurementIndexImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/discover/plan/$planId/': {
       id: '/_layout/discover/plan/$planId/'
       path: '/discover/plan/$planId'
@@ -497,6 +512,7 @@ interface LayoutRouteChildren {
   LayoutDiscoverTeamTeamIdRoute: typeof LayoutDiscoverTeamTeamIdRoute
   LayoutPlansPlanIdRoute: typeof LayoutPlansPlanIdRouteWithChildren
   LayoutExerciseExerciseIdIndexRoute: typeof LayoutExerciseExerciseIdIndexRoute
+  LayoutPerformanceMeasurementIndexRoute: typeof LayoutPerformanceMeasurementIndexRoute
   LayoutDiscoverPlanPlanIdIndexRoute: typeof LayoutDiscoverPlanPlanIdIndexRoute
   LayoutDiscoverUserUserIdIndexRoute: typeof LayoutDiscoverUserUserIdIndexRoute
   LayoutExerciseExerciseIdReferencesIndexRoute: typeof LayoutExerciseExerciseIdReferencesIndexRoute
@@ -515,6 +531,8 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutDiscoverTeamTeamIdRoute: LayoutDiscoverTeamTeamIdRoute,
   LayoutPlansPlanIdRoute: LayoutPlansPlanIdRouteWithChildren,
   LayoutExerciseExerciseIdIndexRoute: LayoutExerciseExerciseIdIndexRoute,
+  LayoutPerformanceMeasurementIndexRoute:
+    LayoutPerformanceMeasurementIndexRoute,
   LayoutDiscoverPlanPlanIdIndexRoute: LayoutDiscoverPlanPlanIdIndexRoute,
   LayoutDiscoverUserUserIdIndexRoute: LayoutDiscoverUserUserIdIndexRoute,
   LayoutExerciseExerciseIdReferencesIndexRoute:
@@ -538,6 +556,7 @@ export interface FileRoutesByFullPath {
   '/discover/team/$teamId': typeof LayoutDiscoverTeamTeamIdRoute
   '/plans/$planId': typeof LayoutPlansPlanIdLayoutRouteWithChildren
   '/exercise/$exerciseId': typeof LayoutExerciseExerciseIdIndexRoute
+  '/performance/measurement': typeof LayoutPerformanceMeasurementIndexRoute
   '/discover/plan/$planId': typeof LayoutDiscoverPlanPlanIdIndexRoute
   '/discover/user/$userId': typeof LayoutDiscoverUserUserIdIndexRoute
   '/exercise/$exerciseId/references': typeof LayoutExerciseExerciseIdReferencesIndexRoute
@@ -562,6 +581,7 @@ export interface FileRoutesByTo {
   '/discover/team/$teamId': typeof LayoutDiscoverTeamTeamIdRoute
   '/plans/$planId': typeof LayoutPlansPlanIdLayoutIndexRoute
   '/exercise/$exerciseId': typeof LayoutExerciseExerciseIdIndexRoute
+  '/performance/measurement': typeof LayoutPerformanceMeasurementIndexRoute
   '/discover/plan/$planId': typeof LayoutDiscoverPlanPlanIdIndexRoute
   '/discover/user/$userId': typeof LayoutDiscoverUserUserIdIndexRoute
   '/exercise/$exerciseId/references': typeof LayoutExerciseExerciseIdReferencesIndexRoute
@@ -586,6 +606,7 @@ export interface FileRoutesById {
   '/_layout/plans/$planId': typeof LayoutPlansPlanIdRouteWithChildren
   '/_layout/plans/$planId/_layout': typeof LayoutPlansPlanIdLayoutRouteWithChildren
   '/_layout/exercise/$exerciseId/': typeof LayoutExerciseExerciseIdIndexRoute
+  '/_layout/performance/measurement/': typeof LayoutPerformanceMeasurementIndexRoute
   '/_layout/discover/plan/$planId/': typeof LayoutDiscoverPlanPlanIdIndexRoute
   '/_layout/discover/user/$userId/': typeof LayoutDiscoverUserUserIdIndexRoute
   '/_layout/exercise/$exerciseId/references/': typeof LayoutExerciseExerciseIdReferencesIndexRoute
@@ -615,6 +636,7 @@ export interface FileRouteTypes {
     | '/discover/team/$teamId'
     | '/plans/$planId'
     | '/exercise/$exerciseId'
+    | '/performance/measurement'
     | '/discover/plan/$planId'
     | '/discover/user/$userId'
     | '/exercise/$exerciseId/references'
@@ -638,6 +660,7 @@ export interface FileRouteTypes {
     | '/discover/team/$teamId'
     | '/plans/$planId'
     | '/exercise/$exerciseId'
+    | '/performance/measurement'
     | '/discover/plan/$planId'
     | '/discover/user/$userId'
     | '/exercise/$exerciseId/references'
@@ -660,6 +683,7 @@ export interface FileRouteTypes {
     | '/_layout/plans/$planId'
     | '/_layout/plans/$planId/_layout'
     | '/_layout/exercise/$exerciseId/'
+    | '/_layout/performance/measurement/'
     | '/_layout/discover/plan/$planId/'
     | '/_layout/discover/user/$userId/'
     | '/_layout/exercise/$exerciseId/references/'
@@ -710,6 +734,7 @@ export const routeTree = rootRoute
         "/_layout/discover/team/$teamId",
         "/_layout/plans/$planId",
         "/_layout/exercise/$exerciseId/",
+        "/_layout/performance/measurement/",
         "/_layout/discover/plan/$planId/",
         "/_layout/discover/user/$userId/",
         "/_layout/exercise/$exerciseId/references/"
@@ -772,6 +797,10 @@ export const routeTree = rootRoute
     },
     "/_layout/exercise/$exerciseId/": {
       "filePath": "_layout/exercise/$exerciseId/index.tsx",
+      "parent": "/_layout"
+    },
+    "/_layout/performance/measurement/": {
+      "filePath": "_layout/performance/measurement/index.tsx",
       "parent": "/_layout"
     },
     "/_layout/discover/plan/$planId/": {

@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as userApi from './endpoint';
 import type { UserContext, UserProfile } from '@/types'; // Import types
+import type { UserMeasurements } from '@/lib/supabase/types'; // Import types
 
 // --- Query Keys ---
 const userKeys = {
@@ -91,3 +92,12 @@ export const useUserPublicWorkouts = (userId: string) => {
         retry: 2,
     });
 };
+
+export const useUserMeasurements = (userId: string) => {
+    return useQuery<UserMeasurements[], Error>({
+        queryKey: ['userMeasurements', userId],
+        queryFn: () => userApi.fetchUserMeasurements(userId),
+        staleTime: 10 * 60 * 1000,
+        retry: 2,
+    });
+}    

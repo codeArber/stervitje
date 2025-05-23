@@ -21,8 +21,6 @@ import { useMemo } from 'react'; // Import useMemo for potentially calculating r
 import { useUser, useUserQuery, useUserPlans, useUserPublicWorkouts, useUsers, useUserTeams } from '@/api/user';
 import { Badge } from '@/components/ui/badge';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import { useQuery } from '@tanstack/react-query';
-import { useMemberInTeam } from '@/api/teams';
 import { useTeamStore } from '@/store/useTeamStore';
 
 // Define types for better clarity (optional but recommended)

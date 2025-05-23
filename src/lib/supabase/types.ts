@@ -39,3 +39,5 @@ export type ExercisePayload = Partial<Omit<Exercise, "id" | "created_at" | "upda
 
 export type InsertExerciseReferenceGlobal = TablesInsert<'exercise_reference_global'>;
 export type InsertExerciseMuscle = TablesInsert<'exercise_muscle'>;
+
+export type UserMeasurements = Tables<'user_measurements'>;

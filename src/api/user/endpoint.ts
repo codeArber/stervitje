@@ -1,5 +1,6 @@
 // src/api/user/endpoint.ts
 import { supabase } from '@/lib/supabase/supabaseClient';
+import { UserMeasurements } from '@/lib/supabase/types';
 import type { UserContext, UserProfile } from '@/types'; // Import defined types
 
 /** Fetches the current user's profile and team memberships using RPC. */
@@ -99,3 +100,17 @@ export const fetchPublicWorkouts = async (userId: string): Promise<any[]> => {
     }
     return data || [];
 };
+
+export const fetchUserMeasurements = async (userId: string): Promise<UserMeasurements[]> => {
+    if(!userId) { return [] } // Handle case where userId is not provided`
+    const { data, error } = await supabase
+        .from('user_measurements')
+        .select('*') // Adjust fields as needed
+        .eq('user_id', userId); // Filter by user ID
+
+    if (error) {
+        console.error("API Error fetchUserMeasurements:", error);
+        throw new Error(error.message);
+    }
+    return data || [];
+}
