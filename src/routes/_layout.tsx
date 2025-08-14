@@ -8,11 +8,14 @@ export const Route = createFileRoute('/_layout')({
 })
 
 function RouteComponent() {
-  const {data} = useUserQuery()
+  const { data } = useUserQuery()
 
   useEffect(() => {
-    useAuthStore.setState({ profile: data?.profile })
+    if (data) {
+      useAuthStore.setState({ profile: data })
+    }
   }, [data])
+  
   return <div className='flex flex-1 overflow-x-hidden bg-background'>
     <Outlet />
   </div>

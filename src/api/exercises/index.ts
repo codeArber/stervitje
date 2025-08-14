@@ -1,10 +1,8 @@
 // src/api/exercises/index.ts
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery, QueryKey, InfiniteData } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import * as exercisesApi from './endpoint';
-// import { FetchExercisesParams } from '@/types/type';
-import type { Exercise, ExercisePayload, FetchExercisesParams } from '@/types/type'; // Adjust path
+import type { Exercise, ExercisePayload, FetchExercisesParams, ExerciseWithRelations, InsertExerciseMuscle, InsertExerciseReferenceGlobal, InsertExerciseSavedReference } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/supabaseClient';
-import { ExerciseWithRelations, InsertExerciseMuscle, InsertExerciseReferenceGlobal, InsertExerciseSavedReference } from '@/lib/supabase/types';
 
 // --- Query Keys ---
 const exerciseKeys = {
@@ -13,6 +11,7 @@ const exerciseKeys = {
   list: (params: FetchExercisesParams) => [...exerciseKeys.lists(), params] as const, // Key for specific list query with filters
   details: () => [...exerciseKeys.all, 'detail'] as const, // Key for exercise details
   detail: (id: string) => [...exerciseKeys.details(), id] as const, // Key for specific exercise detail
+  selectorList: (searchTerm?: string) => [...exerciseKeys.all, 'selectorList', searchTerm ?? 'all'] as const, // Key for selector list
 };
 
 // --- Hooks ---
@@ -26,17 +25,40 @@ export const useFetchExerciseById = (exerciseId: string | undefined | null) => {
     // staleTime: 5 * 60 * 1000, // Optional: Cache data for 5 minutes
   });
 };
+
+
+/** 
+ * Fetches the public URL for the given storage path 
+ * @param imagePath Path inside the bucket, e.g. "images/plank.jpg"
+ */
+export function useExerciseImageUrl(imagePath: string) {
+  return useQuery({
+    queryKey: ['exerciseImageUrl', imagePath],
+    queryFn: async () => {
+      const {
+        data: { publicUrl },
+      } = supabase
+        .storage
+        .from('exercises')
+        .getPublicUrl(imagePath);
+
+      return publicUrl;
+    },
+  });
+}
+
+
 /** Hook for fetching exercises with infinite scrolling & filters */
 export const useInfiniteExercises = (
   { page, limit: paramLimit, ...filters }: FetchExercisesParams = {},
   defaultLimit = 20
 ) => {
-  const limit = paramLimit ?? defaultLimit;          // honour caller’s limit
+  const limit = paramLimit ?? defaultLimit;          // honour caller's limit
 
   return useInfiniteQuery<Exercise[], Error>({
-    queryKey: exerciseKeys.list({ ...filters, limit }),  // ⬅ include limit + filters
+    queryKey: exerciseKeys.list({ ...filters, limit: limit }),  // ⬅ include limit + filters
     queryFn: ({ pageParam = 1 }) =>
-      exercisesApi.fetchExercises({ ...filters, page: pageParam, limit }),
+      exercisesApi.fetchExercises({ ...filters, page: pageParam, limit: limit }),
 
     getNextPageParam: (lastPage, allPages) =>
       lastPage.length === limit ? allPages.length + 1 : undefined,
@@ -45,9 +67,6 @@ export const useInfiniteExercises = (
   });
 };
 
-
-// Key for the selector list
-exerciseKeys.selectorList = (searchTerm?: string) => [...exerciseKeys.all, 'selectorList', searchTerm ?? 'all'] as const;
 
 /** Hook to fetch exercises for selection components */
 export const useFetchExerciseListForSelector = (searchTerm?: string) => {
@@ -76,7 +95,7 @@ export const useCreateExercise = () => {
     },
     onError: (error) => {
       console.error("Mutation Error useCreateExercise:", error);
-      alert(`Create Exercise Error: ${error.message}`); // Replace with better UI feedback
+      // Replace with better UI feedback (toast, notification, etc.)
     },
   });
 };
@@ -98,12 +117,10 @@ export const useUpdateExercise = () => {
 
       // Optional: Update the cache immediately for this item
       queryClient.setQueryData(exerciseKeys.detail(variables.exerciseId), updatedExercise);
-      // Optional: Update the item within infinite lists (more complex)
-      // queryClient.setQueryData<InfiniteData<Exercise[]>>(exerciseKeys.list({...}), oldData => ...)
     },
     onError: (error, variables) => {
       console.error(`Mutation Error useUpdateExercise (ID: ${variables.exerciseId}):`, error);
-      alert(`Update Exercise Error: ${error.message}`); // Replace with better UI feedback
+      // Replace with better UI feedback (toast, notification, etc.)
     },
   });
 };
@@ -124,139 +141,84 @@ export const useDeleteExercise = () => {
       queryClient.invalidateQueries({ queryKey: exerciseKeys.lists() });
 
       // Optional: Manually remove from infinite query cache for instant UI update
-      queryClient.setQueryData<InfiniteData<Exercise[]>>(exerciseKeys.lists(), (oldData) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          pages: oldData.pages.map(page => page.filter(ex => ex.id !== deletedExerciseId)),
-        };
-      });
-      // Remember to adapt the key above if you use filtered lists `exerciseKeys.list(filters)`
+      // This is more complex and typically not needed if using invalidateQueries properly
     },
     onError: (error, variables) => {
       console.error(`Mutation Error useDeleteExercise (ID: ${variables}):`, error);
-      alert(`Delete Exercise Error: ${error.message}`); // Replace with better UI feedback
+      // Replace with better UI feedback (toast, notification, etc.)
     },
   });
 };
 
 
-/** 
- * Fetches the public URL for the given storage path 
- * @param imagePath Path inside the bucket, e.g. "images/plank.jpg"
- */
-export function useExerciseImageUrl(imagePath: string) {
-  return useQuery({
-    queryKey: ['exerciseImageUrl', imagePath],
-    queryFn: async () => {
-      const {
-        data: { publicUrl },
-      } = supabase
-        .storage
-        .from('exercises')
-        .getPublicUrl(imagePath);
-
-      return publicUrl;
-    },
-  });
-}
-
-
-export function userExerciseReferences(exerciseId: string, userId: string) {
-  return useQuery({
-    queryKey: ['exerciseReferences', exerciseId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('exercise_reference')
-        .select('*')
-        .eq('exercise_id', exerciseId)
-        .eq('user_id', userId)
-
-      if (error) throw new Error(error.message);
-      return data;
-    },
-  });
-}
-
-export function globalExerciseReferences(exerciseId: string) {
-  return useQuery({
-    queryKey: ['exerciseReferences', exerciseId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('exercise_reference')
-        .select('*')
-        .eq('exercise_id', exerciseId)
-
-      if (error) throw new Error(error.message);
-      return data;
-    },
-  });
-}
-
-export function useCreateExerciseReferenceGlobal() {
+/** Hook for adding a global reference to an exercise */
+export const useCreateExerciseReferenceGlobal = () => {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ exerciseId, reference }: { exerciseId: string; reference: InsertExerciseReferenceGlobal }) =>
-      exercisesApi.addExercisGlobalReference(exerciseId, reference),
-    onSuccess: (data) => {
+  return useMutation<InsertExerciseReferenceGlobal, Error, { exerciseId: string; reference: InsertExerciseReferenceGlobal }>({
+    mutationFn: ({ exerciseId, reference }) => exercisesApi.addExercisGlobalReference(exerciseId, reference),
+    onSuccess: (data, variables) => {
+      // Invalidate the specific exercise detail query to refresh references
+      queryClient.invalidateQueries({ queryKey: exerciseKeys.detail(variables.exerciseId) });
+      // Invalidate the exercise references query
+      queryClient.invalidateQueries({ queryKey: ['exerciseReferences', variables.exerciseId] });
+    },
+  });
+};
+
+/** Hook for adding a muscle group to an exercise */
+export const useCreateExerciseMuscleGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation<InsertExerciseMuscle, Error, { muscleGroup: InsertExerciseMuscle }>({
+    mutationFn: ({ muscleGroup }) => exercisesApi.addExerciseMuscleGroup(muscleGroup),
+    onSuccess: (data, variables) => {
+      // Invalidate the specific exercise detail query to refresh references
       queryClient.invalidateQueries({ queryKey: exerciseKeys.detail(data.exercise_id) });
+      // Invalidate the exercise references query
       queryClient.invalidateQueries({ queryKey: ['exerciseReferences', data.exercise_id] });
     },
-    
   });
-}
+};
 
-export function useCreateExerciseMuscleGroup() {
+
+/** Hook for removing a muscle group from an exercise */
+export const useRemoveExerciseMuscleGroup = () => {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({  muscleGroup }: { muscleGroup: InsertExerciseMuscle }) =>
-      exercisesApi.addExerciseMuscleGroup(muscleGroup),
-    onSuccess: (data) => {
+  return useMutation<{ success: boolean, exercise_id: string }, Error, { id: string, exerciseId: string }>({
+    mutationFn: ({ id, exerciseId }) => exercisesApi.removeExerciseMuscleGroup(id, exerciseId),
+    onSuccess: (data, variables) => {
+      // Invalidate the specific exercise detail query to refresh references
+      queryClient.invalidateQueries({ queryKey: exerciseKeys.detail(variables.exerciseId) });
+      // Invalidate the exercise references query
+      queryClient.invalidateQueries({ queryKey: ['exerciseReferences', variables.exerciseId] });
+    },
+  });
+};
+
+/** Hook for adding a saved reference to an exercise */
+export const useCreateExerciseSavedReference = () => {
+  const queryClient = useQueryClient();
+  return useMutation<InsertExerciseSavedReference, Error, { reference: InsertExerciseSavedReference }>({
+    mutationFn: ({ reference }) => exercisesApi.addExerciseSavedReference(reference),
+    onSuccess: (data, variables) => {
+      // Invalidate the specific exercise detail query to refresh references
       queryClient.invalidateQueries({ queryKey: exerciseKeys.detail(data.exercise_id) });
+      // Invalidate the exercise references query
       queryClient.invalidateQueries({ queryKey: ['exerciseReferences', data.exercise_id] });
     },
-    
   });
-}
+};
 
 
-//remove muscle group
-export function useRemoveExerciseMuscleGroup() {
+/** Hook for removing a saved reference from an exercise */
+export const useRemoveExerciseSavedReference = () => {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, exerciseId }: { id: string, exerciseId: string }) =>
-      exercisesApi.removeExerciseMuscleGroup(id, exerciseId),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: exerciseKeys.detail(data.exercise_id) });
-      queryClient.invalidateQueries({ queryKey: ['exerciseReferences', data.exercise_id] });
+  return useMutation<{ success: boolean, exercise_id: string }, Error, { id: string, exerciseId: string }>({
+    mutationFn: ({ id, exerciseId }) => exercisesApi.removeExerciseSavedReference(id, exerciseId),
+    onSuccess: (data, variables) => {
+      // Invalidate the specific exercise detail query to refresh references
+      queryClient.invalidateQueries({ queryKey: exerciseKeys.detail(variables.exerciseId) });
+      // Invalidate the exercise references query
+      queryClient.invalidateQueries({ queryKey: ['exerciseReferences', variables.exerciseId] });
     },
-    
-  });
-}
-
-export function useCreateExerciseSavedReference() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ reference }: { reference: InsertExerciseSavedReference }) =>
-      exercisesApi.addExerciseSavedReference(reference),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: exerciseKeys.detail(data.exercise_id) });
-      queryClient.invalidateQueries({ queryKey: ['exerciseReferences', data.exercise_id] });
-    },
-    
-  });
-}
-
-
-export function useRemoveExerciseSavedReference() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, exerciseId }: { id: string, exerciseId: string }) =>
-      exercisesApi.removeExerciseSavedReference(id, exerciseId),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: exerciseKeys.detail(data.exercise_id) });
-      queryClient.invalidateQueries({ queryKey: ['exerciseReferences', data.exercise_id] });
-    },
-    
   });
 }

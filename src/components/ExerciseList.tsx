@@ -1,11 +1,10 @@
-"use client"
-
 import React, { useState } from 'react'; // Import React for Fragment
 import { useInfiniteExercises } from "@/api/exercises"; // Adjust path if needed
-import { ExerciseCard } from "./ExerciseCard"; // Adjust path if needed
+import { ExerciseCard } from "@/components/ExerciseCard"; // Adjust path if needed
 import { Button } from "@/components/ui/button"; // Import Button for Load More
 import { Skeleton } from "@/components/ui/skeleton"; // Optional: for loading state
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { MultiSelect } from './ui/multi-select';
 import { Constants } from '@/lib/database.types';
 import { Input } from './ui/input';
 import { Search } from 'lucide-react';
@@ -34,8 +33,8 @@ export function ExerciseList() {
   // // Pass filtering options here if needed, e.g., useInfiniteExercises({ isPublic: true })
   const [filters, setFilters] = useState<{
     difficulty?: number;
-    type?: string;
-    category?: string;
+    type?: string[];
+    category?: string[];
     searchTerm?: string;
   }>({});
 
@@ -44,6 +43,8 @@ export function ExerciseList() {
     data, error, fetchNextPage, hasNextPage,
     isFetchingNextPage, isLoading,
   } = useInfiniteExercises(filters);   // <-- just pass it
+
+  console.log('ExerciseList data:', data);
 
   // Get the enum values from Constants
   const difficultyOptions = [1, 2, 3, 4, 5];
@@ -79,7 +80,7 @@ export function ExerciseList() {
           <h2 className="text-2xl font-semibold tracking-tight">Exercise Library</h2>
         </div>
 
-        <div className="flex flex-row gap-4">
+        <div className="flex flex-row flex-wrap gap-4">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -90,16 +91,16 @@ export function ExerciseList() {
               onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value || undefined }))}
             />
           </div>
-          <div className='flex flex-row gap-4'>
+          <div className='flex flex-row flex-wrap gap-4'>
             <Select
-              value={filters.difficulty?.toString()}
+              value={filters.difficulty?.toString() || ''}
               onValueChange={(value) => setFilters(prev => ({ ...prev, difficulty: Number(value) || undefined }))}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Difficulty" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={null}>All Difficulties</SelectItem>
+                <SelectItem value="all">All Difficulties</SelectItem>
                 {difficultyOptions.map(level => (
                   <SelectItem key={level} value={level.toString()}>
                     {level} {level === 1 ? '(Easiest)' : level === 5 ? '(Hardest)' : ''}
@@ -108,39 +109,27 @@ export function ExerciseList() {
               </SelectContent>
             </Select>
 
-            <Select
-              value={filters.type}
-              onValueChange={(value) => setFilters(prev => ({ ...prev, type: value || undefined }))}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Exercise Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={null}>All Types</SelectItem>
-                {typeOptions.map(type => (
-                  <SelectItem key={type} value={type}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Multi-select for Exercise Types */}
+            <MultiSelect
+              options={typeOptions.map(type => ({
+                label: type.charAt(0).toUpperCase() + type.slice(1),
+                value: type
+              }))}
+              placeholder="Exercise Type"
+              value={filters.type || []}
+              onValueChange={(values) => setFilters(prev => ({ ...prev, type: values }))}
+            />
 
-            <Select
-              value={filters.category}
-              onValueChange={(value) => setFilters(prev => ({ ...prev, category: value || undefined }))}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={null}>All Categories</SelectItem>
-                {categoryOptions.map(category => (
-                  <SelectItem key={category} value={category}>
-                    {category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Multi-select for Exercise Categories */}
+            <MultiSelect
+              options={categoryOptions.map(category => ({
+                label: category.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' '),
+                value: category
+              }))}
+              placeholder="Category"
+              value={filters.category || []}
+              onValueChange={(values) => setFilters(prev => ({ ...prev, category: values }))}
+            />
 
             {Object.keys(filters).some(key => filters[key as keyof typeof filters]) && (
               <Button
@@ -216,10 +205,11 @@ export function ExerciseList() {
             {isFetchingNextPage ? 'Loading more...' : 'Load More'}
           </Button>
         )}
-        {!hasNextPage && data?.pages.length > 0 && (
+        {!hasNextPage && data?.pages && data.pages.length > 0 && (
           <p className="text-muted-foreground text-sm">You've reached the end!</p>
         )}
       </div>
     </div>
   );
+
 }

@@ -1,175 +1,288 @@
-import { createFileRoute, Link, notFound, ErrorComponent } from '@tanstack/react-router';
-import { useExerciseImageUrl, useFetchExerciseById } from '@/api/exercises'; // Adjust path
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ExerciseDisplay } from '@/components/ExerciseDisplay';
-import Model, { IExerciseData } from 'react-body-highlighter';
-import { ExerciseCategoryDropdown, ExerciseTypeDropdown } from '@/components/ExerciseCategorySelector';
-import { useState } from 'react';
-import { ExerciseCategory, exerciseTypes } from '@/lib/data';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { updateExercise } from '@/api/exercises/endpoint';
-import ExerciseInstructions from '@/components/ExerciseInstructions';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
+import { createFileRoute } from '@tanstack/react-router'
+import { useFetchExerciseById } from '@/api/exercises'
+import { useExerciseReferenceLists } from '@/hooks/use-references'
+import ExerciseInstructions from '@/components/ExerciseInstructions'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb'
+import { Link } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_layout/exercise/$exerciseId/')({
-  component: ExercisePage,
-  // Optional: Add loader for SSR/metadata or error handling before component mounts
-  // loader: async ({ params }) => { ... },
-  errorComponent: ExerciseErrorComponent, // Use a custom error component
-  notFoundComponent: ExerciseNotFound, // Use a custom not found component
-});
+  component: RouteComponent,
+})
 
-const exercises: IExerciseData[] = [
-  { name: 'Bench Press', muscles: ['chest', 'triceps', 'front-deltoids'] },
-  { name: 'Push Ups', muscles: ['chest', 'triceps', 'front-deltoids'] },
-  { name: 'Pull Ups', muscles: ['upper-back', 'biceps', 'back-deltoids'] },
-  { name: 'Deadlift', muscles: ['hamstring', 'gluteal', 'lower-back', 'forearm'] },
-  { name: 'Squats', muscles: ['quadriceps', 'gluteal', 'hamstring'] },
-  { name: 'Overhead Press', muscles: ['front-deltoids', 'triceps', 'trapezius'] },
-  { name: 'Barbell Row', muscles: ['upper-back', 'back-deltoids', 'biceps'] },
-  { name: 'Bicep Curls', muscles: ['biceps', 'forearm'] },
-  { name: 'Tricep Dips', muscles: ['triceps', 'chest'] },
-  { name: 'Lunges', muscles: ['quadriceps', 'gluteal', 'hamstring', 'calves'] },
-  { name: 'Plank', muscles: ['abs', 'obliques'] },
-  { name: 'Russian Twists', muscles: ['obliques', 'abs'] },
-]
+function RouteComponent() {
+  const { exerciseId } = Route.useParams()
+  const { data: exercise, isLoading, error } = useFetchExerciseById(exerciseId)
+  const { globalRefs, savedRefs, isLoading: refsLoading } = useExerciseReferenceLists(exerciseId)
+  const navigate = useNavigate()
+  
+  // Get muscle groups from exercise data
+  const muscleGroups = exercise?.exercise_muscle?.map(m => m.muscle_group) || []
 
-// Custom Not Found Component
-function ExerciseNotFound() {
-  return (
-    <div className="container py-6 text-center">
-      <Alert variant="destructive" className="max-w-md mx-auto">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Not Found</AlertTitle>
-        <AlertDescription>
-          The exercise you are looking for could not be found.
-        </AlertDescription>
-      </Alert>
-      <Link to="/exercise" className="mt-4 inline-block">
-        <Button variant="outline" size="sm">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Exercises
-        </Button>
-      </Link>
-    </div>
-  );
-}
-
-// Custom Error Component for this route
-function ExerciseErrorComponent({ error }: { error: Error }) {
-  console.error("Exercise Page Error:", error);
-  return (
-    <div className="container py-6">
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error Loading Exercise</AlertTitle>
-        <AlertDescription>
-          {error?.message || "An unexpected error occurred."}
-        </AlertDescription>
-      </Alert>
-      <Link to="/exercise" className="mt-4 inline-block">
-        <Button variant="outline" size="sm">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Exercises
-        </Button>
-      </Link>
-    </div>
-  );
-}
-
-
-// Main Page Component
-function ExercisePage() {
-  const { exerciseId } = Route.useParams();
-
-  // Fetch the exercise data using the hook
-  const { data: exercise, isLoading, error, isError } = useFetchExerciseById(exerciseId);
-
-  console.log(exercise)
-  // Note: TanStack Router's errorComponent/notFoundComponent handles primary error/not found states.
-  // This isLoading check handles the initial loading phase.
   if (isLoading) {
     return (
-      <div className="container py-6">
-        {/* Back button can still be shown while loading */}
-        <div className="mb-6">
-          <Link to="/exercise">
-            <Button variant="ghost" size="sm" className="gap-1">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Exercises
-            </Button>
-          </Link>
+      <div className="container mx-auto p-4">
+        <Skeleton className="h-8 w-64 mb-4" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
         </div>
-        {/* <ExerciseDetailSkeleton /> Show loading skeleton */}
       </div>
-    );
+    )
   }
 
-  // If loading is finished, and there's no error, but data is null/undefined,
-  // the notFoundComponent defined in the route config should be rendered by TanStack Router.
-  // Similarly, if isError is true, the errorComponent should be rendered.
-  // We only need to render the success state here.
+  if (error) {
+    return (
+      <div className="container mx-auto p-4">
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle>Error Loading Exercise</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-red-500">{error.message}</p>
+            <Button 
+              onClick={() => navigate({ to: '/exercise' })}
+              className="mt-4"
+            >
+              Back to Exercises
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
-  // Render the exercise details if data is successfully loaded
+  if (!exercise) {
+    return (
+      <div className="container mx-auto p-4">
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle>Exercise Not Found</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>The requested exercise could not be found.</p>
+            <Button 
+              onClick={() => navigate({ to: '/exercise' })}
+              className="mt-4"
+            >
+              Back to Exercises
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Determine which references to show
+  const referencesToShow = savedRefs.length > 0 ? savedRefs : globalRefs.slice(0, 3)
+
   return (
-    <div className="flex flex-col w-full ">
-      {/* Back Button */}
-       <div className='flex flex-row '>
-              <div className=' bg-sidebar flex items-center shadow px-4 py-6 z-10 w-full justify-between h-18'>
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink >
-                        <Link to='/'>
-                          Home
-                        </Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
+    <div className="container mx-auto p-4">
+      {/* Breadcrumb */}
+      <div className="mb-6">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink>
+                <Link to="/">
+                  Home
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink>
+                <Link to="/exercise">
+                  Exercises
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{exercise.name}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
       
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbLink >
-                        <Link to='/exercise'>
-                          Exercises
-                        </Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>{exercise?.name}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </BreadcrumbList>
-                </Breadcrumb>
-                <div></div>
-              </div>
-            </div>
-
-      {/* Render the display component only if exercise data exists */}
-      {/* This check might be redundant if notFoundComponent works correctly, but adds safety */}
-      {exercise ? (
-        <div className='flex flex-row w-full gap-4'>
-          <ExerciseDisplay {...exercise} />
-         
+      {/* Exercise Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">{exercise.name}</h1>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {exercise.exercise_to_category?.map(cat => (
+            <span key={cat.category} className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+              {cat.category}
+            </span>
+          ))}
+          {exercise.exercise_to_type?.map(type => (
+            <span key={type.type} className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+              {type.type}
+            </span>
+          ))}
+          {exercise.difficulty_level && (
+            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">
+              Difficulty: {exercise.difficulty_level}/10
+            </span>
+          )}
+          <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">
+            {exercise.environment}
+          </span>
         </div>
-      ) : (
-        // Fallback if data is null after loading without an error state being triggered
-        // This case *should* be caught by notFoundComponent if useFetchExerciseById returns null on 404
-        <ExerciseNotFound />
-      )}
+      </div>
 
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column - Image and Basic Info */}
+        <div className="space-y-6">
+          {/* Image Placeholder */}
+          <Card className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              {exercise.image_url ? (
+                <img 
+                  src={exercise.image_url} 
+                  alt={exercise.name} 
+                  className="w-full h-64 object-cover rounded-md"
+                />
+              ) : (
+                <div className="bg-gray-200 border-2 border-dashed rounded-xl w-full h-64 flex items-center justify-center">
+                  <span className="text-gray-500">No Image Available</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-      <Separator className="my-8" />
+          {/* Description */}
+          {exercise.description && (
+            <Card className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <CardTitle>Description</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>{exercise.description}</p>
+              </CardContent>
+            </Card>
+          )}
 
-      {/* Placeholder for related exercises - implement fetching/display logic here */}
-      {/* {exercise && <RelatedExercises currentExerciseId={exercise.id} />} */}
-      <div>
-        <h3 className="text-xl font-semibold mb-4">Related Exercises (Placeholder)</h3>
-        {/* Add RelatedExercises component call here */}
+          {/* Muscles Targeted */}
+          <Card className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <CardTitle>Muscles Targeted</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {muscleGroups.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {muscleGroups.map((muscle, index) => (
+                    <span 
+                      key={index} 
+                      className="bg-indigo-100 text-indigo-800 text-sm font-medium px-2.5 py-0.5 rounded"
+                    >
+                      {muscle}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No muscle groups specified</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column - References and Instructions */}
+        <div className="space-y-6">
+          {/* References Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle>References</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {refsLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+              ) : referencesToShow.length > 0 ? (
+                <div className="space-y-4">
+                  {referencesToShow.map((ref, index) => {
+                    // Handle both saved and global reference types
+                    if ('globalReference' in ref && ref.globalReference) {
+                      // This is a saved reference with global reference data
+                      return (
+                        <div key={index} className="border rounded-lg p-4">
+                          <h3 className="font-semibold">{ref.globalReference.title || 'Reference'}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Source: {ref.globalReference.source || 'Unknown'}
+                          </p>
+                          <a 
+                            href={ref.globalReference.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline text-sm mt-2 inline-block"
+                          >
+                            View Reference
+                          </a>
+                        </div>
+                      );
+                    } else {
+                      // This is a global reference
+                      const globalRef = ref as any;
+                      return (
+                        <div key={index} className="border rounded-lg p-4">
+                          <h3 className="font-semibold">{globalRef.title || 'Reference'}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Source: {globalRef.source || 'Unknown'}
+                          </p>
+                          <a 
+                            href={globalRef.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline text-sm mt-2 inline-block"
+                          >
+                            View Reference
+                          </a>
+                        </div>
+                      );
+                    }
+                  })}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No references available for this exercise.</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Instructions */}
+          {exercise.instructions && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Instructions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ExerciseInstructions 
+                  title="Exercise Instructions" 
+                  instructions={exercise.instructions} 
+                />
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
-  );
+  )
 }
-
-// Export the component as default if needed by your file structure / framework conventions
-export default ExercisePage;

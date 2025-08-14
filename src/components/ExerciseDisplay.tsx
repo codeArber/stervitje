@@ -45,6 +45,10 @@ export function ExerciseDisplay(exercise: ExerciseWithRelations) {
     }
   };
 
+  // Extract the actual category and type values from the relationships
+  const categoryValue = exercise.exercise_to_category?.[0]?.category || "";
+  const typeValue = exercise.exercise_to_type?.[0]?.type || "";
+
   return (
     <Card className="w-full mx-auto rounded-none border-none"> {/* Adjust max-width as needed */}
       <CardHeader className="pb-2">
@@ -63,14 +67,14 @@ export function ExerciseDisplay(exercise: ExerciseWithRelations) {
             <h4 className="text-lg font-medium mb-2">Exercise Type</h4>
             <ExerciseTypeDropdown
               exerciseId={exercise.id}
-              category={exercise.category as ExerciseCategory}
-              type={exercise.exercise_type as ExerciseCategory}
+              category={categoryValue as ExerciseCategory}
+              type={typeValue as ExerciseCategory}
             />
           </div>
 
           <div className="flex flex-col h-24">
             <h4 className="text-lg font-medium mb-2">Category</h4>
-            <ExerciseCategoryDropdown exerciseId={exercise.id} category={exercise.category || ""} />
+            <ExerciseCategoryDropdown exerciseId={exercise.id} category={categoryValue || ""} />
           </div>
 
           <div className="flex flex-col h-24">

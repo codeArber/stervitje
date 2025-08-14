@@ -1,4 +1,4 @@
-import { Calendar, History, Home, Inbox, LogOut, Search, Settings, Swords, User } from "lucide-react"
+import { Calendar, History, Home, Inbox, LogOut, Search, Settings, Swords, User, Users } from "lucide-react"
 
 import {
   Sidebar,
@@ -11,10 +11,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { UserDropdown } from "./UserDropdown";
 import { TeamDropdown } from "./TeamDropdown";
 import { Link, useLocation } from "@tanstack/react-router";
-import { useIsPersonalContext } from "@/store/useTeamStore";
 import { title } from "process";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +25,7 @@ const items = [
   },
   {
     title: "Workspace",
-    url: "/plans",
+    url: "/workspace",
     icon: Inbox,
   },
   {
@@ -51,6 +49,11 @@ const items = [
     icon: Swords,
   },
   {
+    title: "Teams",
+    url: "/teams",
+    icon: Users,
+  },
+  {
     title: "Settings",
     url: "/settings",
     icon: Settings,
@@ -65,7 +68,7 @@ export function AppSidebar() {
       <SidebarContent >
         <SidebarGroup>
           <div>
-            <UserDropdown />
+            {/* <UserDropdown /> */}
           </div>
           <SidebarGroupLabel>Application</SidebarGroupLabel>
           <SidebarGroupContent>
