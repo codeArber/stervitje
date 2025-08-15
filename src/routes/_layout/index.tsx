@@ -1,5 +1,4 @@
 import { MarqueeDemo } from '@/components/MarqueExample';
-import WorkoutDayDetailsView from '@/components/WorkoutTodayDetails';
 import { useSession } from '@supabase/auth-helpers-react';
 import { createFileRoute, Link } from '@tanstack/react-router'
 

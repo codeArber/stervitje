@@ -10,7 +10,7 @@ export function TeamCard({ team}: { team: Team  }) {
       <CardHeader>
         <CardTitle>{team.name}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-2">
         <p className="text-muted-foreground mb-4">{team.description || "No description provided"}</p>
         <div className="flex justify-between text-sm text-muted-foreground">
           <span>Created: {team.created_at ? new Date(team.created_at).toLocaleDateString() : "Unknown"}</span>

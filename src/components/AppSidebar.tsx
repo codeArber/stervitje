@@ -10,6 +10,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
 import { TeamDropdown } from "./TeamDropdown";
 import { Link, useLocation } from "@tanstack/react-router";
@@ -24,34 +27,28 @@ const items = [
     icon: Home,
   },
   {
-    title: "Workspace",
-    url: "/workspace",
-    icon: Inbox,
+    title: "Profile",
+    url: "/profile",
+    icon: User,
   },
   {
-    title: "Exercise",
-    url: "/exercise",
-    icon: Calendar,
-  },
-  {
-    title: 'Discover',
-    url: '/discover',
+    title: "Explore",
+    url: "/explore",
     icon: Search,
-  },
-  {
-    title: "History",
-    url: "/history",
-    icon: History,
-  },
-  {
-    title: "Performance",
-    url: "/performance",
-    icon: Swords,
-  },
-  {
-    title: "Teams",
-    url: "/teams",
-    icon: Users,
+    items: [
+      {
+        title: "Teams",
+        url: "/explore/teams"
+      },
+      {
+        title: "Plans",
+        url: "/explore/plans"
+      },
+      {
+        title: "People",
+        url: "/explore/users"
+      }
+    ]
   },
   {
     title: "Settings",
@@ -75,12 +72,34 @@ export function AppSidebar() {
             <SidebarMenu>
               {items.map((item) => (
                 <SidebarMenuItem key={item.title} className={cn(location.includes(item.url) ? "bg-sidebar-border rounded" : "")}>
-                  <SidebarMenuButton asChild>
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
+                  {item.items ? (
+                    <>
+                      <SidebarMenuButton asChild>
+                        <Link to={item.url}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                      <SidebarMenuSub>
+                        {item.items.map((subItem) => (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton asChild>
+                              <Link to={subItem.url}>
+                                <span>{subItem.title}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </>
+                  ) : (
+                    <SidebarMenuButton asChild>
+                      <Link to={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -267,7 +267,7 @@ export type Database = {
           target_rest_seconds: number | null
           target_weight: number | null
           target_weight_unit:
-            | Database["public"]["Enums"]["weight_unit_enum "]
+            | Database["public"]["Enums"]["weight_unit_enum"]
             | null
           updated_at: string | null
         }
@@ -283,7 +283,7 @@ export type Database = {
           target_rest_seconds?: number | null
           target_weight?: number | null
           target_weight_unit?:
-            | Database["public"]["Enums"]["weight_unit_enum "]
+            | Database["public"]["Enums"]["weight_unit_enum"]
             | null
           updated_at?: string | null
         }
@@ -299,7 +299,7 @@ export type Database = {
           target_rest_seconds?: number | null
           target_weight?: number | null
           target_weight_unit?:
-            | Database["public"]["Enums"]["weight_unit_enum "]
+            | Database["public"]["Enums"]["weight_unit_enum"]
             | null
           updated_at?: string | null
         }
@@ -631,25 +631,80 @@ export type Database = {
           },
         ]
       }
+      team_invitations: {
+        Row: {
+          created_at: string | null
+          id: string
+          invited_by: string
+          invited_email: string | null
+          invited_user_id: string | null
+          role: Database["public"]["Enums"]["team_member_role"]
+          status: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invited_by: string
+          invited_email?: string | null
+          invited_user_id?: string | null
+          role: Database["public"]["Enums"]["team_member_role"]
+          status?: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invited_by?: string
+          invited_email?: string | null
+          invited_user_id?: string | null
+          role?: Database["public"]["Enums"]["team_member_role"]
+          status?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_invitations_invited_user_id_fkey"
+            columns: ["invited_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_invitations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_members: {
         Row: {
           id: string
           joined_at: string | null
-          role: string
+          role: Database["public"]["Enums"]["team_member_role"]
           team_id: string
           user_id: string
         }
         Insert: {
           id?: string
           joined_at?: string | null
-          role: string
+          role: Database["public"]["Enums"]["team_member_role"]
           team_id: string
           user_id: string
         }
         Update: {
           id?: string
           joined_at?: string | null
-          role?: string
+          role?: Database["public"]["Enums"]["team_member_role"]
           team_id?: string
           user_id?: string
         }
@@ -819,6 +874,48 @@ export type Database = {
           },
         ]
       }
+      user_plan_status: {
+        Row: {
+          id: string
+          last_activity_at: string
+          plan_id: string
+          started_at: string
+          status: Database["public"]["Enums"]["plan_status"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          last_activity_at?: string
+          plan_id: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["plan_status"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          last_activity_at?: string
+          plan_id?: string
+          started_at?: string
+          status?: Database["public"]["Enums"]["plan_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_plan_status_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_plan_status_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -826,11 +923,11 @@ export type Database = {
     Functions: {
       assign_team_plan_to_member: {
         Args: {
-          _user_id_to_assign: string
           _plan_id_to_assign: string
-          _team_id_context: string
-          _start_date?: string
           _privacy_level?: string
+          _start_date?: string
+          _team_id_context: string
+          _user_id_to_assign: string
         }
         Returns: string
       }
@@ -838,71 +935,103 @@ export type Database = {
         Args: { original_plan_id: string }
         Returns: string
       }
-      get_discoverable_plans: {
-        Args: { page_limit?: number; page_offset?: number }
-        Returns: Json
-      }
-      get_plan_day_details: {
-        Args: { _plan_day_id: string }
-        Returns: Json
-      }
-      get_todays_plan_summary: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      get_user_context: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
-      get_user_workouts_formatted: {
-        Args: { p_user_id: string }
+      get_client_progress_for_coach: {
+        Args: { p_client_id: string }
         Returns: {
-          workouts: Json
+          created_at: string | null
+          date: string
+          duration_minutes: number | null
+          id: string
+          notes: string | null
+          overall_feeling: number | null
+          privacy_level: string | null
+          session_id: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
         }[]
       }
-      get_user_workouts_with_details: {
-        Args: { p_user_id: string }
+      get_discoverable_teams_rich: {
+        Args: { p_search_term?: string }
+        Returns: Json
+      }
+      get_discoverable_users: {
+        Args: {
+          p_page_limit?: number
+          p_page_offset?: number
+          p_role_filter?: string
+          p_search_term?: string
+        }
+        Returns: Json
+      }
+      get_exercise_details: {
+        Args: { p_exercise_id: string }
+        Returns: Json
+      }
+      get_filtered_exercises: {
+        Args: {
+          p_categories?: string[]
+          p_difficulty_level?: number
+          p_environments?: string[]
+          p_muscle_groups?: string[]
+          p_page_limit?: number
+          p_page_offset?: number
+          p_search_term?: string
+          p_types?: string[]
+        }
         Returns: {
-          workout_log_id: string
-          workout_date: string
-          workout_title: string
-          workout_notes: string
-          workout_duration_minutes: number
-          workout_overall_feeling: number
-          workout_privacy_level: string
-          workout_user_plan_id: string
-          workout_plan_day_id: string
-          workout_created_at: string
-          workout_updated_at: string
-          exercise_log_id: string
-          exercise_log_workout_log_id: string
-          exercise_log_exercise_id: string
-          exercise_log_plan_exercise_id: string
-          exercise_log_notes: string
-          exercise_log_order_index: number
-          exercise_log_created_at: string
-          set_log_id: string
-          set_log_exercise_log_id: string
-          set_log_set_number: number
-          set_log_reps_performed: number
-          set_log_weight_used: number
-          set_log_weight_unit: string
-          set_log_duration_seconds: number
-          set_log_distance_meters: number
-          set_log_notes: string
-          set_log_created_at: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          difficulty_level: number | null
+          environment: Database["public"]["Enums"]["exercise_environment"]
+          id: string
+          image_url: string | null
+          instructions: string | null
+          name: string
+          updated_at: string | null
         }[]
       }
-      log_workout: {
-        Args: { workout_payload: Json }
-        Returns: string
+      get_filtered_plans_rich: {
+        Args: {
+          p_difficulty_level?: number
+          p_muscle_groups_filter?: string[]
+          p_page_limit?: number
+          p_page_offset?: number
+          p_sport_filter?: string
+        }
+        Returns: Json
+      }
+      get_plan_details: {
+        Args: { p_plan_id: string }
+        Returns: Json
+      }
+      get_team_details_and_members: {
+        Args: { p_team_id: string }
+        Returns: Json
+      }
+      get_user_plan_history: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      get_user_profile_details: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
+      get_workout_details: {
+        Args: { p_log_id: string }
+        Returns: Json
+      }
+      mark_abandoned_plans: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       plan_add_session: {
         Args: {
-          _plan_day_id: string
-          _order_index?: number
-          _title?: string
           _notes?: string
+          _order_index?: number
+          _plan_day_id: string
+          _title?: string
         }
         Returns: {
           created_at: string | null
@@ -916,10 +1045,10 @@ export type Database = {
       }
       plan_add_session_exercise: {
         Args: {
-          _plan_session_id: string
           _exercise_id: string
-          _order_index: number
           _notes?: string
+          _order_index: number
+          _plan_session_id: string
           _target_rest_seconds?: number
         }
         Returns: {
@@ -935,15 +1064,15 @@ export type Database = {
       }
       plan_add_set: {
         Args: {
+          _notes?: string
           _plan_session_exercise_id: string
           _set_number: number
+          _target_distance_meters?: number
+          _target_duration_seconds?: number
           _target_reps?: number
+          _target_rest_seconds?: number
           _target_weight?: number
           _target_weight_unit?: Database["public"]["Enums"]["weight_unit_enum"]
-          _target_duration_seconds?: number
-          _target_distance_meters?: number
-          _target_rest_seconds?: number
-          _notes?: string
         }
         Returns: {
           created_at: string | null
@@ -957,10 +1086,10 @@ export type Database = {
           target_rest_seconds: number | null
           target_weight: number | null
           target_weight_unit:
-            | Database["public"]["Enums"]["weight_unit_enum "]
+            | Database["public"]["Enums"]["weight_unit_enum"]
             | null
           updated_at: string | null
-        }
+        }[]
       }
       plan_delete_session: {
         Args: { _session_id: string }
@@ -976,10 +1105,10 @@ export type Database = {
       }
       plan_update_session: {
         Args: {
-          _session_id: string
-          _title?: string
           _notes?: string
           _order_index?: number
+          _session_id: string
+          _title?: string
         }
         Returns: {
           created_at: string | null
@@ -993,10 +1122,10 @@ export type Database = {
       }
       plan_update_session_exercise: {
         Args: {
-          _plan_session_exercise_id: string
           _notes?: string
-          _target_rest_seconds?: number
           _order_index?: number
+          _plan_session_exercise_id: string
+          _target_rest_seconds?: number
         }
         Returns: {
           created_at: string | null
@@ -1011,14 +1140,14 @@ export type Database = {
       }
       plan_update_set: {
         Args: {
+          _notes?: string
           _set_id: string
+          _target_distance_meters?: number
+          _target_duration_seconds?: number
           _target_reps?: number
+          _target_rest_seconds?: number
           _target_weight?: number
           _target_weight_unit?: Database["public"]["Enums"]["weight_unit_enum"]
-          _target_duration_seconds?: number
-          _target_distance_meters?: number
-          _target_rest_seconds?: number
-          _notes?: string
         }
         Returns: {
           created_at: string | null
@@ -1032,10 +1161,30 @@ export type Database = {
           target_rest_seconds: number | null
           target_weight: number | null
           target_weight_unit:
-            | Database["public"]["Enums"]["weight_unit_enum "]
+            | Database["public"]["Enums"]["weight_unit_enum"]
             | null
           updated_at: string | null
         }
+      }
+      start_user_plan: {
+        Args: { p_plan_id: string }
+        Returns: undefined
+      }
+      start_workout_session: {
+        Args: { p_plan_session_id?: string }
+        Returns: {
+          created_at: string | null
+          date: string
+          duration_minutes: number | null
+          id: string
+          notes: string | null
+          overall_feeling: number | null
+          privacy_level: string | null
+          session_id: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+        }[]
       }
     }
     Enums: {
@@ -1079,10 +1228,11 @@ export type Database = {
         | "gluteal"
         | "head"
         | "neck"
+      plan_status: "active" | "completed" | "abandoned"
       reference_source: "tiktok" | "youtube" | "instagram"
       reference_visibility: "global" | "private"
+      team_member_role: "admin" | "coach" | "member"
       weight_unit_enum: "kg" | "lb"
-      "weight_unit_enum ": "kg" | "lb"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1253,10 +1403,11 @@ export const Constants = {
         "head",
         "neck",
       ],
+      plan_status: ["active", "completed", "abandoned"],
       reference_source: ["tiktok", "youtube", "instagram"],
       reference_visibility: ["global", "private"],
+      team_member_role: ["admin", "coach", "member"],
       weight_unit_enum: ["kg", "lb"],
-      "weight_unit_enum ": ["kg", "lb"],
     },
   },
 } as const

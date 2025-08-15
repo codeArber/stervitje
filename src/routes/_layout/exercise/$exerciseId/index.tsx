@@ -1,288 +1,199 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useFetchExerciseById } from '@/api/exercises'
-import { useExerciseReferenceLists } from '@/hooks/use-references'
-import ExerciseInstructions from '@/components/ExerciseInstructions'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
-import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb'
-import { Link } from '@tanstack/react-router'
+// FILE: src/routes/_layout/exercise/$exerciseId.tsx
+// Make sure you have these installed: npm install lucide-react clsx tailwind-merge
+
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { useExerciseDetailsQuery } from '@/api/exercise';
+
+// shadcn/ui components
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Icons
+import { Youtube } from 'lucide-react';
 
 export const Route = createFileRoute('/_layout/exercise/$exerciseId/')({
-  component: RouteComponent,
+  component: ExerciseDetailPage,
 })
 
-function RouteComponent() {
-  const { exerciseId } = Route.useParams()
-  const { data: exercise, isLoading, error } = useFetchExerciseById(exerciseId)
-  const { globalRefs, savedRefs, isLoading: refsLoading } = useExerciseReferenceLists(exerciseId)
-  const navigate = useNavigate()
-  
-  // Get muscle groups from exercise data
-  const muscleGroups = exercise?.exercise_muscle?.map(m => m.muscle_group) || []
+
+
+// --- The Main Page Component ---
+function ExerciseDetailPage() {
+  const { exerciseId } = Route.useParams();
+  const { data: exerciseData, isLoading, isError } = useExerciseDetailsQuery(exerciseId);
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto p-4">
-        <Skeleton className="h-8 w-64 mb-4" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-          </div>
-          <div className="space-y-4">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-          </div>
-        </div>
-      </div>
-    )
+    return <ExerciseDetailSkeleton />;
   }
 
-  if (error) {
+  if (isError || !exerciseData) {
     return (
-      <div className="container mx-auto p-4">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle>Error Loading Exercise</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-red-500">{error.message}</p>
-            <Button 
-              onClick={() => navigate({ to: '/exercise' })}
-              className="mt-4"
-            >
-              Back to Exercises
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="container py-8 text-center">
+        <h1 className="text-2xl font-bold mb-2">Oops!</h1>
+        <p className="text-destructive">Failed to load exercise details.</p>
+        <p className="text-muted-foreground mt-2">Please try refreshing the page.</p>
       </div>
-    )
+    );
   }
 
-  if (!exercise) {
-    return (
-      <div className="container mx-auto p-4">
-        <Card className="max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle>Exercise Not Found</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>The requested exercise could not be found.</p>
-            <Button 
-              onClick={() => navigate({ to: '/exercise' })}
-              className="mt-4"
-            >
-              Back to Exercises
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  const { exercise, muscle_groups, references, categories, types } = exerciseData;
 
-  // Determine which references to show
-  const referencesToShow = savedRefs.length > 0 ? savedRefs : globalRefs.slice(0, 3)
+  const difficultyMap: { [key: number]: string } = { 1: 'Beginner', 2: 'Intermediate', 3: 'Advanced' };
 
   return (
-    <div className="container mx-auto p-4">
-      {/* Breadcrumb */}
-      <div className="mb-6">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink>
-                <Link to="/">
-                  Home
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbLink>
-                <Link to="/exercise">
-                  Exercises
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{exercise.name}</BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-      
-      {/* Exercise Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">{exercise.name}</h1>
-        <div className="flex flex-wrap gap-2 mt-2">
-          {exercise.exercise_to_category?.map(cat => (
-            <span key={cat.category} className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
-              {cat.category}
-            </span>
-          ))}
-          {exercise.exercise_to_type?.map(type => (
-            <span key={type.type} className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
-              {type.type}
-            </span>
-          ))}
-          {exercise.difficulty_level && (
-            <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded">
-              Difficulty: {exercise.difficulty_level}/10
-            </span>
-          )}
-          <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded">
-            {exercise.environment}
-          </span>
-        </div>
-      </div>
+    <div className="container max-w-4xl py-8">
+      {/* 1. Breadcrumb Navigation */}
+      <Breadcrumb className="mb-6">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/">Home</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/exercise">Exercises</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{exercise.name}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column - Image and Basic Info */}
-        <div className="space-y-6">
-          {/* Image Placeholder */}
-          <Card className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              {exercise.image_url ? (
-                <img 
-                  src={exercise.image_url} 
-                  alt={exercise.name} 
-                  className="w-full h-64 object-cover rounded-md"
+      <main className="space-y-8">
+        {/* Header Section */}
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold tracking-tight">{exercise.name}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            {exercise.difficulty_level && (
+              <Badge variant="outline">{difficultyMap[exercise.difficulty_level]}</Badge>
+            )}
+            {categories?.map(cat => (
+              <Badge key={cat} variant="secondary" className="capitalize">{cat}</Badge>
+            ))}
+            {types?.map(type => (
+              <Badge key={type} variant="secondary" className="capitalize">{type}</Badge>
+            ))}
+          </div>
+        </div>
+        
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          {/* Left Column: Image and Description */}
+          <div className="space-y-4">
+             <div className="aspect-video overflow-hidden rounded-lg border">
+                <img
+                    src={exercise.image_url || `https://placehold.co/600x400?text=${exercise.name.replace(/\s/g, '+')}`}
+                    alt={`Image of ${exercise.name}`}
+                    className="w-full h-full object-cover"
                 />
-              ) : (
-                <div className="bg-gray-200 border-2 border-dashed rounded-xl w-full h-64 flex items-center justify-center">
-                  <span className="text-gray-500">No Image Available</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+             </div>
+            {exercise.description && (
+              <p className="text-base text-muted-foreground">{exercise.description}</p>
+            )}
+          </div>
 
-          {/* Description */}
-          {exercise.description && (
-            <Card className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <CardTitle>Description</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>{exercise.description}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Muscles Targeted */}
-          <Card className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle>Muscles Targeted</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {muscleGroups.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {muscleGroups.map((muscle, index) => (
-                    <span 
-                      key={index} 
-                      className="bg-indigo-100 text-indigo-800 text-sm font-medium px-2.5 py-0.5 rounded"
-                    >
-                      {muscle}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No muscle groups specified</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column - References and Instructions */}
-        <div className="space-y-6">
-          {/* References Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>References</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {refsLoading ? (
-                <div className="space-y-2">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                </div>
-              ) : referencesToShow.length > 0 ? (
-                <div className="space-y-4">
-                  {referencesToShow.map((ref, index) => {
-                    // Handle both saved and global reference types
-                    if ('globalReference' in ref && ref.globalReference) {
-                      // This is a saved reference with global reference data
-                      return (
-                        <div key={index} className="border rounded-lg p-4">
-                          <h3 className="font-semibold">{ref.globalReference.title || 'Reference'}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Source: {ref.globalReference.source || 'Unknown'}
-                          </p>
-                          <a 
-                            href={ref.globalReference.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline text-sm mt-2 inline-block"
-                          >
-                            View Reference
-                          </a>
-                        </div>
-                      );
-                    } else {
-                      // This is a global reference
-                      const globalRef = ref as any;
-                      return (
-                        <div key={index} className="border rounded-lg p-4">
-                          <h3 className="font-semibold">{globalRef.title || 'Reference'}</h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Source: {globalRef.source || 'Unknown'}
-                          </p>
-                          <a 
-                            href={globalRef.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:underline text-sm mt-2 inline-block"
-                          >
-                            View Reference
-                          </a>
-                        </div>
-                      );
-                    }
-                  })}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No references available for this exercise.</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Instructions */}
-          {exercise.instructions && (
+          {/* Right Column: Instructions */}
+          <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Instructions</CardTitle>
               </CardHeader>
               <CardContent>
-                <ExerciseInstructions 
-                  title="Exercise Instructions" 
-                  instructions={exercise.instructions} 
-                />
+                <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-line text-base">
+                  {exercise.instructions || 'No instructions available.'}
+                </div>
               </CardContent>
             </Card>
-          )}
+          </div>
+        </div>
+
+        {/* Subsequent Cards */}
+        <div className="space-y-6">
+            {muscle_groups && muscle_groups.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Muscles Targeted</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2">
+                  {muscle_groups.map((muscle) => (
+                    <Badge key={muscle} className="capitalize">
+                      {muscle.replace(/-/g, ' ')}
+                    </Badge>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            {references && references.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Video References</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {references.map((ref) => (
+                    <a
+                      key={ref.id}
+                      href={ref.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-2 rounded-md transition-colors hover:bg-muted"
+                    >
+                      <Youtube className="h-6 w-6 text-red-500 shrink-0" />
+                      <span className="text-sm font-medium text-primary hover:underline">
+                        {ref.title || 'Watch on YouTube'}
+                      </span>
+                    </a>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+
+// --- A skeleton component for a better loading experience ---
+const ExerciseDetailSkeleton = () => (
+  <div className="container max-w-4xl py-8">
+    <Skeleton className="h-6 w-1/2 mb-6" />
+    <main className="space-y-8">
+      <div className="space-y-2">
+        <Skeleton className="h-10 w-3/4" />
+        <div className="flex flex-wrap items-center gap-2">
+            <Skeleton className="h-6 w-24" />
+            <Skeleton className="h-6 w-20" />
+            <Skeleton className="h-6 w-16" />
         </div>
       </div>
-    </div>
-  )
-}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+        <div className="space-y-4">
+          <Skeleton className="w-full aspect-video rounded-lg" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+        </div>
+        <div className="space-y-6">
+          <Skeleton className="w-full h-48" />
+        </div>
+      </div>
+      <div className="space-y-6">
+        <Skeleton className="w-full h-32" />
+        <Skeleton className="w-full h-32" />
+      </div>
+    </main>
+  </div>
+);

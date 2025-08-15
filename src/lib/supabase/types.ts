@@ -103,6 +103,25 @@ export interface FetchExercisesParams {
     createdByUserId?: string;
 }
 
+export interface PlanFilterState {
+  difficulty?: number;
+  sport?: string;
+  muscles?: string[];
+  environments?: string[];
+  page?: number;
+  // Add any other filter properties here
+}
+
+export interface PlanToFilter {
+  id: string;
+  created_at: string | null;
+  title: string;
+  description: string | null;
+  difficulty_level: number | null;
+  sport: string | null;
+  // ... and all other fields from your 'plans' table
+}
+
 // Payload for creating/updating an exercise
 export type ExercisePayload = Partial<Omit<Exercise, "id" | "created_at" | "updated_at">>;
 

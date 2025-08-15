@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { useCreatePlan } from '@/api/plans/index'
+import { useCreatePlan } from '@/api/plan/index'
 
 type CreatePlanFormProps = {
   teamId: string
