@@ -1,35 +1,25 @@
+// FILE: src/routes/__root.tsx
+
+import { SupabaseAuthListener } from '@/components/new/SupabaseAuthListener';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createRootRoute, Outlet } from '@tanstack/react-router';
-import { Auth } from '@/components/Auth'; // Your login component
-import { AppSidebar } from '@/components/AppSidebar';
-import { SidebarProvider } from '@/components/ui/sidebar';
-import { useAuthStore } from '@/stores/auth-store'; // Our new Zustand store!
-
-export const Route = createRootRoute({
-  component: Root,
-});
+import { Toaster } from 'sonner';
 
 const queryClient = new QueryClient();
 
-function Root() {
-  const { user, isLoading } = useAuthStore();
-
-  if (isLoading) {
-    return <div className="w-screen h-screen bg-background" />;
-  }
-
-  return (
-    <div className='w-screen h-screen flex flex-col'>
+export const Route = createRootRoute({
+  component: () => (
+    <QueryClientProvider client={queryClient}>
       <SidebarProvider>
-        <QueryClientProvider client={queryClient}>
-          {!user ? <Auth /> : (
-            <>
-              <AppSidebar />
-              <Outlet />
-            </>
-          )}
-        </QueryClientProvider>
+        {/* The listener is placed here to run for the entire app lifecycle */}
+        <SupabaseAuthListener />
+
+        {/* The rest of your app will render here */}
+        <Outlet />
       </SidebarProvider>
-    </div>
-  );
-}
+      
+      <Toaster />
+    </QueryClientProvider>
+  )
+});

@@ -1,144 +1,94 @@
-// FILE: src/api/plan/endpoint.ts
+// FILE: /src/api/plan/endpoint.ts
 
-import { supabase } from '@/lib/supabase/supabaseClient';
-import type { Plan } from '@/types/index';
-import type { AddExercisePayload, AddSessionPayload, AddSetPayload, NewPlan, PlanDetails, PlanWithStats } from '@/types/plan/index';
+import { supabase } from "@/lib/supabase/supabaseClient";
+import type { FullPlan, PlanPerformanceEntry, RichPlanCardData, UserPlanStatus } from "@/types/plan";
+import type { Tag } from "@/types/exercise";
+import type { Tables } from "@/types/database.types";
 
-// A type for our filter object
 export interface PlanFilters {
-  sport_filter?: string;
-  muscle_groups_filter?: string[];
-  difficulty_level?: number;
-  page_limit?: number;
-  page_offset?: number;
+  searchTerm?: string;
+  tagIds?: number[];
+  difficultyLevel?: number;
+  pageLimit?: number;
+  pageOffset?: number;
 }
 
-
-// This is the function for the plan list page (already exists)
-export const fetchFilteredPlans = async (filters: any): Promise<PlanWithStats[]> => {
-  // Use the single, correct function name
-  const { data, error } = await supabase
-    .rpc('get_filtered_plans_rich', { ...filters }); // Make sure this matches the function you kept!
-
-  if (error) throw new Error(error.message);
-  return (data as PlanWithStats[]) || [];
+/**
+ * Fetches the complete, aggregated details for a single plan.
+ */
+export const fetchPlanDetails = async (planId: string): Promise<FullPlan | null> => {
+  const { data, error } = await supabase.rpc('get_plan_details_for_user', { p_plan_id: planId });
+  if (error) { throw new Error(error.message); }
+  return data as FullPlan | null;
 };
 
 /**
- * **NEW:** Fetches the complete, aggregated details for a single plan.
- * @param planId - The UUID of the plan to fetch.
+ * Fetches the rich, analytical data for plan cards on the explore page.
  */
-export const fetchPlanDetails = async (planId: string): Promise<PlanDetails | null> => {
-  const { data, error } = await supabase
-    .rpc('get_plan_details', { p_plan_id: planId })
-    .single(); // .single() because we expect one JSON object
+export const fetchRichPlanCards = async (filters: PlanFilters): Promise<RichPlanCardData[]> => {
+    const { data, error } = await supabase
+      .rpc('get_filtered_plans_rich', {
+        p_search_term: filters.searchTerm,
+        p_tag_ids: filters.tagIds,
+        p_difficulty_level: filters.difficultyLevel,
+        p_page_limit: filters.pageLimit,
+        p_page_offset: filters.pageOffset
+      });
 
-  if (error) {
-    console.error(`API Error fetchPlanDetails (ID: ${planId}):`, error);
-    throw new Error(error.message);
-  }
-  return data as PlanDetails | null;
+    if (error) { throw new Error(error.message); }
+    return (data as RichPlanCardData[]) || [];
 };
 
-
-export const fetchFilteredPlansWithStats = async (filters: PlanFilters): Promise<PlanWithStats[]> => {
-  const { data, error } = await supabase
-    .rpc('get_filtered_plans_rich', { ...filters });
-
-  if (error) {
-    console.error('API Error fetchFilteredPlansWithStats:', error);
-    throw new Error(error.message);
-  }
-  return (data as PlanWithStats[]) || [];
+/**
+ * Fetches the performance leaderboard for a specific plan.
+ */
+export const fetchPlanPerformanceList = async (planId: string): Promise<PlanPerformanceEntry[]> => {
+  const { data, error } = await supabase.rpc('get_plan_user_performance_list', { p_plan_id: planId });
+  if (error) { throw new Error(error.message); }
+  return (data as PlanPerformanceEntry[]) || [];
 };
 
-
-// --- CREATE Operation ---
-
-export const createPlan = async (newPlanData: Pick<NewPlan, 'title' | 'description'>): Promise<Plan> => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("User not authenticated");
-
+/**
+ * Creates an 'active' status record for the user and the given plan.
+ */
+export const startPlanForUser = async (planId: string): Promise<UserPlanStatus> => {
   const { data, error } = await supabase
-    .from('plans')
-    .insert({ ...newPlanData, created_by: user.id })
-    .select()
+    .rpc('start_plan_for_user', { p_plan_id: planId })
     .single();
 
-  if (error) {
-    console.error('API Error createPlan:', error);
-    throw new Error(error.message);
-  }
-  return data;
+  if (error || !data) { throw new Error(error?.message || "Failed to start plan."); }
+  return data as UserPlanStatus;
 };
-
-
-// --- HIERARCHY ADD Operations ---
-
-export const addSession = async (payload: AddSessionPayload) => {
-  const { data, error } = await supabase.rpc('plan_add_session', {
-    _plan_day_id: payload.plan_day_id,
-    _order_index: payload.order_index,
-    _title: payload.title,
-    _notes: payload.notes,
-  });
-  if (error) throw new Error(error.message);
-  return data;
-};
-
-export const addExerciseToSession = async (payload: AddExercisePayload) => {
-  const { data, error } = await supabase.rpc('plan_add_session_exercise', {
-    _plan_session_id: payload.plan_session_id,
-    _exercise_id: payload.exercise_id,
-    _order_index: payload.order_index,
-    _notes: payload.notes,
-    _target_rest_seconds: payload.target_rest_seconds,
-  });
-  if (error) throw new Error(error.message);
-  return data;
-};
-
-export const addSetToExercise = async (payload: AddSetPayload) => {
-  const { data, error } = await supabase.rpc('plan_add_set', {
-    _plan_session_exercise_id: payload.plan_session_exercise_id,
-    _set_number: payload.set_number,
-    _target_reps: payload.target_reps,
-    _target_weight: payload.target_weight,
-    _notes: payload.notes,
-  });
-  if (error) throw new Error(error.message);
-  return data;
-};
-
-
-// --- HIERARCHY DELETE Operations ---
-
-export const deleteSession = async (sessionId: string) => {
-  const { error } = await supabase.rpc('plan_delete_session', { _session_id: sessionId });
-  if (error) throw new Error(error.message);
-};
-
-export const deleteExerciseFromSession = async (planSessionExerciseId: string) => {
-  const { error } = await supabase.rpc('plan_delete_session_exercise', { _plan_session_exercise_id: planSessionExerciseId });
-  if (error) throw new Error(error.message);
-};
-
-export const deleteSetFromExercise = async (setId: string) => {
-  const { error } = await supabase.rpc('plan_delete_set', { _set_id: setId });
-  if (error) throw new Error(error.message);
-};
-
 
 /**
- * **NEW:** Starts a plan for the current user, creating their status record.
- * @param planId - The UUID of the plan to start.
+ * Creates a new session_log for a given plan_session_id.
  */
-export const startUserPlan = async (planId: string): Promise<void> => {
-  const { error } = await supabase
-    .rpc('start_user_plan', { p_plan_id: planId });
+export const startWorkout = async (planSessionId: string): Promise<Tables<'session_logs'>> => {
+  const { data, error } = await supabase
+    .rpc('start_workout_session', { p_plan_session_id: planSessionId })
+    .single();
 
-  if (error) {
-    console.error(`API Error startUserPlan (ID: ${planId}):`, error);
-    throw new Error(error.message);
-  }
+  if (error || !data) { throw new Error(error?.message || "Failed to start workout session."); }
+  return data as Tables<'session_logs'>;
+};
+
+/**
+ * RESTORED: Fetches a single session_log record by its ID. This is critical for the workout player.
+ */
+export const fetchSessionLog = async (sessionId: string): Promise<Tables<'session_logs'> | null> => {
+  const { data, error } = await supabase
+    .rpc('get_session_log', { p_session_log_id: sessionId })
+    .single();
+
+  if (error) { throw new Error(error.message); }
+  return data as Tables<'session_logs'> | null;
+};
+
+/**
+ * Fetches all tags of a specific type (e.g., 'equipment').
+ */
+export const fetchTagsByType = async (tagType: string): Promise<Tag[]> => {
+  const { data, error } = await supabase.from('tags').select('id, name, tag_type').eq('tag_type', tagType);
+  if (error) { throw new Error(error.message); }
+  return data || [];
 };

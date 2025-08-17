@@ -1,11 +1,23 @@
-// src/types/explore/index.ts
-import type { Plan, Team, Profile } from '@/types/index'; // Correct: Imports the clean base types
-import type { TeamMemberRole } from '@/types/team/index'; // Correct: Imports the specific role type
+import type { PlanAnalyticsSummary, CoachAnalyticsSummary } from "../analytics";
+import type { Plan, Profile, Team } from "../index"; // Ensure Profile is imported from correct path
 
-// ... the rest of the file is correct ...
-export type DiscoverablePlan = Plan;
-export type DiscoverableTeam = Team;
+// This is the data structure for one plan card on the Explore Plans page
+export type RichPlanCardData = Plan & {
+  analytics: PlanAnalyticsSummary | null;
+  creator: Profile;
+};
 
-export type DiscoverableUser = Profile & {
-  roles: TeamMemberRole[] | null;
+// This is the data structure for one team card on the Explore Teams page
+// (For now, we can build it from existing types, but can add analytics later)
+export type RichTeamCardData = Team & {
+  members_count: number;
+  plans_count: number;
+  // We can add team-level analytics here in the future
+};
+
+// This is the data structure for one user/coach card on the Explore Users page
+// REMOVED: specializations as it's not returned by get_filtered_users_rich RPC
+export type RichUserCardData = Profile & {
+  analytics: CoachAnalyticsSummary | null;
+  // specializations: string[] | null; // REMOVED
 };

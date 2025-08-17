@@ -1,98 +1,122 @@
-// FILE: /api/plan/index.ts
+// FILE: /src/api/plan/index.ts
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as planApi from './endpoint';
-import type { Plan } from '@/types/index';
+import {
+    fetchPlanDetails,
+    fetchRichPlanCards,
+    fetchPlanPerformanceList,
+    startPlanForUser,
+    startWorkout,
+    fetchTagsByType,
+    fetchSessionLog, // RESTORED
+    type PlanFilters,
+} from './endpoint';
 import type {
-  PlanDetails,
-  NewPlan,
-  PlanWithStats,
-  AddSessionPayload,
-  AddExercisePayload,
-  AddSetPayload
-} from '@/types/plan/index';
-import { startUserPlan } from './endpoint';
+    FullPlan,
+    PlanPerformanceEntry,
+    RichPlanCardData,
+    UserPlanStatus,
+} from '@/types/plan';
+import type { Tag } from '@/types/exercise';
+import type { Tables } from '@/types/database.types';
 
 const planKeys = {
   all: ['plans'] as const,
   lists: () => [...planKeys.all, 'list'] as const,
-  list: (filters: any) => [...planKeys.lists(), filters] as const,
+  list: (filters: PlanFilters) => [...planKeys.lists(), filters] as const,
   details: () => [...planKeys.all, 'details'] as const,
   detail: (planId: string) => [...planKeys.details(), planId] as const,
+  performanceLists: () => [...planKeys.all, 'performance', 'list'] as const,
+  performanceList: (planId: string) => [...planKeys.performanceLists(), planId] as const,
+  sessionLogs: () => [...planKeys.all, 'sessionLog'] as const, // RESTORED
+  sessionLog: (sessionId: string) => [...planKeys.sessionLogs(), sessionId] as const, // RESTORED
 };
 
-// --- Read Hooks (Queries) ---
-
-export const useFilteredPlansQuery = (filters: any) => {
-  return useQuery<PlanWithStats[], Error>({
-    queryKey: planKeys.list(filters),
-    queryFn: () => planApi.fetchFilteredPlans(filters),
-  });
+const tagKeys = {
+    all: ['tags'] as const,
+    lists: () => [...tagKeys.all, 'list'] as const,
+    list: (type: string) => [...tagKeys.lists(), { type }] as const,
 };
+
+// --- QUERIES ---
 
 export const usePlanDetailsQuery = (planId: string | undefined) => {
-  return useQuery<PlanDetails | null, Error>({
+  return useQuery<FullPlan | null, Error>({
     queryKey: planKeys.detail(planId!),
-    queryFn: () => planApi.fetchPlanDetails(planId!),
+    queryFn: () => fetchPlanDetails(planId!),
     enabled: !!planId,
   });
 };
 
-
-/**
- * **NEW:** Hook for starting a plan for the current user.
- */
-export const useStartUserPlanMutation = () => {
-  const queryClient = useQueryClient();
-  return useMutation<void, Error, { planId: string }>({
-    mutationFn: ({ planId }) => startUserPlan(planId),
-    onSuccess: (_, variables) => {
-      // After starting a plan, we must refetch the user's own profile
-      // details, as their "active_plan" has now changed.
-      queryClient.invalidateQueries({ queryKey: ['user', 'details'] });
-      // Also refetch this plan's details to update performance stats.
-      queryClient.invalidateQueries({ queryKey: planKeys.detail(variables.planId) });
-    },
-  });
-};
-
-// --- Write Hooks (Mutations) ---
-
-export const useCreatePlanMutation = () => {
-    const queryClient = useQueryClient();
-    return useMutation<Plan, Error, Pick<NewPlan, 'title' | 'description'>>({
-        mutationFn: (newPlanData) => planApi.createPlan(newPlanData),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: planKeys.lists() });
-        },
+export const useRichPlanCardsQuery = (filters: PlanFilters) => {
+    return useQuery<RichPlanCardData[], Error>({
+      queryKey: planKeys.list(filters),
+      queryFn: () => fetchRichPlanCards(filters),
+      placeholderData: (prev) => prev,
     });
 };
 
-// --- Plan Editing Mutation Hooks ---
+export const usePlanPerformanceQuery = (planId: string | undefined) => {
+    return useQuery<PlanPerformanceEntry[], Error>({
+        queryKey: planKeys.performanceList(planId!),
+        queryFn: () => fetchPlanPerformanceList(planId!),
+        enabled: !!planId,
+    });
+};
 
-// A helper function to manage invalidating the plan detail query after any edit
-const usePlanEditMutation = (mutationFn: (payload: any) => Promise<any>) => {
+
+/**
+ * RESTORED: Hook for fetching a single session_log record.
+ */
+export const useSessionLogQuery = (sessionId: string | undefined) => {
+    return useQuery<Tables<'session_logs'> | null, Error>({
+        queryKey: planKeys.sessionLog(sessionId!),
+        queryFn: () => fetchSessionLog(sessionId!),
+        enabled: !!sessionId,
+    });
+};
+
+// --- MUTATIONS ---
+
+export const useStartPlanForUserMutation = () => {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn,
-    onSuccess: (_, variables) => {
-      if (variables.planId) {
-        queryClient.invalidateQueries({ queryKey: planKeys.detail(variables.planId) });
-      }
-    },
-    onError: (error) => {
-      console.error("Plan editing error:", error.message);
+  return useMutation<UserPlanStatus, Error, string>({
+    mutationFn: (planId) => startPlanForUser(planId),
+    onSuccess: (_, planId) => {
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(planId) });
     },
   });
 };
 
-// ADD Hooks
-export const useAddSessionMutation = () => usePlanEditMutation((payload: { planId: string } & AddSessionPayload) => planApi.addSession(payload));
-export const useAddExerciseMutation = () => usePlanEditMutation((payload: { planId: string } & AddExercisePayload) => planApi.addExerciseToSession(payload));
-export const useAddSetMutation = () => usePlanEditMutation((payload: { planId: string } & AddSetPayload) => planApi.addSetToExercise(payload));
+// Replace ONLY this hook in /src/api/plan/index.ts
 
-// DELETE Hooks
-export const useDeleteSessionMutation = () => usePlanEditMutation((payload: { planId: string, sessionId: string }) => planApi.deleteSession(payload.sessionId));
-export const useDeleteExerciseMutation = () => usePlanEditMutation((payload: { planId: string, planSessionExerciseId: string }) => planApi.deleteExerciseFromSession(payload.planSessionExerciseId));
-export const useDeleteSetMutation = () => usePlanEditMutation((payload: { planId: string, setId: string }) => planApi.deleteSetFromExercise(payload.setId));
+/**
+ * Hook for the mutation to start a workout session.
+ */
+export const useStartWorkoutMutation = () => {
+  const queryClient = useQueryClient(); // We need the query client
+  
+  return useMutation<Tables<'session_logs'>, Error, string>({
+    mutationFn: (planSessionId) => startWorkout(planSessionId),
+    // THE FIX IS HERE: We need to define the mutation's behavior.
+    onSuccess: () => {
+      // After a workout is started, we should invalidate queries that
+      // might show a list of workouts or the global active session.
+      // A broad invalidation is safest here.
+      queryClient.invalidateQueries({ queryKey: planKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // Invalidate dashboard to be safe
+    },
+    onError: (error) => {
+      // Log the error for debugging
+      console.error("Error starting workout:", error);
+    }
+  });
+};
 
+export const useTagsQuery = (tagType: string) => {
+  return useQuery<Tag[], Error>({
+    queryKey: tagKeys.list(tagType),
+    queryFn: () => fetchTagsByType(tagType),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};

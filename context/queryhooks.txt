@@ -1,0 +1,392 @@
+// FILE: src/api/workspace/index.ts
+import { useQuery } from '@tanstack/react-query';
+import { fetchWorkspaceData } from './endpoint';
+import type { WorkspaceData } from '@/types/workspace/index';
+
+const workspaceKeys = {
+  all: ['workspace'] as const,
+  details: () => [...workspaceKeys.all, 'details'] as const,
+  detail: (teamId: string) => [...workspaceKeys.details(), teamId] as const,
+};
+
+/**
+ * Hook for fetching all the necessary data for a given workspace view.
+ * @param teamId - The ID of the workspace (team) to fetch.
+ */
+export const useWorkspaceDataQuery = (teamId: string | undefined) => {
+  return useQuery<WorkspaceData | null, Error>({
+    queryKey: workspaceKeys.detail(teamId!),
+    queryFn: () => fetchWorkspaceData(teamId!),
+    enabled: !!teamId, // Only runs when a teamId is provided
+  });
+};
+
+
+// src/api/user/index.ts
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  completeOnboarding,
+  fetchCurrentUserProfile,
+  fetchUserPlanHistory,
+  fetchUserProfileDetails,
+  fetchRichUserCards, // The new function
+  type UserFilters
+} from './endpoint';
+import { useAuthStore } from '@/stores/auth-store';
+import type { Profile } from '@/types/index';
+import type { RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
+
+// --- Query Keys ---
+const userKeys = {
+  all: ['user'] as const,
+  currentUser: () => [...userKeys.all, 'current'] as const,
+  profileDetails: (userId: string) => [...userKeys.all, 'details', userId] as const,
+  // Key for the new rich user card lists
+  richLists: () => [...userKeys.all, 'rich', 'list'] as const,
+  richList: (filters: UserFilters) => [...userKeys.richLists(), filters] as const,
+  planHistory: (userId: string) => [...userKeys.all, 'planHistory', userId] as const,
+};
+
+// --- Hooks ---
+
+/**
+ * Hook for fetching the current authenticated user's simple profile record.
+ * This is now powered by the Zustand store.
+ */
+export const useCurrentUserQuery = () => {
+  const { user } = useAuthStore();
+
+  return useQuery<Profile | null, Error>({
+    queryKey: userKeys.currentUser(),
+    queryFn: fetchCurrentUserProfile,
+    enabled: !!user,
+  });
+};
+
+/**
+ * Hook for fetching the complete, aggregated profile details for any user.
+ */
+export const useUserProfileDetailsQuery = (userId: string | undefined) => {
+  return useQuery<UserProfileDetails | null, Error>({
+    queryKey: userKeys.profileDetails(userId!),
+    queryFn: () => fetchUserProfileDetails(userId!),
+    enabled: !!userId,
+  });
+};
+
+/**
+ * NEW & REPLACES useDiscoverableUsersQuery: Hook for fetching rich, analytical data
+ * for user/coach cards on the Explore page.
+ */
+export const useRichUserCardsQuery = (filters: UserFilters) => {
+    return useQuery<RichUserCardData[], Error>({
+      queryKey: userKeys.richList(filters),
+      queryFn: () => fetchRichUserCards(filters),
+    });
+};
+
+/**
+ * Hook for fetching a user's complete workout plan history.
+ */
+export const useUserPlanHistoryQuery = (userId: string | undefined) => {
+  return useQuery<UserPlanHistoryItem[], Error>({
+    queryKey: userKeys.planHistory(userId!),
+    queryFn: () => fetchUserPlanHistory(userId!),
+    enabled: !!userId,
+  });
+};
+
+/**
+ * Hook for the mutation to complete the user's onboarding process.
+ */
+export const useCompleteOnboardingMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, void>({
+    mutationFn: completeOnboarding,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.currentUser() });
+    },
+    onError: (error) => {
+      console.error('Error completing onboarding mutation:', error);
+    }
+  });
+};
+
+
+// src/api/team/index.ts
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+// src/api/team/index.ts
+import {
+    createTeam,
+    fetchTeamDetails,
+    fetchRichTeamCards, 
+    type TeamFilters,
+    fetchPendingInvitations,
+    inviteMember,
+    respondToInvitation
+} from './endpoint';
+import type { NewTeam, RichTeamCardData, Team, TeamDetails, TeamInvitationWithRelations, TeamMemberRole } from '@/types/team';
+
+const teamKeys = {
+  all: ['teams'] as const,
+  lists: () => [...teamKeys.all, 'list'] as const,
+  list: (filters: TeamFilters) => [...teamKeys.lists(), filters] as const,
+  details: () => [...teamKeys.all, 'details'] as const,
+  detail: (teamId: string) => [...teamKeys.details(), teamId] as const,
+};
+
+const teamInvitationKeys = {
+    all: ['teamInvitations'] as const,
+    lists: () => [...teamInvitationKeys.all, 'list'] as const,
+    list: (status: string) => [...teamInvitationKeys.lists(), status] as const,
+};
+
+export const useTeamDetailsQuery = (teamId: string | undefined) => {
+  return useQuery<TeamDetails | null, Error>({
+    queryKey: teamKeys.detail(teamId!),
+    queryFn: () => fetchTeamDetails(teamId!),
+    enabled: !!teamId,
+  });
+};
+
+/**
+ * NEW & REPLACES OLD HOOK: Fetches rich data for team cards on the Explore page.
+ */
+export const useRichTeamCardsQuery = (filters: TeamFilters) => {
+    return useQuery<RichTeamCardData[], Error>({
+      queryKey: teamKeys.list(filters),
+      queryFn: () => fetchRichTeamCards(filters),
+    });
+};
+
+export const useCreateTeamMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<Team, Error, Omit<NewTeam, 'id' | 'created_by' | 'created_at' | 'updated_at'>>({
+    mutationFn: (newTeamData) => createTeam(newTeamData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamKeys.all });
+    },
+  });
+};
+
+// ... (Your invitation mutation hooks can remain the same)
+
+export const usePendingInvitationsQuery = () => {
+    return useQuery<TeamInvitationWithRelations[], Error>({
+        queryKey: teamInvitationKeys.list('pending'),
+        queryFn: fetchPendingInvitations,
+    });
+};
+
+export const useInviteMemberMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, {
+    teamId: string;
+    role: TeamMemberRole;
+    email?: string;
+    userId?: string;
+  }>({
+    mutationFn: (inviteData) => inviteMember(inviteData),
+    onSuccess: (_, variables) => {
+      // On success, we know the DB record was created, so we can refresh the team details.
+      queryClient.invalidateQueries({ queryKey: teamKeys.detail(variables.teamId) });
+    },
+  });
+};
+
+/**
+ * **NEW:** Hook for responding to a team invitation.
+ */
+export const useRespondToInvitationMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, { invitationId: string, accept: boolean }>({
+    mutationFn: (responseData) => respondToInvitation(responseData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamInvitationKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: teamKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['user', 'details'] });
+    },
+  });
+};
+
+// src/api/plan/index.ts
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+    fetchPlanDetails,
+    startWorkout,
+    logWorkout,
+    fetchPlanPerformanceList,
+    fetchRichPlanCards, // NEW
+    type PlanFilters,
+    fetchTagsByType,
+    fetchSessionLog,
+    fetchWorkoutPlayerData,   // NEW
+} from './endpoint';
+import type {
+    FullPlan,
+    LogWorkoutPayload,
+    PlanPerformanceEntry,
+    RichPlanCardData,
+    WorkoutPlayerData, // NEW
+} from '@/types/plan';
+import type { Tables } from '@/types/database.types';
+import { Tag } from '@/types/exercise';
+
+const planKeys = {
+  all: ['plans'] as const,
+  lists: () => [...planKeys.all, 'list'] as const,
+  list: (filters: PlanFilters) => [...planKeys.lists(), filters] as const,
+  details: () => [...planKeys.all, 'details'] as const,
+  detail: (planId: string) => [...planKeys.details(), planId] as const,
+  performanceLists: () => [...planKeys.all, 'performance', 'list'] as const,
+  performanceList: (planId: string) => [...planKeys.performanceLists(), planId] as const,
+  sessionLogs: () => [...planKeys.all, 'sessionLog'] as const,
+  sessionLog: (sessionId: string) => [...planKeys.sessionLogs(), sessionId] as const,
+workoutPlayers: () => [...planKeys.all, 'workoutPlayer'] as const,
+  workoutPlayer: (sessionId: string) => [...planKeys.workoutPlayers(), sessionId] as const,
+
+};
+
+const tagKeys = {
+  all: ['tags'] as const,
+  lists: () => [...tagKeys.all, 'list'] as const,
+  list: (type: string) => [...tagKeys.lists(), { type }] as const,
+};
+
+export const usePlanDetailsQuery = (planId: string | undefined) => {
+  return useQuery<FullPlan | null, Error>({
+    queryKey: planKeys.detail(planId!),
+    queryFn: () => fetchPlanDetails(planId!),
+    enabled: !!planId,
+  });
+};
+
+/**
+ * NEW: Hook for fetching rich plan cards for the Explore page.
+ */
+export const useRichPlanCardsQuery = (filters: PlanFilters) => {
+    return useQuery<RichPlanCardData[], Error>({
+      queryKey: planKeys.list(filters),
+      queryFn: () => fetchRichPlanCards(filters),
+      placeholderData: (prev) => prev,
+    });
+};
+
+export const usePlanPerformanceQuery = (planId: string | undefined) => {
+    return useQuery<PlanPerformanceEntry[], Error>({
+        queryKey: planKeys.performanceList(planId!),
+        queryFn: () => fetchPlanPerformanceList(planId!),
+        enabled: !!planId,
+    });
+};
+
+export const useStartWorkoutMutation = () => {
+  return useMutation<Tables<'session_logs'>, Error, string | null>({
+    mutationFn: (planSessionId) => startWorkout(planSessionId),
+  });
+};
+
+export const useLogWorkoutMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, LogWorkoutPayload>({
+    mutationFn: (payload) => logWorkout(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: planKeys.all });
+    },
+  });
+};
+
+/**
+ * Hook for fetching a list of tags by their type.
+ * @param tagType - The type of tags to fetch (e.g., 'equipment').
+ */
+export const useTagsQuery = (tagType: string) => {
+  return useQuery<Tag[], Error>({
+    queryKey: tagKeys.list(tagType),
+    queryFn: () => fetchTagsByType(tagType),
+    // This data is unlikely to change often, so we can make it stale for longer
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+// Add this new hook anywhere inside /src/api/plan/index.ts
+/**
+ * NEW: Hook for fetching a single session_log record.
+ * @param sessionId - The ID of the session log to fetch.
+ */
+export const useSessionLogQuery = (sessionId: string | undefined) => {
+    return useQuery<Tables<'session_logs'> | null, Error>({
+        queryKey: planKeys.sessionLog(sessionId!),
+        queryFn: () => fetchSessionLog(sessionId!),
+        enabled: !!sessionId,
+    });
+};
+
+
+export const useWorkoutPlayerDataQuery = (sessionId: string) => {
+  return useQuery<WorkoutPlayerData | null, Error>({
+    queryKey: planKeys.workoutPlayer(sessionId),
+    queryFn: () => fetchWorkoutPlayerData(sessionId),
+    enabled: !!sessionId,
+  });
+};
+
+// src/api/exercise/index.ts
+
+import { useQuery } from '@tanstack/react-query';
+import { fetchExerciseDetails, fetchFilteredExercises, type ExerciseFilters } from './endpoint';
+import type { Exercise, ExerciseWithDetails } from '@/types/exercise';
+
+// --- Query Keys ---
+const exerciseKeys = {
+  all: ['exercises'] as const,
+  lists: () => [...exerciseKeys.all, 'list'] as const,
+  list: (filters: ExerciseFilters) => [...exerciseKeys.lists(), filters] as const,
+  details: () => [...exerciseKeys.all, 'details'] as const,
+  detail: (exerciseId: string) => [...exerciseKeys.details(), exerciseId] as const,
+};
+
+// --- Hooks ---
+/**
+ * Hook for fetching a filtered list of exercises.
+ * @param filters - An object containing all active filter criteria.
+ */
+export const useFilteredExercisesQuery = (filters: ExerciseFilters) => {
+  return useQuery<Exercise[], Error>({
+    queryKey: exerciseKeys.list(filters),
+    queryFn: () => fetchFilteredExercises(filters),
+  });
+};
+
+/**
+ * Hook for fetching the complete details of a single exercise.
+ * @param exerciseId - The ID of the exercise to fetch.
+ */
+export const useExerciseDetailsQuery = (exerciseId: string | undefined) => {
+  return useQuery<ExerciseWithDetails | null, Error>({
+    queryKey: exerciseKeys.detail(exerciseId!),
+    queryFn: () => fetchExerciseDetails(exerciseId!),
+    enabled: !!exerciseId, // The query will not run until the ID is available
+  });
+};
+
+import { useQuery } from '@tanstack/react-query';
+import { fetchDashboardSummary } from './endpoint';
+import type { DashboardSummary } from '@/types/dashboard/index';
+
+const dashboardKeys = {
+  all: ['dashboard'] as const,
+  summary: () => [...dashboardKeys.all, 'summary'] as const,
+};
+
+/**
+ * Hook for fetching the complete summary data for the user's main dashboard.
+ */
+export const useDashboardSummaryQuery = () => {
+  return useQuery<DashboardSummary | null, Error>({
+    queryKey: dashboardKeys.summary(),
+    queryFn: fetchDashboardSummary,
+  });
+};

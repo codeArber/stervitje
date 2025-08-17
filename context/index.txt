@@ -1,0 +1,12 @@
+Database.txt has the database info inside. the definition of the tables and its constraints.
+
+rpc has the functions that are defined in the supabase.
+
+endoints.txt has all the endpoints, which fetch the data, or mutate it.
+
+queryhooks.txt has the hooks, done with tanstack query.
+
+store.txt has the workout store, used in the website, whe a session log is started.
+
+Techs used: vite, react, shadcn, tailwind, zustand.
+

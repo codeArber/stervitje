@@ -1,17 +1,26 @@
-// FILE: src/api/user/index.ts
-import { useQuery } from '@tanstack/react-query';
-import { fetchCurrentUserProfile, fetchDiscoverableUsers, fetchUserPlanHistory, fetchUserProfileDetails, UserFilters } from './endpoint';
-import { useAuthStore } from '@/stores/auth-store'; // Import the Zustand store
+// src/api/user/index.ts
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  completeOnboarding,
+  fetchCurrentUserProfile,
+  fetchUserPlanHistory,
+  fetchUserProfileDetails,
+  fetchRichUserCards, // The new function
+  type UserFilters
+} from './endpoint';
+import { useAuthStore } from '@/stores/auth-store';
 import type { Profile } from '@/types/index';
-import type { DiscoverableUser, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
+import type { RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
 
 // --- Query Keys ---
 const userKeys = {
   all: ['user'] as const,
   currentUser: () => [...userKeys.all, 'current'] as const,
   profileDetails: (userId: string) => [...userKeys.all, 'details', userId] as const,
-  discoverableLists: () => [...userKeys.all, 'discoverable', 'list'] as const,
-  discoverableList: (filters: UserFilters) => [...userKeys.discoverableLists(), filters] as const,
+  // Key for the new rich user card lists
+  richLists: () => [...userKeys.all, 'rich', 'list'] as const,
+  richList: (filters: UserFilters) => [...userKeys.richLists(), filters] as const,
   planHistory: (userId: string) => [...userKeys.all, 'planHistory', userId] as const,
 };
 
@@ -22,20 +31,17 @@ const userKeys = {
  * This is now powered by the Zustand store.
  */
 export const useCurrentUserQuery = () => {
-  // Get the user object from the Zustand store
   const { user } = useAuthStore();
 
   return useQuery<Profile | null, Error>({
     queryKey: userKeys.currentUser(),
     queryFn: fetchCurrentUserProfile,
-    // The query will only be enabled when the Zustand store confirms a user is logged in.
     enabled: !!user,
   });
 };
 
 /**
  * Hook for fetching the complete, aggregated profile details for any user.
- * (This hook does not need to change, but is included for completeness)
  */
 export const useUserProfileDetailsQuery = (userId: string | undefined) => {
   return useQuery<UserProfileDetails | null, Error>({
@@ -45,21 +51,40 @@ export const useUserProfileDetailsQuery = (userId: string | undefined) => {
   });
 };
 
-export const useDiscoverableUsersQuery = (filters: UserFilters) => {
-  return useQuery<DiscoverableUser[], Error>({
-    queryKey: userKeys.discoverableList(filters),
-    queryFn: () => fetchDiscoverableUsers(filters),
-  });
+/**
+ * NEW & REPLACES useDiscoverableUsersQuery: Hook for fetching rich, analytical data
+ * for user/coach cards on the Explore page.
+ */
+export const useRichUserCardsQuery = (filters: UserFilters) => {
+    return useQuery<RichUserCardData[], Error>({
+      queryKey: userKeys.richList(filters),
+      queryFn: () => fetchRichUserCards(filters),
+    });
 };
 
 /**
- * **NEW:** Hook for fetching a user's complete workout plan history.
- * @param userId - The ID of the user whose history you want to fetch.
+ * Hook for fetching a user's complete workout plan history.
  */
 export const useUserPlanHistoryQuery = (userId: string | undefined) => {
   return useQuery<UserPlanHistoryItem[], Error>({
     queryKey: userKeys.planHistory(userId!),
     queryFn: () => fetchUserPlanHistory(userId!),
     enabled: !!userId,
+  });
+};
+
+/**
+ * Hook for the mutation to complete the user's onboarding process.
+ */
+export const useCompleteOnboardingMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, void>({
+    mutationFn: completeOnboarding,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.currentUser() });
+    },
+    onError: (error) => {
+      console.error('Error completing onboarding mutation:', error);
+    }
   });
 };

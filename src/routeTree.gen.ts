@@ -8,29 +8,60 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { createFileRoute } from '@tanstack/react-router'
+
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as LayoutImport } from './routes/_layout'
+import { Route as OnboardingIndexImport } from './routes/onboarding/index'
+import { Route as LoginIndexImport } from './routes/login/index'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
-import { Route as LayoutAboutImport } from './routes/_layout/about'
+import { Route as LayoutUsersIndexImport } from './routes/_layout/users/index'
+import { Route as LayoutTeamsIndexImport } from './routes/_layout/teams/index'
 import { Route as LayoutProfileIndexImport } from './routes/_layout/profile/index'
 import { Route as LayoutExploreIndexImport } from './routes/_layout/explore/index'
 import { Route as LayoutExerciseIndexImport } from './routes/_layout/exercise/index'
-import { Route as LayoutWorkoutLogIdImport } from './routes/_layout/workout/$logId'
+import { Route as LayoutDashboardIndexImport } from './routes/_layout/dashboard/index'
+import { Route as LayoutPlansNewImport } from './routes/_layout/plans/new'
+import { Route as LayoutPlansLayoutImport } from './routes/_layout/plans/_layout'
+import { Route as LayoutUsersUserIdIndexImport } from './routes/_layout/users/$userId/index'
+import { Route as LayoutTeamsTeamIdIndexImport } from './routes/_layout/teams/$teamId/index'
+import { Route as LayoutPlansPlanIdIndexImport } from './routes/_layout/plans/$planId/index'
 import { Route as LayoutExploreUsersIndexImport } from './routes/_layout/explore/users/index'
 import { Route as LayoutExploreTeamsIndexImport } from './routes/_layout/explore/teams/index'
 import { Route as LayoutExplorePlansIndexImport } from './routes/_layout/explore/plans/index'
 import { Route as LayoutExerciseExerciseIdIndexImport } from './routes/_layout/exercise/$exerciseId/index'
-import { Route as LayoutExploreUsersUserIdIndexImport } from './routes/_layout/explore/users/$userId/index'
-import { Route as LayoutExploreTeamsTeamIdIndexImport } from './routes/_layout/explore/teams/$teamId/index'
-import { Route as LayoutExplorePlansPlanIdIndexImport } from './routes/_layout/explore/plans/$planId/index'
-import { Route as LayoutExplorePlansPlanIdEditImport } from './routes/_layout/explore/plans/$planId/edit'
+import { Route as LayoutPlansPlanIdEditImport } from './routes/_layout/plans/$planId/edit'
+import { Route as LayoutExploreTeamsTeamIdImport } from './routes/_layout/explore/teams/$teamId'
+import { Route as LayoutPlansPlanIdWorkoutSessionIdImport } from './routes/_layout/plans/$planId/workout/$sessionId'
+
+// Create Virtual Routes
+
+const LayoutPlansImport = createFileRoute('/_layout/plans')()
 
 // Create/Update Routes
 
 const LayoutRoute = LayoutImport.update({
   id: '/_layout',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LayoutPlansRoute = LayoutPlansImport.update({
+  id: '/plans',
+  path: '/plans',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const OnboardingIndexRoute = OnboardingIndexImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LoginIndexRoute = LoginIndexImport.update({
+  id: '/login/',
+  path: '/login/',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -40,9 +71,15 @@ const LayoutIndexRoute = LayoutIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutAboutRoute = LayoutAboutImport.update({
-  id: '/about',
-  path: '/about',
+const LayoutUsersIndexRoute = LayoutUsersIndexImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutTeamsIndexRoute = LayoutTeamsIndexImport.update({
+  id: '/teams/',
+  path: '/teams/',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -64,10 +101,39 @@ const LayoutExerciseIndexRoute = LayoutExerciseIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutWorkoutLogIdRoute = LayoutWorkoutLogIdImport.update({
-  id: '/workout/$logId',
-  path: '/workout/$logId',
+const LayoutDashboardIndexRoute = LayoutDashboardIndexImport.update({
+  id: '/dashboard/',
+  path: '/dashboard/',
   getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutPlansNewRoute = LayoutPlansNewImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => LayoutPlansRoute,
+} as any)
+
+const LayoutPlansLayoutRoute = LayoutPlansLayoutImport.update({
+  id: '/_layout',
+  getParentRoute: () => LayoutPlansRoute,
+} as any)
+
+const LayoutUsersUserIdIndexRoute = LayoutUsersUserIdIndexImport.update({
+  id: '/users/$userId/',
+  path: '/users/$userId/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutTeamsTeamIdIndexRoute = LayoutTeamsTeamIdIndexImport.update({
+  id: '/teams/$teamId/',
+  path: '/teams/$teamId/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutPlansPlanIdIndexRoute = LayoutPlansPlanIdIndexImport.update({
+  id: '/$planId/',
+  path: '/$planId/',
+  getParentRoute: () => LayoutPlansRoute,
 } as any)
 
 const LayoutExploreUsersIndexRoute = LayoutExploreUsersIndexImport.update({
@@ -95,32 +161,23 @@ const LayoutExerciseExerciseIdIndexRoute =
     getParentRoute: () => LayoutRoute,
   } as any)
 
-const LayoutExploreUsersUserIdIndexRoute =
-  LayoutExploreUsersUserIdIndexImport.update({
-    id: '/explore/users/$userId/',
-    path: '/explore/users/$userId/',
-    getParentRoute: () => LayoutRoute,
-  } as any)
+const LayoutPlansPlanIdEditRoute = LayoutPlansPlanIdEditImport.update({
+  id: '/$planId/edit',
+  path: '/$planId/edit',
+  getParentRoute: () => LayoutPlansRoute,
+} as any)
 
-const LayoutExploreTeamsTeamIdIndexRoute =
-  LayoutExploreTeamsTeamIdIndexImport.update({
-    id: '/explore/teams/$teamId/',
-    path: '/explore/teams/$teamId/',
-    getParentRoute: () => LayoutRoute,
-  } as any)
+const LayoutExploreTeamsTeamIdRoute = LayoutExploreTeamsTeamIdImport.update({
+  id: '/explore/teams/$teamId',
+  path: '/explore/teams/$teamId',
+  getParentRoute: () => LayoutRoute,
+} as any)
 
-const LayoutExplorePlansPlanIdIndexRoute =
-  LayoutExplorePlansPlanIdIndexImport.update({
-    id: '/explore/plans/$planId/',
-    path: '/explore/plans/$planId/',
-    getParentRoute: () => LayoutRoute,
-  } as any)
-
-const LayoutExplorePlansPlanIdEditRoute =
-  LayoutExplorePlansPlanIdEditImport.update({
-    id: '/explore/plans/$planId/edit',
-    path: '/explore/plans/$planId/edit',
-    getParentRoute: () => LayoutRoute,
+const LayoutPlansPlanIdWorkoutSessionIdRoute =
+  LayoutPlansPlanIdWorkoutSessionIdImport.update({
+    id: '/$planId/workout/$sessionId',
+    path: '/$planId/workout/$sessionId',
+    getParentRoute: () => LayoutPlansRoute,
   } as any)
 
 // Populate the FileRoutesByPath interface
@@ -134,13 +191,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutImport
       parentRoute: typeof rootRoute
     }
-    '/_layout/about': {
-      id: '/_layout/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof LayoutAboutImport
-      parentRoute: typeof LayoutImport
-    }
     '/_layout/': {
       id: '/_layout/'
       path: '/'
@@ -148,11 +198,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/workout/$logId': {
-      id: '/_layout/workout/$logId'
-      path: '/workout/$logId'
-      fullPath: '/workout/$logId'
-      preLoaderRoute: typeof LayoutWorkoutLogIdImport
+    '/login/': {
+      id: '/login/'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingIndexImport
+      parentRoute: typeof rootRoute
+    }
+    '/_layout/plans': {
+      id: '/_layout/plans'
+      path: '/plans'
+      fullPath: '/plans'
+      preLoaderRoute: typeof LayoutPlansImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/plans/_layout': {
+      id: '/_layout/plans/_layout'
+      path: '/plans'
+      fullPath: '/plans'
+      preLoaderRoute: typeof LayoutPlansLayoutImport
+      parentRoute: typeof LayoutPlansRoute
+    }
+    '/_layout/plans/new': {
+      id: '/_layout/plans/new'
+      path: '/new'
+      fullPath: '/plans/new'
+      preLoaderRoute: typeof LayoutPlansNewImport
+      parentRoute: typeof LayoutPlansImport
+    }
+    '/_layout/dashboard/': {
+      id: '/_layout/dashboard/'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof LayoutDashboardIndexImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/exercise/': {
@@ -175,6 +260,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/profile'
       preLoaderRoute: typeof LayoutProfileIndexImport
       parentRoute: typeof LayoutImport
+    }
+    '/_layout/teams/': {
+      id: '/_layout/teams/'
+      path: '/teams'
+      fullPath: '/teams'
+      preLoaderRoute: typeof LayoutTeamsIndexImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/users/': {
+      id: '/_layout/users/'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof LayoutUsersIndexImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/explore/teams/$teamId': {
+      id: '/_layout/explore/teams/$teamId'
+      path: '/explore/teams/$teamId'
+      fullPath: '/explore/teams/$teamId'
+      preLoaderRoute: typeof LayoutExploreTeamsTeamIdImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/plans/$planId/edit': {
+      id: '/_layout/plans/$planId/edit'
+      path: '/$planId/edit'
+      fullPath: '/plans/$planId/edit'
+      preLoaderRoute: typeof LayoutPlansPlanIdEditImport
+      parentRoute: typeof LayoutPlansImport
     }
     '/_layout/exercise/$exerciseId/': {
       id: '/_layout/exercise/$exerciseId/'
@@ -204,71 +317,94 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutExploreUsersIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/explore/plans/$planId/edit': {
-      id: '/_layout/explore/plans/$planId/edit'
-      path: '/explore/plans/$planId/edit'
-      fullPath: '/explore/plans/$planId/edit'
-      preLoaderRoute: typeof LayoutExplorePlansPlanIdEditImport
+    '/_layout/plans/$planId/': {
+      id: '/_layout/plans/$planId/'
+      path: '/$planId'
+      fullPath: '/plans/$planId'
+      preLoaderRoute: typeof LayoutPlansPlanIdIndexImport
+      parentRoute: typeof LayoutPlansImport
+    }
+    '/_layout/teams/$teamId/': {
+      id: '/_layout/teams/$teamId/'
+      path: '/teams/$teamId'
+      fullPath: '/teams/$teamId'
+      preLoaderRoute: typeof LayoutTeamsTeamIdIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/explore/plans/$planId/': {
-      id: '/_layout/explore/plans/$planId/'
-      path: '/explore/plans/$planId'
-      fullPath: '/explore/plans/$planId'
-      preLoaderRoute: typeof LayoutExplorePlansPlanIdIndexImport
+    '/_layout/users/$userId/': {
+      id: '/_layout/users/$userId/'
+      path: '/users/$userId'
+      fullPath: '/users/$userId'
+      preLoaderRoute: typeof LayoutUsersUserIdIndexImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/explore/teams/$teamId/': {
-      id: '/_layout/explore/teams/$teamId/'
-      path: '/explore/teams/$teamId'
-      fullPath: '/explore/teams/$teamId'
-      preLoaderRoute: typeof LayoutExploreTeamsTeamIdIndexImport
-      parentRoute: typeof LayoutImport
-    }
-    '/_layout/explore/users/$userId/': {
-      id: '/_layout/explore/users/$userId/'
-      path: '/explore/users/$userId'
-      fullPath: '/explore/users/$userId'
-      preLoaderRoute: typeof LayoutExploreUsersUserIdIndexImport
-      parentRoute: typeof LayoutImport
+    '/_layout/plans/$planId/workout/$sessionId': {
+      id: '/_layout/plans/$planId/workout/$sessionId'
+      path: '/$planId/workout/$sessionId'
+      fullPath: '/plans/$planId/workout/$sessionId'
+      preLoaderRoute: typeof LayoutPlansPlanIdWorkoutSessionIdImport
+      parentRoute: typeof LayoutPlansImport
     }
   }
 }
 
 // Create and export the route tree
 
+interface LayoutPlansRouteChildren {
+  LayoutPlansLayoutRoute: typeof LayoutPlansLayoutRoute
+  LayoutPlansNewRoute: typeof LayoutPlansNewRoute
+  LayoutPlansPlanIdEditRoute: typeof LayoutPlansPlanIdEditRoute
+  LayoutPlansPlanIdIndexRoute: typeof LayoutPlansPlanIdIndexRoute
+  LayoutPlansPlanIdWorkoutSessionIdRoute: typeof LayoutPlansPlanIdWorkoutSessionIdRoute
+}
+
+const LayoutPlansRouteChildren: LayoutPlansRouteChildren = {
+  LayoutPlansLayoutRoute: LayoutPlansLayoutRoute,
+  LayoutPlansNewRoute: LayoutPlansNewRoute,
+  LayoutPlansPlanIdEditRoute: LayoutPlansPlanIdEditRoute,
+  LayoutPlansPlanIdIndexRoute: LayoutPlansPlanIdIndexRoute,
+  LayoutPlansPlanIdWorkoutSessionIdRoute:
+    LayoutPlansPlanIdWorkoutSessionIdRoute,
+}
+
+const LayoutPlansRouteWithChildren = LayoutPlansRoute._addFileChildren(
+  LayoutPlansRouteChildren,
+)
+
 interface LayoutRouteChildren {
-  LayoutAboutRoute: typeof LayoutAboutRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
-  LayoutWorkoutLogIdRoute: typeof LayoutWorkoutLogIdRoute
+  LayoutPlansRoute: typeof LayoutPlansRouteWithChildren
+  LayoutDashboardIndexRoute: typeof LayoutDashboardIndexRoute
   LayoutExerciseIndexRoute: typeof LayoutExerciseIndexRoute
   LayoutExploreIndexRoute: typeof LayoutExploreIndexRoute
   LayoutProfileIndexRoute: typeof LayoutProfileIndexRoute
+  LayoutTeamsIndexRoute: typeof LayoutTeamsIndexRoute
+  LayoutUsersIndexRoute: typeof LayoutUsersIndexRoute
+  LayoutExploreTeamsTeamIdRoute: typeof LayoutExploreTeamsTeamIdRoute
   LayoutExerciseExerciseIdIndexRoute: typeof LayoutExerciseExerciseIdIndexRoute
   LayoutExplorePlansIndexRoute: typeof LayoutExplorePlansIndexRoute
   LayoutExploreTeamsIndexRoute: typeof LayoutExploreTeamsIndexRoute
   LayoutExploreUsersIndexRoute: typeof LayoutExploreUsersIndexRoute
-  LayoutExplorePlansPlanIdEditRoute: typeof LayoutExplorePlansPlanIdEditRoute
-  LayoutExplorePlansPlanIdIndexRoute: typeof LayoutExplorePlansPlanIdIndexRoute
-  LayoutExploreTeamsTeamIdIndexRoute: typeof LayoutExploreTeamsTeamIdIndexRoute
-  LayoutExploreUsersUserIdIndexRoute: typeof LayoutExploreUsersUserIdIndexRoute
+  LayoutTeamsTeamIdIndexRoute: typeof LayoutTeamsTeamIdIndexRoute
+  LayoutUsersUserIdIndexRoute: typeof LayoutUsersUserIdIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
-  LayoutAboutRoute: LayoutAboutRoute,
   LayoutIndexRoute: LayoutIndexRoute,
-  LayoutWorkoutLogIdRoute: LayoutWorkoutLogIdRoute,
+  LayoutPlansRoute: LayoutPlansRouteWithChildren,
+  LayoutDashboardIndexRoute: LayoutDashboardIndexRoute,
   LayoutExerciseIndexRoute: LayoutExerciseIndexRoute,
   LayoutExploreIndexRoute: LayoutExploreIndexRoute,
   LayoutProfileIndexRoute: LayoutProfileIndexRoute,
+  LayoutTeamsIndexRoute: LayoutTeamsIndexRoute,
+  LayoutUsersIndexRoute: LayoutUsersIndexRoute,
+  LayoutExploreTeamsTeamIdRoute: LayoutExploreTeamsTeamIdRoute,
   LayoutExerciseExerciseIdIndexRoute: LayoutExerciseExerciseIdIndexRoute,
   LayoutExplorePlansIndexRoute: LayoutExplorePlansIndexRoute,
   LayoutExploreTeamsIndexRoute: LayoutExploreTeamsIndexRoute,
   LayoutExploreUsersIndexRoute: LayoutExploreUsersIndexRoute,
-  LayoutExplorePlansPlanIdEditRoute: LayoutExplorePlansPlanIdEditRoute,
-  LayoutExplorePlansPlanIdIndexRoute: LayoutExplorePlansPlanIdIndexRoute,
-  LayoutExploreTeamsTeamIdIndexRoute: LayoutExploreTeamsTeamIdIndexRoute,
-  LayoutExploreUsersUserIdIndexRoute: LayoutExploreUsersUserIdIndexRoute,
+  LayoutTeamsTeamIdIndexRoute: LayoutTeamsTeamIdIndexRoute,
+  LayoutUsersUserIdIndexRoute: LayoutUsersUserIdIndexRoute,
 }
 
 const LayoutRouteWithChildren =
@@ -276,118 +412,166 @@ const LayoutRouteWithChildren =
 
 export interface FileRoutesByFullPath {
   '': typeof LayoutRouteWithChildren
-  '/about': typeof LayoutAboutRoute
   '/': typeof LayoutIndexRoute
-  '/workout/$logId': typeof LayoutWorkoutLogIdRoute
+  '/login': typeof LoginIndexRoute
+  '/onboarding': typeof OnboardingIndexRoute
+  '/plans': typeof LayoutPlansLayoutRoute
+  '/plans/new': typeof LayoutPlansNewRoute
+  '/dashboard': typeof LayoutDashboardIndexRoute
   '/exercise': typeof LayoutExerciseIndexRoute
   '/explore': typeof LayoutExploreIndexRoute
   '/profile': typeof LayoutProfileIndexRoute
+  '/teams': typeof LayoutTeamsIndexRoute
+  '/users': typeof LayoutUsersIndexRoute
+  '/explore/teams/$teamId': typeof LayoutExploreTeamsTeamIdRoute
+  '/plans/$planId/edit': typeof LayoutPlansPlanIdEditRoute
   '/exercise/$exerciseId': typeof LayoutExerciseExerciseIdIndexRoute
   '/explore/plans': typeof LayoutExplorePlansIndexRoute
   '/explore/teams': typeof LayoutExploreTeamsIndexRoute
   '/explore/users': typeof LayoutExploreUsersIndexRoute
-  '/explore/plans/$planId/edit': typeof LayoutExplorePlansPlanIdEditRoute
-  '/explore/plans/$planId': typeof LayoutExplorePlansPlanIdIndexRoute
-  '/explore/teams/$teamId': typeof LayoutExploreTeamsTeamIdIndexRoute
-  '/explore/users/$userId': typeof LayoutExploreUsersUserIdIndexRoute
+  '/plans/$planId': typeof LayoutPlansPlanIdIndexRoute
+  '/teams/$teamId': typeof LayoutTeamsTeamIdIndexRoute
+  '/users/$userId': typeof LayoutUsersUserIdIndexRoute
+  '/plans/$planId/workout/$sessionId': typeof LayoutPlansPlanIdWorkoutSessionIdRoute
 }
 
 export interface FileRoutesByTo {
-  '/about': typeof LayoutAboutRoute
   '/': typeof LayoutIndexRoute
-  '/workout/$logId': typeof LayoutWorkoutLogIdRoute
+  '/login': typeof LoginIndexRoute
+  '/onboarding': typeof OnboardingIndexRoute
+  '/plans': typeof LayoutPlansLayoutRoute
+  '/plans/new': typeof LayoutPlansNewRoute
+  '/dashboard': typeof LayoutDashboardIndexRoute
   '/exercise': typeof LayoutExerciseIndexRoute
   '/explore': typeof LayoutExploreIndexRoute
   '/profile': typeof LayoutProfileIndexRoute
+  '/teams': typeof LayoutTeamsIndexRoute
+  '/users': typeof LayoutUsersIndexRoute
+  '/explore/teams/$teamId': typeof LayoutExploreTeamsTeamIdRoute
+  '/plans/$planId/edit': typeof LayoutPlansPlanIdEditRoute
   '/exercise/$exerciseId': typeof LayoutExerciseExerciseIdIndexRoute
   '/explore/plans': typeof LayoutExplorePlansIndexRoute
   '/explore/teams': typeof LayoutExploreTeamsIndexRoute
   '/explore/users': typeof LayoutExploreUsersIndexRoute
-  '/explore/plans/$planId/edit': typeof LayoutExplorePlansPlanIdEditRoute
-  '/explore/plans/$planId': typeof LayoutExplorePlansPlanIdIndexRoute
-  '/explore/teams/$teamId': typeof LayoutExploreTeamsTeamIdIndexRoute
-  '/explore/users/$userId': typeof LayoutExploreUsersUserIdIndexRoute
+  '/plans/$planId': typeof LayoutPlansPlanIdIndexRoute
+  '/teams/$teamId': typeof LayoutTeamsTeamIdIndexRoute
+  '/users/$userId': typeof LayoutUsersUserIdIndexRoute
+  '/plans/$planId/workout/$sessionId': typeof LayoutPlansPlanIdWorkoutSessionIdRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/_layout': typeof LayoutRouteWithChildren
-  '/_layout/about': typeof LayoutAboutRoute
   '/_layout/': typeof LayoutIndexRoute
-  '/_layout/workout/$logId': typeof LayoutWorkoutLogIdRoute
+  '/login/': typeof LoginIndexRoute
+  '/onboarding/': typeof OnboardingIndexRoute
+  '/_layout/plans': typeof LayoutPlansRouteWithChildren
+  '/_layout/plans/_layout': typeof LayoutPlansLayoutRoute
+  '/_layout/plans/new': typeof LayoutPlansNewRoute
+  '/_layout/dashboard/': typeof LayoutDashboardIndexRoute
   '/_layout/exercise/': typeof LayoutExerciseIndexRoute
   '/_layout/explore/': typeof LayoutExploreIndexRoute
   '/_layout/profile/': typeof LayoutProfileIndexRoute
+  '/_layout/teams/': typeof LayoutTeamsIndexRoute
+  '/_layout/users/': typeof LayoutUsersIndexRoute
+  '/_layout/explore/teams/$teamId': typeof LayoutExploreTeamsTeamIdRoute
+  '/_layout/plans/$planId/edit': typeof LayoutPlansPlanIdEditRoute
   '/_layout/exercise/$exerciseId/': typeof LayoutExerciseExerciseIdIndexRoute
   '/_layout/explore/plans/': typeof LayoutExplorePlansIndexRoute
   '/_layout/explore/teams/': typeof LayoutExploreTeamsIndexRoute
   '/_layout/explore/users/': typeof LayoutExploreUsersIndexRoute
-  '/_layout/explore/plans/$planId/edit': typeof LayoutExplorePlansPlanIdEditRoute
-  '/_layout/explore/plans/$planId/': typeof LayoutExplorePlansPlanIdIndexRoute
-  '/_layout/explore/teams/$teamId/': typeof LayoutExploreTeamsTeamIdIndexRoute
-  '/_layout/explore/users/$userId/': typeof LayoutExploreUsersUserIdIndexRoute
+  '/_layout/plans/$planId/': typeof LayoutPlansPlanIdIndexRoute
+  '/_layout/teams/$teamId/': typeof LayoutTeamsTeamIdIndexRoute
+  '/_layout/users/$userId/': typeof LayoutUsersUserIdIndexRoute
+  '/_layout/plans/$planId/workout/$sessionId': typeof LayoutPlansPlanIdWorkoutSessionIdRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | ''
-    | '/about'
     | '/'
-    | '/workout/$logId'
+    | '/login'
+    | '/onboarding'
+    | '/plans'
+    | '/plans/new'
+    | '/dashboard'
     | '/exercise'
     | '/explore'
     | '/profile'
+    | '/teams'
+    | '/users'
+    | '/explore/teams/$teamId'
+    | '/plans/$planId/edit'
     | '/exercise/$exerciseId'
     | '/explore/plans'
     | '/explore/teams'
     | '/explore/users'
-    | '/explore/plans/$planId/edit'
-    | '/explore/plans/$planId'
-    | '/explore/teams/$teamId'
-    | '/explore/users/$userId'
+    | '/plans/$planId'
+    | '/teams/$teamId'
+    | '/users/$userId'
+    | '/plans/$planId/workout/$sessionId'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/about'
     | '/'
-    | '/workout/$logId'
+    | '/login'
+    | '/onboarding'
+    | '/plans'
+    | '/plans/new'
+    | '/dashboard'
     | '/exercise'
     | '/explore'
     | '/profile'
+    | '/teams'
+    | '/users'
+    | '/explore/teams/$teamId'
+    | '/plans/$planId/edit'
     | '/exercise/$exerciseId'
     | '/explore/plans'
     | '/explore/teams'
     | '/explore/users'
-    | '/explore/plans/$planId/edit'
-    | '/explore/plans/$planId'
-    | '/explore/teams/$teamId'
-    | '/explore/users/$userId'
+    | '/plans/$planId'
+    | '/teams/$teamId'
+    | '/users/$userId'
+    | '/plans/$planId/workout/$sessionId'
   id:
     | '__root__'
     | '/_layout'
-    | '/_layout/about'
     | '/_layout/'
-    | '/_layout/workout/$logId'
+    | '/login/'
+    | '/onboarding/'
+    | '/_layout/plans'
+    | '/_layout/plans/_layout'
+    | '/_layout/plans/new'
+    | '/_layout/dashboard/'
     | '/_layout/exercise/'
     | '/_layout/explore/'
     | '/_layout/profile/'
+    | '/_layout/teams/'
+    | '/_layout/users/'
+    | '/_layout/explore/teams/$teamId'
+    | '/_layout/plans/$planId/edit'
     | '/_layout/exercise/$exerciseId/'
     | '/_layout/explore/plans/'
     | '/_layout/explore/teams/'
     | '/_layout/explore/users/'
-    | '/_layout/explore/plans/$planId/edit'
-    | '/_layout/explore/plans/$planId/'
-    | '/_layout/explore/teams/$teamId/'
-    | '/_layout/explore/users/$userId/'
+    | '/_layout/plans/$planId/'
+    | '/_layout/teams/$teamId/'
+    | '/_layout/users/$userId/'
+    | '/_layout/plans/$planId/workout/$sessionId'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   LayoutRoute: typeof LayoutRouteWithChildren
+  LoginIndexRoute: typeof LoginIndexRoute
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   LayoutRoute: LayoutRouteWithChildren,
+  LoginIndexRoute: LoginIndexRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
 }
 
 export const routeTree = rootRoute
@@ -400,38 +584,62 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/_layout"
+        "/_layout",
+        "/login/",
+        "/onboarding/"
       ]
     },
     "/_layout": {
       "filePath": "_layout.tsx",
       "children": [
-        "/_layout/about",
         "/_layout/",
-        "/_layout/workout/$logId",
+        "/_layout/plans",
+        "/_layout/dashboard/",
         "/_layout/exercise/",
         "/_layout/explore/",
         "/_layout/profile/",
+        "/_layout/teams/",
+        "/_layout/users/",
+        "/_layout/explore/teams/$teamId",
         "/_layout/exercise/$exerciseId/",
         "/_layout/explore/plans/",
         "/_layout/explore/teams/",
         "/_layout/explore/users/",
-        "/_layout/explore/plans/$planId/edit",
-        "/_layout/explore/plans/$planId/",
-        "/_layout/explore/teams/$teamId/",
-        "/_layout/explore/users/$userId/"
+        "/_layout/teams/$teamId/",
+        "/_layout/users/$userId/"
       ]
-    },
-    "/_layout/about": {
-      "filePath": "_layout/about.tsx",
-      "parent": "/_layout"
     },
     "/_layout/": {
       "filePath": "_layout/index.tsx",
       "parent": "/_layout"
     },
-    "/_layout/workout/$logId": {
-      "filePath": "_layout/workout/$logId.tsx",
+    "/login/": {
+      "filePath": "login/index.tsx"
+    },
+    "/onboarding/": {
+      "filePath": "onboarding/index.tsx"
+    },
+    "/_layout/plans": {
+      "filePath": "_layout/plans",
+      "parent": "/_layout",
+      "children": [
+        "/_layout/plans/_layout",
+        "/_layout/plans/new",
+        "/_layout/plans/$planId/edit",
+        "/_layout/plans/$planId/",
+        "/_layout/plans/$planId/workout/$sessionId"
+      ]
+    },
+    "/_layout/plans/_layout": {
+      "filePath": "_layout/plans/_layout.tsx",
+      "parent": "/_layout/plans"
+    },
+    "/_layout/plans/new": {
+      "filePath": "_layout/plans/new.tsx",
+      "parent": "/_layout/plans"
+    },
+    "/_layout/dashboard/": {
+      "filePath": "_layout/dashboard/index.tsx",
       "parent": "/_layout"
     },
     "/_layout/exercise/": {
@@ -445,6 +653,22 @@ export const routeTree = rootRoute
     "/_layout/profile/": {
       "filePath": "_layout/profile/index.tsx",
       "parent": "/_layout"
+    },
+    "/_layout/teams/": {
+      "filePath": "_layout/teams/index.tsx",
+      "parent": "/_layout"
+    },
+    "/_layout/users/": {
+      "filePath": "_layout/users/index.tsx",
+      "parent": "/_layout"
+    },
+    "/_layout/explore/teams/$teamId": {
+      "filePath": "_layout/explore/teams/$teamId.tsx",
+      "parent": "/_layout"
+    },
+    "/_layout/plans/$planId/edit": {
+      "filePath": "_layout/plans/$planId/edit.tsx",
+      "parent": "/_layout/plans"
     },
     "/_layout/exercise/$exerciseId/": {
       "filePath": "_layout/exercise/$exerciseId/index.tsx",
@@ -462,21 +686,21 @@ export const routeTree = rootRoute
       "filePath": "_layout/explore/users/index.tsx",
       "parent": "/_layout"
     },
-    "/_layout/explore/plans/$planId/edit": {
-      "filePath": "_layout/explore/plans/$planId/edit.tsx",
+    "/_layout/plans/$planId/": {
+      "filePath": "_layout/plans/$planId/index.tsx",
+      "parent": "/_layout/plans"
+    },
+    "/_layout/teams/$teamId/": {
+      "filePath": "_layout/teams/$teamId/index.tsx",
       "parent": "/_layout"
     },
-    "/_layout/explore/plans/$planId/": {
-      "filePath": "_layout/explore/plans/$planId/index.tsx",
+    "/_layout/users/$userId/": {
+      "filePath": "_layout/users/$userId/index.tsx",
       "parent": "/_layout"
     },
-    "/_layout/explore/teams/$teamId/": {
-      "filePath": "_layout/explore/teams/$teamId/index.tsx",
-      "parent": "/_layout"
-    },
-    "/_layout/explore/users/$userId/": {
-      "filePath": "_layout/explore/users/$userId/index.tsx",
-      "parent": "/_layout"
+    "/_layout/plans/$planId/workout/$sessionId": {
+      "filePath": "_layout/plans/$planId/workout/$sessionId.tsx",
+      "parent": "/_layout/plans"
     }
   }
 }

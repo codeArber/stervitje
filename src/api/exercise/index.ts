@@ -1,39 +1,38 @@
-// src/api/exercise/index.ts
-import { useQuery } from '@tanstack/react-query';
-import { fetchExerciseDetails, fetchFilteredExercises, type ExerciseFilters } from './endpoint';
-import type { Exercise, ExerciseDetails, ExerciseWithDetails } from '@/types/exercise/index';
+// FILE: /src/api/exercise/index.ts
 
-// --- Query Keys ---
-// --- Query Keys ---
+import { useQuery } from '@tanstack/react-query';
+import {
+    fetchExerciseDetails,
+    fetchFilteredExercisesWithDetails,
+    type ExerciseFilters
+} from './endpoint';
+import type { ExerciseWithDetails, ExerciseWithMuscles } from '@/types/exercise';
+
 const exerciseKeys = {
   all: ['exercises'] as const,
   lists: () => [...exerciseKeys.all, 'list'] as const,
   list: (filters: ExerciseFilters) => [...exerciseKeys.lists(), filters] as const,
   details: () => [...exerciseKeys.all, 'details'] as const,
-  // NEW: A key for a single exercise's details
   detail: (exerciseId: string) => [...exerciseKeys.details(), exerciseId] as const,
 };
 
-// --- Hooks ---
 /**
- * Hook for fetching a filtered list of exercises.
- * @param filters - An object containing all active filter criteria.
+ * Hook for fetching a filtered list of exercises, including their muscle data.
  */
 export const useFilteredExercisesQuery = (filters: ExerciseFilters) => {
-  return useQuery<Exercise[], Error>({ // The return type is now Exercise[]
+  return useQuery<ExerciseWithMuscles[], Error>({
     queryKey: exerciseKeys.list(filters),
-    queryFn: () => fetchFilteredExercises(filters),
+    queryFn: () => fetchFilteredExercisesWithDetails(filters),
   });
 };
 
 /**
- * **NEW:** Hook for fetching the complete details of a single exercise.
- * @param exerciseId - The ID of the exercise to fetch.
+ * Hook for fetching the complete details of a single exercise.
  */
 export const useExerciseDetailsQuery = (exerciseId: string | undefined) => {
-  return useQuery<ExerciseDetails | null, Error>({
+  return useQuery<ExerciseWithDetails | null, Error>({
     queryKey: exerciseKeys.detail(exerciseId!),
     queryFn: () => fetchExerciseDetails(exerciseId!),
-    enabled: !!exerciseId, // The query will not run until the ID is available
+    enabled: !!exerciseId,
   });
 };

@@ -1,37 +1,34 @@
 // src/types/team/index.ts
 
-import { Plan } from "..";
-import { Enums, Tables } from "../database.types";
+import type { Plan } from "..";
+import type { Enums, Tables, TablesInsert } from "../database.types";
 
-// Re-exporting base types for convenience
 export type Team = Tables<'teams'>;
 export type Profile = Tables<'profiles'>;
 export type TeamMemberRole = Enums<'team_member_role'>;
+export type TeamInvitation = Tables<'team_invitations'>;
+export type NewTeam = TablesInsert<'teams'>;
 
-export type KeyMember = {
-  profile: Profile;
-  role: TeamMemberRole;
+export type TeamInvitationWithRelations = TeamInvitation & {
+  teams: Team;
+  profiles: Profile;
 };
 
-
-// --- Relationship Types ---
-// This represents a single member object within the 'members' array of our RPC response
 export type TeamMemberWithProfile = {
   profile: Profile;
   role: TeamMemberRole;
 };
 
-// --- RPC Response Type ---
-// This is the main type for the entire JSON object returned by the get_team_details_and_members function.
+
+// NEW: For the Explore page team cards
+export type RichTeamCardData = Team & {
+    members_count: number;
+    plans_count: number;
+};
+
 export type TeamDetails = {
   team: Tables<'teams'>;
   members: TeamMemberWithProfile[] | null;
-  plans: Plan[] | null; // The new addition!
-};
-
-export type DiscoverableTeamRichDetails = Team & {
-  members_count: number;
-  plans_count: number;
-  key_members: KeyMember[] | null;
-  member_names_preview: string[] | null;
+  plans: Plan[] | null;
+  current_user_role: TeamMemberRole | null; // <-- ADD THIS LINE
 };

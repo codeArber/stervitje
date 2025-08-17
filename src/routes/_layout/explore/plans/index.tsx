@@ -1,208 +1,224 @@
-// FILE: src/routes/_layout/explore/plans/index.tsx
+// FILE: src/routes/_layout/explore/plans.tsx
 
-import { useState, useMemo } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useFilteredPlansQuery } from '@/api/plan';
+import { useState } from 'react';
+// CORRECTED: Import your own useDebounce hook
 import { useDebounce } from '@/hooks/use-debounce';
-import { allMuscleGroups } from '@/types/exercise'; // Reusing from our exercise types
-import type { Plan } from '@/types/index';
+
+// API & Types
+import { useRichPlanCardsQuery, useTagsQuery } from '@/api/plan';
+import type { RichPlanCardData } from '@/types/plan';
 
 // shadcn/ui components
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 // Icons
-import { ChevronsUpDown, Check, X, BarChart } from 'lucide-react';
-import { PlanCard } from '@/components/new/PlanCard';
-import { CreatePlanDialog } from '@/components/new/CreatePlanDialog';
+import { Search, Star, GitFork, Heart, Users } from 'lucide-react';
+import { PlanFilters } from '@/api/plan/endpoint';
 
-// --- TanStack Router Route Definition ---
+// Main Route Component
 export const Route = createFileRoute('/_layout/explore/plans/')({
-  component: PlanListPage,
+  component: ExplorePlansPage,
 });
 
+function ExplorePlansPage() {
+  const [filters, setFilters] = useState<PlanFilters>({});
+  // This now uses your custom hook. The debounce logic is slightly different
+  // as your hook directly debounces the value.
+  const debouncedSearchTerm = useDebounce(filters.searchTerm, 500);
 
-// --- The Main Page Component ---
-function PlanListPage() {
-  // State for our filters
-  const [sportFilter, setSportFilter] = useState('');
-  const [selectedMuscles, setSelectedMuscles] = useState<string[]>([]);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string>('');
-
-  const debouncedSportFilter = useDebounce(sportFilter, 300);
-
-  const filters = useMemo(() => ({
-    sport_filter: debouncedSportFilter || undefined,
-    muscle_groups_filter: selectedMuscles.length > 0 ? selectedMuscles : undefined,
-    difficulty_level: selectedDifficulty ? parseInt(selectedDifficulty, 10) : undefined,
-  }), [debouncedSportFilter, selectedMuscles, selectedDifficulty]);
-
-  const { data: plans, isLoading, isError } = useFilteredPlansQuery(filters);
-
-  const resetFilters = () => {
-    setSportFilter('');
-    setSelectedMuscles([]);
-    setSelectedDifficulty('');
+  // We combine the debounced term with the instant filters for the API call
+  const apiFilters = {
+    ...filters,
+    searchTerm: debouncedSearchTerm,
   };
 
-  const hasActiveFilters = sportFilter || selectedMuscles.length || selectedDifficulty;
-
   return (
-    <div className="container py-8">
-      <div className="flex justify-between items-center mb-8">
-        <div className="space-y-4">
-          <h1 className="text-4xl font-bold tracking-tight">Discover Plans</h1>
-          <p className="text-muted-foreground">
-            Find the perfect training plan designed by our community and coaches.
+    <div className="flex h-full">
+      {/* Filters Sidebar */}
+      <aside className="w-80 h-full border-r p-4 overflow-y-auto hidden md:block">
+        <h2 className="text-xl font-bold mb-4">Filters</h2>
+        <PlanFiltersPanel filters={filters} setFilters={setFilters} />
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <header className="mb-6">
+          <h1 className="text-4xl font-bold tracking-tight">Explore Plans</h1>
+          <p className="text-lg text-muted-foreground mt-2">
+            Find the perfect training plan designed by our community of expert coaches.
           </p>
-        </div>
-        {/* ADD THE BUTTON HERE */}
-        <CreatePlanDialog />
-      </div>
-
-      {/* Filter Controls */}
-      <div className="space-y-4 mb-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <Input
-            placeholder="Search by sport (e.g., Football)"
-            value={sportFilter}
-            onChange={(e) => setSportFilter(e.target.value)}
-          />
-          <MultiSelectFilter
-            title="Muscles"
-            options={allMuscleGroups}
-            selectedValues={selectedMuscles}
-            setSelectedValues={setSelectedMuscles}
-          />
-          <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-muted-foreground">Difficulty:</span>
-            <ToggleGroup
-              type="single"
-              value={selectedDifficulty}
-              onValueChange={(value) => setSelectedDifficulty(value)}
-              variant="outline"
-              size="sm"
-            >
-              <ToggleGroupItem value="1" aria-label="Beginner">1</ToggleGroupItem>
-              <ToggleGroupItem value="2" aria-label="Intermediate">2</ToggleGroupItem>
-              <ToggleGroupItem value="3" aria-label="Advanced">3</ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-        </div>
-        {hasActiveFilters ? (
-          <Button variant="ghost" size="sm" onClick={resetFilters} className="text-muted-foreground h-auto p-1">
-            <X className="h-4 w-4 mr-1" />
-            Reset Filters
-          </Button>
-        ) : null}
-      </div>
-
-
-      {/* Content Display */}
-      <div>
-        {isLoading && <PlanListSkeleton />}
-        {isError && <p className="text-destructive text-center py-10">Failed to load plans. Please try again.</p>}
-        {!isLoading && !isError && plans && plans.length === 0 && (
-          <div className="text-center py-10">
-            <h3 className="text-xl font-semibold">No Plans Found</h3>
-            <p className="text-muted-foreground mt-2">Try adjusting your filters or search term.</p>
-          </div>
-        )}
-        {!isLoading && !isError && plans && plans.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <PlanCard key={plan.id} plan={plan} />
-            ))}
-          </div>
-        )}
-      </div>
+        </header>
+        <PlanResultsGrid filters={apiFilters} />
+      </main>
     </div>
   );
 }
 
 
-// Reusable Multi-select Filter Component
-const MultiSelectFilter = ({ title, options, selectedValues, setSelectedValues }: { title: string; options: readonly string[], selectedValues: string[], setSelectedValues: (values: string[]) => void }) => {
-  const [open, setOpen] = useState(false);
+// --- Sub-components for the Page ---
 
-  const handleSelect = (currentValue: string) => {
-    setSelectedValues(
-      selectedValues.includes(currentValue)
-        ? selectedValues.filter((value) => value !== currentValue)
-        : [...selectedValues, currentValue]
+// Filters Panel Component
+function PlanFiltersPanel({ filters, setFilters }: { filters: PlanFilters; setFilters: React.Dispatch<React.SetStateAction<PlanFilters>> }) {
+    const { data: equipmentTags, isLoading: isLoadingEquipment } = useTagsQuery('equipment');
+  
+    const handleTagChange = (tagId: number, isChecked: boolean) => {
+      setFilters(prev => {
+        const currentTags = prev.tagIds || [];
+        const newTags = isChecked
+          ? [...currentTags, tagId]
+          : currentTags.filter(id => id !== tagId);
+        // We set pageOffset back to 0 when filters change
+        return { ...prev, tagIds: newTags.length > 0 ? newTags : undefined, pageOffset: 0 };
+      });
+    };
+  
+    return (
+      <div className="space-y-6">
+        <div>
+          <Label htmlFor="search">Search by Name</Label>
+          <div className="relative mt-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="search"
+              placeholder="e.g., Strength Builder"
+              className="pl-9"
+              value={filters.searchTerm || ''}
+              onChange={(e) => setFilters(prev => ({ ...prev, searchTerm: e.target.value, pageOffset: 0 }))}
+            />
+          </div>
+        </div>
+        
+        <Accordion type="multiple" defaultValue={['equipment']} className="w-full">
+          <AccordionItem value="equipment">
+            <AccordionTrigger className="font-semibold">Equipment</AccordionTrigger>
+            <AccordionContent className="space-y-2">
+              {isLoadingEquipment ? (
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              ) : (
+                equipmentTags?.map(tag => (
+                  <div key={tag.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`tag-${tag.id}`}
+                      checked={filters.tagIds?.includes(tag.id)}
+                      onCheckedChange={(checked) => handleTagChange(tag.id, !!checked)}
+                    />
+                    <Label htmlFor={`tag-${tag.id}`} className="font-normal cursor-pointer">{tag.name}</Label>
+                  </div>
+                ))
+              )}
+            </AccordionContent>
+          </AccordionItem>
+          {/* Add more AccordionItems for other filter types like 'primary_physical_intent' later */}
+        </Accordion>
+      </div>
     );
-  };
+  }
+  
+// Results Grid Component
+function PlanResultsGrid({ filters }: { filters: PlanFilters }) {
+  const { data: plans, isLoading, isError, error } = useRichPlanCardsQuery(filters);
 
-  const formattedTitle = selectedValues.length > 0 ? `${selectedValues.length} selected` : `Select ${title}...`;
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {Array.from({ length: 6 }).map((_, i) => <PlanCardSkeleton key={i} />)}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return <div className="text-destructive text-center py-10">Error: {error.message}</div>;
+  }
+
+  if (!plans || plans.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <h3 className="text-lg font-semibold">No Plans Found</h3>
+        <p className="text-muted-foreground">Try adjusting your filters to find more plans.</p>
+      </div>
+    );
+  }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between font-normal"
-        >
-          <span className="truncate">{formattedTitle}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <Command>
-          <CommandInput placeholder={`Search ${title}...`} />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup>
-              {options.map((option) => (
-                <CommandItem
-                  key={option}
-                  value={option}
-                  onSelect={handleSelect}
-                  className="capitalize"
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedValues.includes(option) ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.replace(/-/g, ' ')}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {plans.map(plan => <PlanCard key={plan.id} planData={plan} />)}
+    </div>
   );
-};
+}
 
-export const PlanListSkeleton = ({ count = 6 }: { count?: number }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {Array.from({ length: count }).map((_, i) => (
-      <Card key={i}>
+// Single Plan Card Component
+function PlanCard({ planData }: { planData: RichPlanCardData }) {
+    // UPDATED: Destructure plan from planData, which is the whole object
+    const { analytics, creator } = planData;
+    const plan = planData; // For clarity, the root object is the plan
+  
+    return (
+      <Link to="/plans/$planId" params={{ planId: plan.id }}>
+        <Card className="h-full flex flex-col hover:border-primary transition-colors duration-200">
+          <CardHeader>
+            <div className="flex items-center gap-3 mb-3">
+              <Avatar>
+                <AvatarImage src={creator.profile_image_url || undefined} alt={creator.full_name || 'Creator'} />
+                <AvatarFallback>{(creator.full_name || 'U').charAt(0).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div>
+                <CardTitle className="text-lg leading-tight">{plan.title}</CardTitle>
+                <p className="text-sm text-muted-foreground">{creator.full_name || creator.username}</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">{plan.description}</p>
+          </CardHeader>
+          <CardContent className="flex-grow">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline"><Star className="h-3 w-3 mr-1" /> Level {plan.difficulty_level}/5</Badge>
+              {/* Add more badges for primary intent or equipment later */}
+            </div>
+          </CardContent>
+          <CardFooter className="bg-muted/50 p-3 flex justify-around text-xs text-muted-foreground font-medium">
+            <div className="flex items-center gap-1" title="Likes"><Heart className="h-3 w-3" /><span>{analytics?.like_count || 0}</span></div>
+            <div className="flex items-center gap-1" title="Forks"><GitFork className="h-3 w-3" /><span>{analytics?.fork_count || 0}</span></div>
+            <div className="flex items-center gap-1" title="Active Users"><Users className="h-3 w-3" /><span>{analytics?.active_users_count || 0}</span></div>
+            <div className="flex items-center gap-1 font-semibold text-primary" title="Average Goal Success Rate"><Star className="h-3 w-3" /><span>{Math.round(analytics?.avg_goal_success_rate || 0)}% Success</span></div>
+          </CardFooter>
+        </Card>
+      </Link>
+    );
+  }
+  
+
+// Skeleton for the Plan Card
+function PlanCardSkeleton() {
+    return (
+      <Card className="h-full flex flex-col">
         <CardHeader>
-          <div className="flex justify-between items-start"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-5 w-16" /></div>
-          <Skeleton className="h-4 w-full mt-2" />
-          <Skeleton className="h-4 w-5/6 mt-1" />
+          <div className="flex items-center gap-3 mb-3">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="space-y-1">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-5 w-1/3" />
-          <Skeleton className="h-5 w-1/2" />
+        <CardContent className="flex-grow">
+          <div className="flex gap-2">
+            <Skeleton className="h-6 w-20" />
+          </div>
         </CardContent>
-        <CardFooter className="border-t pt-4 flex justify-between">
-          <Skeleton className="h-5 w-1/3" />
-          <Skeleton className="h-5 w-1/3" />
+        <CardFooter className="bg-muted/50 p-3">
+            <Skeleton className="h-5 w-full" />
         </CardFooter>
       </Card>
-    ))}
-  </div>
-);
+    );
+  }

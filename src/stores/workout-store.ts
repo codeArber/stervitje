@@ -1,126 +1,92 @@
-// FILE: src/stores/workout-store.ts
+// FILE: /src/stores/workout-store.ts
 
 import { create } from 'zustand';
-import type { SessionLog } from '@/types/workout/index';
-import type { ActiveExercise, ActiveSet } from '@/types/workout/index';
+import { supabase } from '@/lib/supabase/supabaseClient';
+import type { PlanSession } from '@/types/plan';
+import type { Tables } from '@/types/database.types';
 
-// Define the shape of the store's state and actions
+// Internal helper to call the RPC with proper typing
+const fetchActiveSessionRpc = async (): Promise<Tables<'session_logs'> | null> => {
+    const { data, error } = await supabase.rpc('get_active_session_for_user').single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 means 0 rows, which is a valid result
+        throw error;
+    }
+
+    // THE CRITICAL FIX IS HERE: We explicitly cast the returned data.
+    return data as Tables<'session_logs'> | null;
+};
+
+
+// --- Main Store Interface ---
+
 interface WorkoutState {
-  sessionLog: SessionLog | null;
-  activeExercises: ActiveExercise[];
-  currentExerciseIndex: number;
-  currentSetIndex: number;
-  isCompleted: boolean;
+  // --- GLOBAL STATE ---
+  globalActiveSession: Tables<'session_logs'> | null;
+  isCheckingGlobalSession: boolean;
+  checkGlobalActiveSession: () => Promise<void>;
 
-  // --- ACTIONS ---
-  // Initializes the store with data for a new workout session
-  startWorkout: (sessionLog: SessionLog, exercises: ActiveExercise[]) => void;
-  
-  // Updates a set with the user's performed values
-  updateSet: (reps: number, weight: number) => void;
-
-  // Marks the current set as complete and moves to the next
-  completeSet: () => void;
-  
-  // Moves to the next exercise
-  nextExercise: () => void;
-  
-  // Ends the workout
-  finishWorkout: () => void;
-  
-  // Resets the store to its initial state
-  reset: () => void;
+  // --- WORKOUT PLAYER STATE ---
+  playerSessionLog: Tables<'session_logs'> | null;
+  playerActiveSession: PlanSession | null;
+  isPlayerCompleted: boolean;
+  initializePlayer: (sessionLog: Tables<'session_logs'>, session: PlanSession) => void;
+  finishPlayer: () => void;
+  resetPlayer: () => void;
 }
 
-export const useWorkoutStore = create<WorkoutState>((set, get) => ({
+export const useWorkoutStore = create<WorkoutState>((set) => ({
   // --- INITIAL STATE ---
-  sessionLog: null,
-  activeExercises: [],
-  currentExerciseIndex: 0,
-  currentSetIndex: 0,
-  isCompleted: false,
+  globalActiveSession: null,
+  isCheckingGlobalSession: true,
+  playerSessionLog: null,
+  playerActiveSession: null,
+  isPlayerCompleted: false,
 
   // --- ACTION IMPLEMENTATIONS ---
-  startWorkout: (sessionLog, exercises) => {
+
+  /**
+   * Fetches the globally active session from the database.
+   */
+  checkGlobalActiveSession: async () => {
+    set({ isCheckingGlobalSession: true });
+    try {
+      const session = await fetchActiveSessionRpc();
+      set({ globalActiveSession: session, isCheckingGlobalSession: false });
+    } catch (error) {
+      console.error("Failed to fetch active session:", error);
+      set({ globalActiveSession: null, isCheckingGlobalSession: false });
+    }
+  },
+
+  /**
+   * Populates the store with the data needed for the workout player UI.
+   */
+  initializePlayer: (sessionLog, session) => {
     set({
-      sessionLog,
-      activeExercises: exercises,
-      currentExerciseIndex: 0,
-      currentSetIndex: 0,
-      isCompleted: false,
-    });
-  },
-
-  updateSet: (reps, weight) => {
-    set((state) => {
-      const newActiveExercises = [...state.activeExercises];
-      const currentExercise = newActiveExercises[state.currentExerciseIndex];
-      if (currentExercise) {
-        const currentSet = currentExercise.sets[state.currentSetIndex];
-        if (currentSet) {
-          currentSet.performed_reps = reps;
-          currentSet.performed_weight = weight;
-        }
-      }
-      return { activeExercises: newActiveExercises };
-    });
-  },
-
-  completeSet: () => {
-    set((state) => {
-      const newActiveExercises = [...state.activeExercises];
-      const currentExercise = newActiveExercises[state.currentExerciseIndex];
-      
-      if (!currentExercise) return {};
-      
-      const currentSet = currentExercise.sets[state.currentSetIndex];
-      if (currentSet) {
-        currentSet.is_completed = true;
-      }
-      
-      // Check if there are more sets in the current exercise
-      if (state.currentSetIndex < currentExercise.sets.length - 1) {
-        // Move to the next set
-        return {
-          activeExercises: newActiveExercises,
-          currentSetIndex: state.currentSetIndex + 1,
-        };
-      } else {
-        // It was the last set, move to the next exercise
-        get().nextExercise();
-        // Since nextExercise calls set(), we don't need to return state here.
-        // But to be safe and explicit, let's return the updated exercises.
-        return { activeExercises: newActiveExercises };
-      }
-    });
-  },
-
-  nextExercise: () => {
-    set((state) => {
-      // Check if there are more exercises in the workout
-      if (state.currentExerciseIndex < state.activeExercises.length - 1) {
-        return {
-          currentExerciseIndex: state.currentExerciseIndex + 1,
-          currentSetIndex: 0, // Reset set index for the new exercise
-        };
-      } else {
-        // It was the last exercise, the workout is complete
-        return { isCompleted: true };
-      }
+      playerSessionLog: sessionLog,
+      playerActiveSession: session,
+      isPlayerCompleted: false,
     });
   },
   
-  finishWorkout: () => {
-    set({ isCompleted: true });
+  /**
+   * Marks the player as completed and clears the global active session state.
+   */
+  finishPlayer: () => {
+    set({ isPlayerCompleted: true, globalActiveSession: null });
+    // We can also trigger a re-check to be safe, but clearing it locally is faster for the UI
+    // useWorkoutStore.getState().checkGlobalActiveSession(); 
   },
   
-  reset: () => {
+  /**
+   * Resets only the player-specific state when the user leaves the workout page.
+   */
+  resetPlayer: () => {
     set({
-      sessionLog: null,
-      activeExercises: [],
-      currentExerciseIndex: 0,
-      currentSetIndex: 0,
-      isCompleted: false,
+      playerSessionLog: null,
+      playerActiveSession: null,
+      isPlayerCompleted: false,
     });
   },
 }));

@@ -1,45 +1,95 @@
 // src/api/team/index.ts
-import { useQuery } from '@tanstack/react-query';
-import { fetchDiscoverableTeams, fetchDiscoverableTeamsWithRichDetails, fetchTeamDetails, TeamFilters } from './endpoint';
-import type { DiscoverableTeamRichDetails, Team, TeamDetails } from '@/types/team/index';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+// src/api/team/index.ts
+import {
+    createTeam,
+    fetchTeamDetails,
+    fetchRichTeamCards, 
+    type TeamFilters,
+    fetchPendingInvitations,
+    inviteMember,
+    respondToInvitation
+} from './endpoint';
+import type { NewTeam, RichTeamCardData, Team, TeamDetails, TeamInvitationWithRelations, TeamMemberRole } from '@/types/team';
 
-// --- Query Keys ---
 const teamKeys = {
   all: ['teams'] as const,
-  lists: () => [...teamKeys.all, 'list'] as const, // For lists of teams later
-  details: () => [...teamKeys.all, 'details'] as const,
-  // A key for fetching the details of a *specific* team by its ID
-  detail: (teamId: string) => [...teamKeys.details(), teamId] as const,
+  lists: () => [...teamKeys.all, 'list'] as const,
   list: (filters: TeamFilters) => [...teamKeys.lists(), filters] as const,
+  details: () => [...teamKeys.all, 'details'] as const,
+  detail: (teamId: string) => [...teamKeys.details(), teamId] as const,
 };
 
-// --- Hooks ---
+const teamInvitationKeys = {
+    all: ['teamInvitations'] as const,
+    lists: () => [...teamInvitationKeys.all, 'list'] as const,
+    list: (status: string) => [...teamInvitationKeys.lists(), status] as const,
+};
 
-/**
- * Hook for fetching the complete, aggregated details for any team.
- * Your components will use this hook to display team pages.
- *
- * @param teamId - The ID of the team to fetch. The hook will be disabled if no ID is provided.
- */
 export const useTeamDetailsQuery = (teamId: string | undefined) => {
   return useQuery<TeamDetails | null, Error>({
-    // The key is dynamic based on the teamId
     queryKey: teamKeys.detail(teamId!),
-    // The query function calls our new endpoint function
     queryFn: () => fetchTeamDetails(teamId!),
-    // The query will not run until a teamId is available.
     enabled: !!teamId,
   });
 };
 
+/**
+ * NEW & REPLACES OLD HOOK: Fetches rich data for team cards on the Explore page.
+ */
+export const useRichTeamCardsQuery = (filters: TeamFilters) => {
+    return useQuery<RichTeamCardData[], Error>({
+      queryKey: teamKeys.list(filters),
+      queryFn: () => fetchRichTeamCards(filters),
+    });
+};
 
+export const useCreateTeamMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<Team, Error, Omit<NewTeam, 'id' | 'created_by' | 'created_at' | 'updated_at'>>({
+    mutationFn: (newTeamData) => createTeam(newTeamData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamKeys.all });
+    },
+  });
+};
+
+// ... (Your invitation mutation hooks can remain the same)
+
+export const usePendingInvitationsQuery = () => {
+    return useQuery<TeamInvitationWithRelations[], Error>({
+        queryKey: teamInvitationKeys.list('pending'),
+        queryFn: fetchPendingInvitations,
+    });
+};
+
+export const useInviteMemberMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, {
+    teamId: string;
+    role: TeamMemberRole;
+    email?: string;
+    userId?: string;
+  }>({
+    mutationFn: (inviteData) => inviteMember(inviteData),
+    onSuccess: (_, variables) => {
+      // On success, we know the DB record was created, so we can refresh the team details.
+      queryClient.invalidateQueries({ queryKey: teamKeys.detail(variables.teamId) });
+    },
+  });
+};
 
 /**
- * **UPDATED:** This hook now calls the new endpoint function and returns the richer data type.
+ * **NEW:** Hook for responding to a team invitation.
  */
-export const useDiscoverableTeamsQuery = (filters: TeamFilters) => {
-  return useQuery<DiscoverableTeamRichDetails[], Error>({
-    queryKey: teamKeys.list(filters),
-    queryFn: () => fetchDiscoverableTeamsWithRichDetails(filters),
+export const useRespondToInvitationMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, { invitationId: string, accept: boolean }>({
+    mutationFn: (responseData) => respondToInvitation(responseData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamInvitationKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: teamKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['user', 'details'] });
+    },
   });
 };

@@ -1,13 +1,14 @@
 // src/api/user/endpoint.ts
+
 import { supabase } from '@/lib/supabase/supabaseClient';
 import type { Profile } from '@/types/index';
-import type { DiscoverableUser, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
-
-
+import type { RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
 
 export interface UserFilters {
-  roleFilter?: 'coach' | 'member' | 'admin';
   searchTerm?: string;
+  // NOTE: The roleFilter and excludeTeamId from the old discoverableUsers
+  // are not used by the new rich user card RPC, but the interface can
+  // be extended if needed in the future.
 }
 
 /**
@@ -37,8 +38,7 @@ export const fetchCurrentUserProfile = async (): Promise<Profile | null> => {
 };
 
 /**
- * **NEW:** Fetches the complete, aggregated profile details for a specific user.
- * This is the function that calls our powerful RPC.
+ * Fetches the complete, aggregated profile details for a specific user.
  *
  * @param userId - The UUID of the user whose profile we want to fetch.
  */
@@ -56,25 +56,43 @@ export const fetchUserProfileDetails = async (userId: string): Promise<UserProfi
     throw new Error(error.message);
   }
 
-  return data;
-};
-
-export const fetchDiscoverableUsers = async (filters: UserFilters): Promise<DiscoverableUser[]> => {
-  const { data, error } = await supabase
-    .rpc('get_discoverable_users', {
-      p_role_filter: filters.roleFilter,
-      p_search_term: filters.searchTerm,
-    });
-
-  if (error) {
-    console.error('API Error fetchDiscoverableUsers:', error);
-    throw new Error(error.message);
-  }
-  return (data as DiscoverableUser[]) || [];
+  return data as UserProfileDetails | null;
 };
 
 /**
- * **NEW:** Fetches the complete workout plan history for a specific user.
+ * NEW & REPLACES discoverableUsers: Fetches rich, analytical data for user/coach cards
+ * on the Explore page, powered by the coach_analytics_summary view.
+ */
+export const fetchRichUserCards = async (filters: UserFilters): Promise<RichUserCardData[]> => {
+    const { data, error } = await supabase
+      .rpc('get_filtered_users_rich', {
+        p_search_term: filters.searchTerm,
+        // NOTE: p_page_limit and p_page_offset can be added here if pagination is needed
+      });
+
+    if (error) {
+      console.error('API Error fetchRichUserCards:', error);
+      throw new Error(error.message);
+    }
+    return (data as RichUserCardData[]) || [];
+};
+
+/**
+ * Calls the RPC to mark the current user's onboarding as complete.
+ */
+export const completeOnboarding = async (): Promise<void> => {
+  const { error } = await supabase
+    .rpc('complete_onboarding');
+
+  if (error) {
+    console.error('API Error completeOnboarding:', error);
+    throw new Error(error.message);
+  }
+};
+
+
+/**
+ * Fetches the complete workout plan history for a specific user.
  * @param userId - The UUID of the user.
  */
 export const fetchUserPlanHistory = async (userId: string): Promise<UserPlanHistoryItem[]> => {

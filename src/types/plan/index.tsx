@@ -1,86 +1,70 @@
-// FILE: src/types/plan/index.ts
+// FILE: /src/types/plan/index.ts
 
-import type { Tables, TablesInsert, Enums } from '@/types/database.types';
-import type { Profile, Team, Exercise } from '@/types/index';
+import type { Enums, Tables, TablesInsert } from "../database.types";
+import type { Exercise, Tag } from "../exercise";
+import type { Profile } from "../user";
+import type { PlanAnalyticsSummary } from "../analytics";
 
 // --- Base Types ---
 export type Plan = Tables<'plans'>;
-export type NewPlan = TablesInsert<'plans'>;
+export type PlanGoal = Tables<'plan_goals'>;
 export type UserPlanStatus = Tables<'user_plan_status'>;
 
-// --- Hierarchy Types (for the nested plan structure) ---
-export type PlanSetInHierarchy = Tables<'plan_session_exercise_sets'>;
-
-export type PlanExerciseInHierarchy = Tables<'plan_session_exercises'> & {
+// --- Hierarchy Types ---
+export type PlanSet = Tables<'plan_session_exercise_sets'> & {
+    intent: Enums<'exercise_physical_intent'> | null;
+};
+export type PlanExercise = Tables<'plan_session_exercises'> & {
   exercise_details: Exercise;
-  sets: PlanSetInHierarchy[] | null;
+  sets: PlanSet[];
 };
-
-export type PlanSessionInHierarchy = Tables<'plan_sessions'> & {
-  exercises: PlanExerciseInHierarchy[] | null;
+export type PlanSession = Tables<'plan_sessions'> & {
+  is_completed_by_user: boolean;
+  exercises: PlanExercise[];
 };
-
-export type PlanDayInHierarchy = Tables<'plan_days'> & {
-  sessions: PlanSessionInHierarchy[] | null;
+export type PlanDay = Tables<'plan_days'> & {
+  sessions: PlanSession[];
 };
-
-export type PlanWeekInHierarchy = Tables<'plan_weeks'> & {
-  days: PlanDayInHierarchy[] | null;
+export type PlanWeek = Tables<'plan_weeks'> & {
+  days: PlanDay[];
 };
-
 export type PlanHierarchy = {
-  weeks: PlanWeekInHierarchy[] | null;
+  weeks: PlanWeek[];
 };
 
-
-// --- Performance Stats Types ---
-export type PlanPerformanceStat = {
-  user_profile: Profile;
-  last_completed_date: string;
-  unique_workouts_logged: number;
-  total_workouts_planned: number;
-  completion_percentage: number;
-  adherence_percentage: number;
-};
-
-
-// --- Main RPC Response Type ---
-// This is the complete shape of the data returned by get_plan_details
-export type PlanDetails = {
+// --- RPC Response Types ---
+export type FullPlan = {
   plan: Plan;
   creator: Profile;
-  team: Team | null;
+  team: Tables<'teams'> | null;
+  goals: PlanGoal[] | null;
+  can_edit: boolean;
+  required_equipment: Tag[] | null;
+  user_plan_status: UserPlanStatus | null;
   hierarchy: PlanHierarchy;
-  performance_stats: PlanPerformanceStat[] | null;
+};
+export type UserPlanPerformance = Tables<'user_plan_performance_summary'>;
+export type PlanPerformanceEntry = {
+    profile: Profile;
+    performance: UserPlanPerformance;
+};
+export type RichPlanCardData = Plan & {
+  analytics: PlanAnalyticsSummary | null;
+  creator: Profile;
 };
 
-export type PlanWithStats = Plan & {
-  duration_weeks: number;
-  active_users_count: number;
-  finished_users_count: number;
+// --- Mutation Payload Types ---
+export type LoggedSet = Omit<TablesInsert<'set_logs'>, 'id' | 'session_exercise_log_id' | 'created_at'>;
+export type LoggedExercise = {
+  plan_session_exercise_id: string | null;
+  exercise_id: string;
+  notes?: string;
+  sets: LoggedSet[];
 };
-
-
-// Payload to add a new session to a day
-// We take the Insert type and make the auto-generated fields optional.
-export type AddSessionPayload = Omit<TablesInsert<'plan_sessions'>, 'id' | 'created_at' | 'updated_at'>;
-
-// Payload to add a new exercise to a session
-export type AddExercisePayload = Omit<TablesInsert<'plan_session_exercises'>, 'id' | 'created_at' | 'updated_at'>;
-
-// Payload to add a new set to an exercise
-export type AddSetPayload = Omit<TablesInsert<'plan_session_exercise_sets'>, 'id' | 'created_at' | 'updated_at'>;
-
-
-// --- Types for UPDATE operations ---
-// For updates, we often need the ID and a subset of the fields.
-// The `Partial` utility makes all fields optional, which is perfect for updates.
-
-// Payload to update an existing session
-export type UpdateSessionPayload = { session_id: string } & Partial<Omit<Tables<'plan_sessions'>, 'id' | 'plan_day_id' | 'created_at' | 'updated_at'>>;
-
-// Payload to update an existing exercise in a session
-export type UpdateExercisePayload = { plan_session_exercise_id: string } & Partial<Omit<Tables<'plan_session_exercises'>, 'id' | 'plan_session_id' | 'exercise_id' | 'created_at' | 'updated_at'>>;
-
-// Payload to update an existing set
-export type UpdateSetPayload = { set_id: string } & Partial<Omit<Tables<'plan_session_exercise_sets'>, 'id' | 'plan_session_exercise_id' | 'created_at' | 'updated_at'>>;
+export type LogWorkoutPayload = {
+  session_log_id: string;
+  performed_exercises: LoggedExercise[];
+  duration_minutes: number;
+  overall_feeling: number;
+  notes: string;
+};

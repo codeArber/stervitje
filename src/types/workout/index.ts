@@ -1,5 +1,3 @@
-// src/types/workout/index.ts
-
 import { Tables, TablesInsert } from "../database.types";
 
 // --- Base Types ---
@@ -20,16 +18,22 @@ export type NewSetLog = TablesInsert<'set_logs'>;
 // Performed Workout Types
 type PerformedSet = SetLog;
 
-type PerformedExercise = PlanSessionExercise & {
+// CORRECTED: Based on session_exercise_logs table, not plan_session_exercises
+type PerformedExercise = Tables<'session_exercise_logs'> & {
   exercise_details: Exercise;
   sets: PerformedSet[] | null;
 };
 
-type PerformedSession = SessionLog & {
-  exercises: PerformedExercise[] | null;
+// CORRECTED: Only 'log_summary' and 'performed_exercises' are returned
+export type WorkoutDetails = {
+  log_summary: SessionLog; // Changed from 'performed' to 'log_summary' to match RPC
+  performed_exercises: PerformedExercise[] | null; // Changed from 'exercises' to 'performed_exercises' to match RPC
 };
 
-// Planned Workout Types
+// Planned Workout Types (These are NOT returned by get_workout_details RPC)
+// If you have another RPC that returns this, keep these types.
+// Otherwise, they might be for internal UI state and don't need to match RPC output directly.
+// For now, I'm assuming they're potentially for UI or another planned RPC.
 type PlannedSet = PlanSessionExerciseSet;
 
 type PlannedExercise = PlanSessionExercise & {
@@ -40,12 +44,6 @@ type PlannedExercise = PlanSessionExercise & {
 type PlannedSession = {
     session: PlanSession;
     exercises: PlannedExercise[] | null;
-};
-
-// The main type for the get_workout_details function response.
-export type WorkoutDetails = {
-  performed: PerformedSession;
-  planned: PlannedSession | null;
 };
 
 export type ActiveSet = {

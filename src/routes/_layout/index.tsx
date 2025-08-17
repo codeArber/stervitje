@@ -1,21 +1,72 @@
-import { MarqueeDemo } from '@/components/MarqueExample';
-import { useSession } from '@supabase/auth-helpers-react';
-import { createFileRoute, Link } from '@tanstack/react-router'
+// FILE: /src/routes/_layout.tsx
+
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import { useAuthStore } from '@/stores/auth-store';
+import { useWorkoutStore } from '@/stores/workout-store'; // Import the unified workout store
+import { AppSidebar } from '@/components/AppSidebar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect } from 'react';
 
 export const Route = createFileRoute('/_layout/')({
-    component: TodaysWorkoutWidget,
-})
+  loader: async ({ location }) => {
+    const { checkUserSession, user, profile } = useAuthStore.getState();
 
-function TodaysWorkoutWidget() {
-    const user = useSession()?.user; // Get the current session and any errors
+    if (!user) {
+      await checkUserSession();
+    }
+    
+    const refreshedState = useAuthStore.getState();
+
+    if (!refreshedState.user) {
+      throw redirect({ to: '/login', search: { redirect: location.href } });
+    }
+
+    if (!refreshedState.profile || !refreshedState.profile.onboarding_completed) {
+      if (location.pathname !== '/onboarding') {
+        throw redirect({ to: '/onboarding' });
+      }
+    }
+    
+    // Redirect from the base authenticated route to the dashboard
+    if (location.pathname === '/_layout' || location.pathname === '/_layout/') {
+        throw redirect({ to: '/dashboard' });
+    }
+
+    return null;
+  },
+  component: AuthenticatedLayout,
+});
+
+function AuthenticatedLayout() {
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const checkGlobalActiveSession = useWorkoutStore((state) => state.checkGlobalActiveSession);
+
+  // This useEffect will run ONLY ONCE when the layout first mounts.
+  useEffect(() => {
+    checkGlobalActiveSession();
+  }, [checkGlobalActiveSession]);
 
 
-    // Display the scheduled workout(s)
-    return (
-        <div className="p-4 border rounded shadow-sm">
-          <h3 className="font-semibold mb-2">Today's Workout</h3>
-          <p className="text-sm text-muted-foreground">No workout scheduled for today. Enjoy your rest!</p>
-          <MarqueeDemo />
-        </div>
-    );
-};
+  if (isLoading) {
+    return <AppLoadingSkeleton />;
+  }
+
+  return (
+    <div className="flex h-screen w-screen overflow-hidden">
+      <AppSidebar />
+      <main className='flex-1 overflow-y-auto'>
+        <Outlet />
+      </main>
+    </div>
+  );
+}
+
+const AppLoadingSkeleton = () => (
+  <div className="flex h-screen w-screen">
+    <Skeleton className="h-full w-64" />
+    <div className="flex-1 p-8">
+      <Skeleton className="h-10 w-1/2 mb-8" />
+      <Skeleton className="h-64 w-full" />
+    </div>
+  </div>
+);

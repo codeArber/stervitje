@@ -1,33 +1,27 @@
-// src/types/exercise/index.ts
+// FILE: /src/types/exercise/index.ts
 
-import { Enums, Tables } from "../database.types";
+import type { Tables, Enums } from "../database.types";
 
-// Re-exporting base types for convenience
 export type Exercise = Tables<'exercises'>;
-export type MuscleGroup = Enums<'muscle_group_enum'>;
-export type ExerciseCategory = Enums<'exercise_category'>;
-
-
+export type Tag = Tables<'tags'>;
 export type ExerciseReference = Tables<'exercise_reference_global'>;
-export type ExerciseType = Enums<'exercise_type_enum'>;
+export type MuscleGroup = Enums<'muscle_group_enum'>;
+export type EngagementLevel = Enums<'engagement_level'>;
 
-// --- RPC Response Type ---
-// This is the main type for a single exercise object returned by the get_filtered_exercises function.
-// It includes the base exercise data plus aggregated arrays of its relations.
-export type ExerciseWithDetails = Exercise & {
-  muscle_groups: MuscleGroup[] | null;
-  categories: ExerciseCategory[] | null;
+export type ExerciseMuscleWithEngagement = {
+  muscle: MuscleGroup;
+  engagement: EngagementLevel;
 };
 
-export type ExerciseDetails = {
-  exercise: Exercise;
-  muscle_groups: Enums<'muscle_group_enum'>[] | null;
-  categories: Enums<'exercise_category'>[] | null;
-  types: ExerciseType[] | null;
+// This is the type for a single item in the list from our new RPC
+export type ExerciseWithMuscles = Exercise & {
+  muscles: ExerciseMuscleWithEngagement[] | null;
+  tags: Tag[] | null; // <-- ADD THIS LINE
+};
+
+// This is the rich type for the Exercise Details page
+export type ExerciseWithDetails = Exercise & {
+  muscles: ExerciseMuscleWithEngagement[] | null;
+  tags: Tag[] | null;
   references: ExerciseReference[] | null;
 };
-
-export const allMuscleGroups = [ "trapezius", "upper-back", "lower-back", "chest", "biceps", "triceps", "forearm", "back-deltoids", "front-deltoids", "abs", "obliques", "adductor", "hamstring", "quadriceps", "abductors", "calves", "gluteal", "head", "neck" ] as const;
-export const allCategories = [ "strength", "endurance", "mobility", "power", "speed", "agility", "balance", "coordination", "recovery", "core_stability" ] as const;
-export const allTypes = [ "pull", "push", "isometric", "plyometric", "rotational", "dynamic" ] as const;
-export const allEnvironments = [ "gym", "outdoor", "home", "studio" ] as const;

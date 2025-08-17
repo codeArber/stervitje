@@ -44,8 +44,7 @@ const formSchema = z.object({
   difficulty_level: z.coerce.number().min(1).max(3),
   private: z.boolean().default(true),
 });
-
-export function CreatePlanDialog() {
+export function CreatePlanDialog({ teamId }: { teamId?: string }) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const { mutate: createPlan, isPending } = useCreatePlanMutation();
@@ -61,9 +60,14 @@ export function CreatePlanDialog() {
     },
   });
 
-  // The onSubmit function now passes all the form values
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    createPlan(values, {
+    // **UPDATED**: We now include the teamId in the payload sent to the mutation
+    createPlan(
+      {
+        ...values,
+        ...teamId && { team_id: teamId },
+      },
+      {
       onSuccess: (newPlan) => {
         setOpen(false);
         form.reset();

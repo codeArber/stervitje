@@ -1,187 +1,153 @@
-// FILE: src/routes/_layout/explore/teams/index.tsx
+// FILE: /src/routes/_layout/explore/teams.tsx
 
-import { useState, useMemo } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDiscoverableTeamsQuery } from '@/api/team'; // Ensure this is the updated hook
-import type { TeamFilters } from '@/api/team/endpoint';
+import { useState } from 'react';
 import { useDebounce } from '@/hooks/use-debounce';
-import type { DiscoverableTeamRichDetails } from '@/types/team/index';
+
+// API & Types
+import { useRichTeamCardsQuery } from '@/api/team';
+import type { RichTeamCardData } from '@/types/team';
 
 // shadcn/ui components
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 // Icons
-import { Users, Dumbbell } from 'lucide-react';
+import { Search, Users, Dumbbell, PlusCircle, ArrowRight } from 'lucide-react';
+import { TeamFilters } from '@/api/team/endpoint';
 
-// --- TanStack Router Route Definition ---
 export const Route = createFileRoute('/_layout/explore/teams/')({
-  component: TeamDirectoryPage,
+  component: ExploreTeamsPage,
 });
 
-
-// --- The Main Page Component ---
-function TeamDirectoryPage() {
+function ExploreTeamsPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
 
-  const filters: TeamFilters = useMemo(() => ({
-    searchTerm: debouncedSearchTerm || undefined,
-  }), [debouncedSearchTerm]);
-
-  const { data: teams, isLoading, isError } = useDiscoverableTeamsQuery(filters);
+  const filters: TeamFilters = { searchTerm: debouncedSearchTerm };
 
   return (
-    <div className="container py-8">
-      {/* Provider for all tooltips on the page */}
-      <TooltipProvider>
-        <div className="space-y-4 mb-8">
-          <h1 className="text-4xl font-bold tracking-tight">Discover Teams</h1>
-          <p className="text-muted-foreground">
-            Find coaching teams, gyms, and communities to join.
-          </p>
+    <div className="container mx-auto py-8">
+      {/* Header */}
+      <header className="mb-8 space-y-2">
+        <div className="flex justify-between items-center">
+          <h1 className="text-4xl font-bold tracking-tight">Explore Teams</h1>
+          <Button asChild>
+            <Link to="/teams"> {/* Assuming you'll have a create team page */}
+              <PlusCircle className="mr-2 h-4 w-4" /> Create Team
+            </Link>
+          </Button>
         </div>
+        <p className="text-lg text-muted-foreground">
+          Find a community, join a coach's group, or create your own.
+        </p>
+      </header>
 
-        {/* Filter Controls */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+      {/* Search Bar */}
+      <div className="mb-8">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by team name or description..."
-            className="max-w-sm"
+            placeholder="Search for teams by name..."
+            className="pl-9"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          {/* Dummy filter for the future */}
-          <div className="p-2 border rounded-md text-sm text-muted-foreground flex items-center">
-            Future filters will go here...
-          </div>
         </div>
-        
-        {/* Content Display */}
-        <div>
-          {isLoading && <TeamGridSkeleton />}
-          {isError && <p className="text-destructive text-center py-10">Failed to load teams.</p>}
-          {!isLoading && !isError && teams && teams.length === 0 && (
-            <div className="text-center py-10">
-              <h3 className="text-xl font-semibold">No Teams Found</h3>
-              <p className="text-muted-foreground mt-2">Try adjusting your search term.</p>
-            </div>
-          )}
-          {!isLoading && !isError && teams && teams.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {teams.map((team) => (
-                <TeamCard key={team.id} team={team} />
-              ))}
-            </div>
-          )}
-        </div>
-      </TooltipProvider>
+      </div>
+
+      {/* Results Grid */}
+      <main>
+        <TeamResultsGrid filters={filters} />
+      </main>
     </div>
   );
 }
 
+// --- Sub-components for the Page ---
 
-// --- Sub-components for better organization ---
+function TeamResultsGrid({ filters }: { filters: TeamFilters }) {
+  const { data: teams, isLoading, isError, error } = useRichTeamCardsQuery(filters);
 
-// A single Team Card with new details
-const TeamCard = ({ team }: { team: DiscoverableTeamRichDetails }) => (
-  <Link
-    to="/explore/teams/$teamId"
-    params={{ teamId: team.id }}
-    className="group"
-  >
-    <Card className="h-full flex flex-col transition-all group-hover:shadow-lg group-hover:-translate-y-1">
-      <CardHeader className="flex-row items-start gap-4 space-y-0">
-         <Avatar className="w-12 h-12 border">
-            <AvatarImage src={team.logo_url || ''} alt={team.name} />
-            <AvatarFallback>{team.name.charAt(0).toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1">
-            <CardTitle className="leading-tight">{team.name}</CardTitle>
-            {team.sport && <CardDescription className="capitalize">{team.sport}</CardDescription>}
-        </div>
-      </CardHeader>
-      <CardContent className="flex-grow">
-        <p className="text-sm text-muted-foreground line-clamp-2">
-            {team.description || 'No description provided.'}
-        </p>
-        
-        {/* NEW: Displaying Admins and Coaches */}
-        {team.key_members && team.key_members.length > 0 && (
-            <div className="mt-4">
-                <h4 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Coaching Staff</h4>
-                <div className="flex flex-wrap gap-x-4 gap-y-2">
-                    {team.key_members.map(member => (
-                        <div key={member.profile.id} className="flex items-center gap-2 text-sm">
-                            <Avatar className="w-6 h-6">
-                                <AvatarImage src={member.profile.profile_image_url || ''} />
-                                <AvatarFallback className="text-xs">{member.profile.username.charAt(0).toUpperCase()}</AvatarFallback>
-                            </Avatar>
-                            <span>{member.profile.full_name || member.profile.username}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between text-sm text-muted-foreground border-t pt-4">
-        {/* UPDATED: Total members now has a tooltip */}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center gap-2 cursor-help">
-              <Users className="h-4 w-4" />
-              <span>{team.members_count} Members</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent>
-            {team.member_names_preview && team.member_names_preview.length > 0 ? (
-                <div className="text-xs space-y-1 p-1">
-                    <p className="font-semibold mb-1">Members Include:</p>
-                    {team.member_names_preview.map(name => <p key={name}>{name}</p>)}
-                    {team.members_count > 15 && <p className="opacity-70 mt-1">... and {team.members_count - 15} more</p>}
-                </div>
-            ) : <p className="text-xs p-1">No members in this team yet.</p>}
-          </TooltipContent>
-        </Tooltip>
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {Array.from({ length: 6 }).map((_, i) => <TeamCardSkeleton key={i} />)}
+      </div>
+    );
+  }
 
-        <div className="flex items-center gap-2" title="Total Plans">
-            <Dumbbell className="h-4 w-4" />
-            <span>{team.plans_count} Plans</span>
-        </div>
-      </CardFooter>
-    </Card>
-  </Link>
-);
+  if (isError) {
+    return <div className="text-destructive text-center py-10">Error: {error.message}</div>;
+  }
 
-// Skeleton for loading state
-export const TeamGridSkeleton = () => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {Array.from({ length: 6 }).map((_, i) => (
-      <Card key={i}>
-        <CardHeader className="flex-row items-start gap-4 space-y-0">
-          <Skeleton className="w-12 h-12 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
+  if (!teams || teams.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <h3 className="text-lg font-semibold">No Teams Found</h3>
+        <p className="text-muted-foreground">Try a different search term or create a new team!</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {teams.map(team => <TeamCard key={team.id} team={team} />)}
+    </div>
+  );
+}
+
+function TeamCard({ team }: { team: RichTeamCardData }) {
+  return (
+    <Link to="/explore/teams/$teamId" params={{ teamId: team.id }}>
+      <Card className="h-full flex flex-col hover:border-primary transition-colors duration-200">
+        <CardHeader>
+          <div className="aspect-video w-full bg-muted rounded-md mb-4 flex items-center justify-center">
+            {team.logo_url ? (
+              <img src={team.logo_url} alt={`${team.name} logo`} className="h-full w-full object-cover rounded-md" />
+            ) : (
+              <Users className="h-12 w-12 text-muted-foreground" />
+            )}
           </div>
+          <CardTitle>{team.name}</CardTitle>
+          <CardDescription className="line-clamp-2 min-h-[40px]">
+            {team.description || "No description available."}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-2/3" />
-        </CardContent>
-        <CardFooter className="border-t pt-4 flex justify-between">
-            <Skeleton className="h-5 w-1/4" />
-            <Skeleton className="h-5 w-1/4" />
+        <CardContent className="flex-grow" />
+        <CardFooter className="bg-muted/50 p-3 flex justify-between items-center text-sm">
+          <div className="flex items-center gap-4 text-muted-foreground font-medium">
+            <div className="flex items-center gap-1.5" title="Members">
+              <Users className="h-4 w-4" />
+              <span>{team.members_count}</span>
+            </div>
+            <div className="flex items-center gap-1.5" title="Public Plans">
+              <Dumbbell className="h-4 w-4" />
+              <span>{team.plans_count}</span>
+            </div>
+          </div>
+          <ArrowRight className="h-5 w-5 text-muted-foreground" />
         </CardFooter>
       </Card>
-    ))}
-  </div>
-);
+    </Link>
+  );
+}
+
+function TeamCardSkeleton() {
+  return (
+    <Card className="h-full flex flex-col">
+      <CardHeader>
+        <Skeleton className="aspect-video w-full rounded-md mb-4" />
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-4 w-full mt-2" />
+        <Skeleton className="h-4 w-1/2" />
+      </CardHeader>
+      <CardContent className="flex-grow" />
+      <CardFooter className="bg-muted/50 p-3">
+        <Skeleton className="h-5 w-full" />
+      </CardFooter>
+    </Card>
+  );
+}

@@ -1,0 +1,432 @@
+import { supabase } from '@/lib/supabase/supabaseClient';
+import type { DashboardSummary } from '@/types/dashboard/index';
+
+/**
+ * Fetches the complete, aggregated summary data for the logged-in user's dashboard.
+ */
+export const fetchDashboardSummary = async (): Promise<DashboardSummary | null> => {
+  // The RPC call itself does not change, only the data it returns
+  const { data, error } = await supabase
+    .rpc('get_user_dashboard_summary')
+    .single(); // .single() is good practice here as we expect one object
+
+  if (error) {
+    console.error('API Error fetchDashboardSummary:', error);
+    throw new Error(error.message);
+  }
+  return data as DashboardSummary | null;
+};
+
+
+// src/api/exercise/endpoint.ts
+
+import { supabase } from "@/lib/supabase/supabaseClient";
+import type { Exercise, ExerciseWithDetails } from "@/types/exercise";
+
+// A type for the new, refactored filters
+export interface ExerciseFilters {
+  searchTerm?: string;
+  primaryIntents?: string[];
+  tagIds?: number[]; // We will filter by the integer ID of the tags
+  difficultyLevel?: number;
+  pageLimit?: number;
+  pageOffset?: number;
+}
+
+/**
+ * Fetches a filtered, paginated list of exercises using the new RPC.
+ * @param filters - An object containing all active filter criteria.
+ */
+export const fetchFilteredExercises = async (filters: ExerciseFilters): Promise<Exercise[]> => {
+  const { data, error } = await supabase
+    .rpc('get_filtered_exercises', {
+      p_search_term: filters.searchTerm,
+      p_primary_intents: filters.primaryIntents,
+      p_tag_ids: filters.tagIds,
+      p_difficulty_level: filters.difficultyLevel,
+      p_page_limit: filters.pageLimit,
+      p_page_offset: filters.pageOffset
+    });
+
+  if (error) {
+    console.error('API Error fetchFilteredExercises:', error);
+    throw new Error(error.message);
+  }
+  return data || [];
+};
+
+/**
+ * Fetches the complete, aggregated details for a single exercise.
+ * @param exerciseId - The UUID of the exercise to fetch.
+ */
+export const fetchExerciseDetails = async (exerciseId: string): Promise<ExerciseWithDetails | null> => {
+  const { data, error } = await supabase
+    .rpc('get_exercise_details', { p_exercise_id: exerciseId });
+
+  if (error) {
+    console.error(`API Error fetchExerciseDetails (ID: ${exerciseId}):`, error);
+    throw new Error(error.message);
+  }
+  // The RPC returns a single JSONB object, not an array
+  return data ? (data as ExerciseWithDetails) : null;
+};
+
+// src/api/plan/endpoint.ts
+
+import { supabase } from "@/lib/supabase/supabaseClient";
+import type { FullPlan, LogWorkoutPayload, PlanPerformanceEntry, RichPlanCardData, WorkoutPlayerData } from "@/types/plan";
+import type { Tables } from "@/types/database.types";
+import { Tag } from "@/types/exercise";
+
+export interface PlanFilters {
+  searchTerm?: string;
+  tagIds?: number[];
+  difficultyLevel?: number;
+  pageLimit?: number;
+  pageOffset?: number;
+}
+
+export const fetchPlanDetails = async (planId: string): Promise<FullPlan | null> => {
+  const { data, error } = await supabase.rpc('get_plan_details_for_user', { p_plan_id: planId });
+  if (error) { throw new Error(error.message); }
+  return data as FullPlan | null;
+};
+
+export const startWorkout = async (planSessionId: string | null): Promise<Tables<'session_logs'>> => {
+  const { data, error } = await supabase.rpc('start_workout_session', { p_plan_session_id: planSessionId });
+  if (error || !data?.[0]) { throw new Error(error?.message || "Failed to start workout."); }
+  return data[0];
+};
+
+export const logWorkout = async (payload: LogWorkoutPayload): Promise<void> => {
+  const { error } = await supabase.rpc('log_workout_session', { /* payload */ });
+  if (error) { throw new Error(error.message); }
+};
+
+export const fetchPlanPerformanceList = async (planId: string): Promise<PlanPerformanceEntry[]> => {
+  const { data, error } = await supabase.rpc('get_plan_user_performance_list', { p_plan_id: planId });
+  if (error) { throw new Error(error.message); }
+  return (data as PlanPerformanceEntry[]) || [];
+};
+
+/**
+ * NEW: Fetches the rich, analytical data for plan cards on the explore page.
+ */
+export const fetchRichPlanCards = async (filters: PlanFilters): Promise<RichPlanCardData[]> => {
+    const { data, error } = await supabase
+      .rpc('get_filtered_plans_rich', {
+        p_search_term: filters.searchTerm,
+        p_tag_ids: filters.tagIds,
+        p_difficulty_level: filters.difficultyLevel,
+        p_page_limit: filters.pageLimit,
+        p_page_offset: filters.pageOffset
+      });
+
+    if (error) {
+      console.error('API Error fetchRichPlanCards:', error);
+      throw new Error(error.message);
+    }
+    return (data as RichPlanCardData[]) || [];
+};
+
+/**
+ * Fetches all tags of a specific type (e.g., 'equipment').
+ * @param tagType - The type of tags to fetch.
+ */
+export const fetchTagsByType = async (tagType: string): Promise<Tag[]> => {
+  // We need a simple RPC for this for security and simplicity.
+  // Let's assume an RPC 'get_tags_by_type' exists.
+  const { data, error } = await supabase
+    .from('tags')
+    .select('id, name, tag_type')
+    .eq('tag_type', tagType);
+
+  if (error) {
+    console.error(`API Error fetchTagsByType (${tagType}):`, error);
+    throw new Error(error.message);
+  }
+  return data || [];
+};
+
+/**
+ * NEW: Fetches a single session_log record by its ID.
+ * @param sessionId - The UUID of the session log.
+ */
+export const fetchSessionLog = async (sessionId: string): Promise<Tables<'session_logs'> | null> => {
+  const { data, error } = await supabase
+    .rpc('get_session_log', { p_session_log_id: sessionId })
+    .single(); // We expect one record or null
+
+  if (error) {
+    console.error(`API Error fetchSessionLog (ID: ${sessionId}):`, error);
+    throw new Error(error.message);
+  }
+
+  // THE FIX: Explicitly cast the returned data to the correct type.
+  return data as Tables<'session_logs'> | null;
+};
+
+export const fetchWorkoutPlayerData = async (sessionId: string): Promise<WorkoutPlayerData | null> => {
+  const { data, error } = await supabase
+    .rpc('get_workout_player_data', { p_session_log_id: sessionId });
+
+  if (error) { throw new Error(error.message); }
+  return data as WorkoutPlayerData | null;
+};
+
+// src/api/team/endpoint.ts
+
+import { supabase } from '@/lib/supabase/supabaseClient';
+import type { NewTeam, Team, TeamDetails, RichTeamCardData, TeamInvitationWithRelations } from '@/types/team';
+import type { TeamMemberRole } from '@/types/team/index';
+
+export interface TeamFilters {
+  searchTerm?: string;
+}
+
+export const fetchTeamDetails = async (teamId: string): Promise<TeamDetails | null> => {
+  const { data, error } = await supabase.rpc('get_team_details_and_members', { p_team_id: teamId });
+  if (error) { throw new Error(error.message); }
+  return data;
+};
+
+/**
+ * NEW & REPLACES OLD FUNCTION: Fetches rich data for team cards on the Explore page.
+ */
+export const fetchRichTeamCards = async (filters: TeamFilters): Promise<RichTeamCardData[]> => {
+    const { data, error } = await supabase
+      .rpc('get_filtered_teams_rich', {
+        p_search_term: filters.searchTerm,
+      });
+
+    if (error) {
+      console.error('API Error fetchRichTeamCards:', error);
+      throw new Error(error.message);
+    }
+    return (data as RichTeamCardData[]) || [];
+};
+
+export const createTeam = async (newTeamData: Omit<NewTeam, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'is_personal_workspace'>): Promise<Team> => {
+  const { name, description, is_private } = newTeamData;
+  const { data, error } = await supabase.rpc('create_new_team', { p_name: name, p_description: description, p_is_private: is_private }).single();
+  if (error) { throw new Error(error.message); }
+  return data as Team;
+};
+
+
+export const fetchPendingInvitations = async (): Promise<TeamInvitationWithRelations[]> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    // The 'select' string has been corrected to remove the trailing comma.
+    const { data, error } = await supabase
+        .from('team_invitations')
+        .select(`
+            *,
+            teams(*),
+            profiles:invited_by(*)
+        `) // <--- The comma is now removed from the end of this line
+        .eq('status', 'pending')
+        .eq('invited_user_id', user.id);
+    
+    if (error) {
+        console.error('API Error fetchPendingInvitations:', error);
+        throw new Error(error.message);
+    }
+    return data || [];
+};
+
+
+
+const sendInvitationEmail = async (invitationId: string) => {
+  // The 'invoke' helper is simple. The second argument is the body object.
+  // It automatically handles POST, headers, and stringifying the body.
+  const { error } = await supabase.functions.invoke('send-invite-email', {
+    body: { invitationId }, // Just pass the object directly
+  });
+
+  if (error) {
+    // We log the error but don't re-throw, so the UI can succeed
+    // even if the email fails to send.
+    console.error(`Failed to send invitation email for invite ${invitationId}:`, error.message);
+  }
+};
+
+// This is the main function that orchestrates the entire process
+export const inviteMember = async ({ teamId, email, role, userId }: {
+  teamId: string;
+  role: TeamMemberRole;
+  email?: string;
+  userId?: string;
+}) => {
+  // Step 1: Call the RPC to create the database record and get the new ID back.
+  const { data: responseData, error: rpcError } = await supabase.rpc('invite_member_to_team', {
+    p_team_id: teamId,
+    p_role: role,
+    p_invited_email: email,
+    p_invited_user_id: userId
+  });
+
+  if (rpcError) {
+    // If the database operation fails, we stop immediately.
+    throw new Error(rpcError.message);
+  }
+
+  const newInvitationId = responseData?.id;
+
+  if (!newInvitationId) {
+    throw new Error("Failed to create invitation record in the database.");
+  }
+
+  // Step 2: If the record was created and an email was provided,
+  // invoke the Edge Function to send the notification.
+  if (email) {
+    await sendInvitationEmail(newInvitationId);
+  }
+};
+
+export const respondToInvitation = async ({ invitationId, accept }: { invitationId: string, accept: boolean }) => {
+  const { error } = await supabase
+    .rpc('respond_to_team_invitation', {
+      p_invitation_id: invitationId,
+      p_accepted: accept
+    });
+
+  if (error) {
+    console.error('API Error respondToInvitation:', error);
+    throw new Error(error.message);
+  }
+};
+
+// src/api/user/endpoint.ts
+
+import { supabase } from '@/lib/supabase/supabaseClient';
+import type { Profile } from '@/types/index';
+import type { RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
+
+export interface UserFilters {
+  searchTerm?: string;
+  // NOTE: The roleFilter and excludeTeamId from the old discoverableUsers
+  // are not used by the new rich user card RPC, but the interface can
+  // be extended if needed in the future.
+}
+
+/**
+ * Fetches the simple profile record for the currently authenticated user.
+ * Good for quick access to name, username, etc.
+ */
+export const fetchCurrentUserProfile = async (): Promise<Profile | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      console.warn(`API Warning fetchCurrentUserProfile: Profile for user ${user.id} not found.`);
+      return null;
+    }
+    console.error(`API Error fetchCurrentUserProfile (User ID: ${user.id}):`, error);
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
+/**
+ * Fetches the complete, aggregated profile details for a specific user.
+ *
+ * @param userId - The UUID of the user whose profile we want to fetch.
+ */
+export const fetchUserProfileDetails = async (userId: string): Promise<UserProfileDetails | null> => {
+  if (!userId) {
+    console.warn("API Warning fetchUserProfileDetails: No userId provided.");
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .rpc('get_user_profile_details', { p_user_id: userId });
+
+  if (error) {
+    console.error(`API Error fetchUserProfileDetails (User ID: ${userId}):`, error);
+    throw new Error(error.message);
+  }
+
+  return data as UserProfileDetails | null;
+};
+
+/**
+ * NEW & REPLACES discoverableUsers: Fetches rich, analytical data for user/coach cards
+ * on the Explore page, powered by the coach_analytics_summary view.
+ */
+export const fetchRichUserCards = async (filters: UserFilters): Promise<RichUserCardData[]> => {
+    const { data, error } = await supabase
+      .rpc('get_filtered_users_rich', {
+        p_search_term: filters.searchTerm,
+        // NOTE: p_page_limit and p_page_offset can be added here if pagination is needed
+      });
+
+    if (error) {
+      console.error('API Error fetchRichUserCards:', error);
+      throw new Error(error.message);
+    }
+    return (data as RichUserCardData[]) || [];
+};
+
+/**
+ * Calls the RPC to mark the current user's onboarding as complete.
+ */
+export const completeOnboarding = async (): Promise<void> => {
+  const { error } = await supabase
+    .rpc('complete_onboarding');
+
+  if (error) {
+    console.error('API Error completeOnboarding:', error);
+    throw new Error(error.message);
+  }
+};
+
+
+/**
+ * Fetches the complete workout plan history for a specific user.
+ * @param userId - The UUID of the user.
+ */
+export const fetchUserPlanHistory = async (userId: string): Promise<UserPlanHistoryItem[]> => {
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .rpc('get_user_plan_history', { p_user_id: userId });
+
+  if (error) {
+    console.error(`API Error fetchUserPlanHistory (User ID: ${userId}):`, error);
+    throw new Error(error.message);
+  }
+  return (data as UserPlanHistoryItem[]) || [];
+};
+
+// FILE: src/api/workspace/endpoint.ts
+
+import { supabase } from "@/lib/supabase/supabaseClient";
+import { WorkspaceData } from "@/types/workspace";
+
+/**
+ * Fetches the complete, aggregated data for a specific workspace (team).
+ * @param teamId - The UUID of the team to fetch data for.
+ */
+export const fetchWorkspaceData = async (teamId: string): Promise<WorkspaceData | null> => {
+  if (!teamId) return null;
+
+const { data, error } = await supabase
+    .rpc('get_workspace_data', { workspace_id: teamId })
+    .single();
+
+  if (error) {
+    console.error(`API Error fetchWorkspaceData (Workspace ID: ${teamId}):`, error);
+    throw new Error(error.message);
+  }
+  return data as WorkspaceData | null;
+};
