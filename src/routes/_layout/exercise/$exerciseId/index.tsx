@@ -47,7 +47,7 @@ function ExerciseDetailPage() {
 
   if (isError || !exerciseData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
         <div className="container max-w-4xl py-16">
           <Card className="border-red-200 bg-red-50/80 backdrop-blur-sm shadow-xl">
             <CardContent className="p-12 text-center">
@@ -96,8 +96,8 @@ function ExerciseDetailPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="container max-w-6xl py-8">
-        {/* Enhanced Breadcrumb Navigation */}
+      <div className="container p-6 w-full" >
+        {/* Enhanced Breadcrumb Navigation */} 
         <Card className="mb-8 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
           <CardContent className="p-6">
             <Breadcrumb>
@@ -418,13 +418,22 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
             <div className="flex flex-col lg:flex-row gap-8 items-start">
               {/* Body Diagram */}
               <div className="flex-shrink-0 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-6 mx-auto">
-                <div className="muscle-diagram-container">
+                <div className="muscle-diagram-container flex flex-row">
                   <Model
                     data={muscleData}
                     style={{
                       width: "300px",
                       height: "400px"
                     }}
+                    
+                  />
+                    <Model
+                    data={muscleData}
+                    style={{
+                      width: "300px",
+                      height: "400px"
+                    }}
+                    type='posterior'
                   />
                   <style jsx>{`
                     .muscle-diagram-container svg [data-name] {
@@ -655,7 +664,7 @@ function EnhancedTagsCard({
 // --- Enhanced Skeleton Component ---
 const ExerciseDetailSkeleton = () => (
   <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-    <div className="container max-w-6xl py-8">
+    <div className="container max-w-6xl p-6">
       {/* Breadcrumb Skeleton */}
       <Card className="mb-8 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
         <CardContent className="p-6">

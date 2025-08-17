@@ -15,3 +15,13 @@
   }
 }
 
+
+@layer components {
+  .muscle-diagram-container svg [data-name] {
+    @apply cursor-pointer transition-all duration-200 ease-in-out;
+  }
+  .muscle-diagram-container svg [data-name]:hover {
+    filter: brightness(1.1);
+    stroke-width: 3px !important;
+  }
+}

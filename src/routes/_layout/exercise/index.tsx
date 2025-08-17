@@ -21,15 +21,15 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 // Icons
-import { 
-  Search, 
-  ArrowRight, 
-  ChevronsUpDown, 
-  Check, 
-  Filter, 
-  Brain, 
-  Dumbbell, 
-  Target, 
+import {
+  Search,
+  ArrowRight,
+  ChevronsUpDown,
+  Check,
+  Filter,
+  Brain,
+  Dumbbell,
+  Target,
   Trophy,
   Activity,
   Zap,
@@ -37,11 +37,13 @@ import {
   Star,
   ChevronDown,
   Settings2,
-  Sparkles
+  Sparkles,
+  ArrowLeft
 } from 'lucide-react';
 import { ExerciseFilters } from '@/api/exercise/endpoint';
 import { useTagsQuery } from '@/api/plan';
 import { getExerciseImageUrl } from '@/types/storage';
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 
 type MuscleGroupEnum = Database['public']['Enums']['muscle_group_enum'];
 
@@ -58,14 +60,41 @@ function ExerciseListPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="container mx-auto p-6">
-      
+
 
         {/* Enhanced Filters Section */}
         <div className="mb-8">
           <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
             <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col justify-between items-center mb-4">
+                <div className="flex items-center gap-3 flex flex-col">
+                  <Card className="mb-8 border-0 shadow-lg bg-white/80 backdrop-blur-sm w-full">
+                    <CardContent className="p-6 w-full">
+                      <Breadcrumb w-full>
+                        <BreadcrumbList className="text-lg">
+                          <BreadcrumbItem>
+                            <BreadcrumbLink asChild>
+                              <Link to="/dashboard" className="flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors">
+                                <ArrowLeft className="w-4 h-4" />
+                                Home
+                              </Link>
+                            </BreadcrumbLink>
+                          </BreadcrumbItem>
+                          <BreadcrumbSeparator />
+                          <BreadcrumbItem>
+                            <BreadcrumbLink asChild>
+                              <Link to="/exercise" className="text-slate-600 hover:text-blue-600 transition-colors">
+                                Exercises
+                              </Link>
+                            </BreadcrumbLink>
+                          </BreadcrumbItem>
+                        
+                        </BreadcrumbList>
+                      </Breadcrumb>
+                    </CardContent>
+                  </Card>
+                  <div className='flex flex-row gap-4'>
+                    
                   <div className="p-2 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl">
                     <Settings2 className="h-5 w-5 text-white" />
                   </div>
@@ -74,6 +103,7 @@ function ExerciseListPage() {
                     <Sparkles className="w-3 h-3 mr-1" />
                     AI Powered
                   </Badge>
+                  </div>
                 </div>
                 <Button
                   variant="ghost"
@@ -85,7 +115,7 @@ function ExerciseListPage() {
                   <ChevronDown className={`ml-2 h-4 w-4 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
                 </Button>
               </div>
-              
+
               {filtersOpen && (
                 <div className="border-t border-slate-200 pt-6">
                   <ExerciseFiltersPanel filters={filters} setFilters={setFilters} />
@@ -274,7 +304,7 @@ function ExerciseResultsGrid({ filters }: { filters: ExerciseFilters }) {
           Curated Collection
         </Badge>
       </div>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {exercises.map(exercise => <ExerciseCard key={exercise.id} exercise={exercise} />)}
       </div>
@@ -319,8 +349,8 @@ function ExerciseCard({ exercise }: { exercise: ExerciseWithMuscles }) {
         <CardContent className="p-0">
           {/* Image Section */}
           <div className="relative h-48 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
-            <img 
-              src={imageUrl} 
+            <img
+              src={imageUrl}
               alt={exercise.name}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
             />
