@@ -1,9 +1,9 @@
-// FILE: src/ui/plan/edit/WeekEditor.tsx
+// FILE: src/components/new/plan/plan-edit/WeekEditor.tsx
 
 import React from 'react';
 import { toast } from 'sonner';
 
-// --- STATE MANAGEMENT IMPORTS (Correctly using your provider's hooks) ---
+// --- STATE MANAGEMENT IMPORTS ---
 import { usePlanEditor } from '@/stores/editor/PlanEditorProvider';
 import type { PlanDay, PlanWeek } from '@/types/plan';
 
@@ -11,7 +11,7 @@ import type { PlanDay, PlanWeek } from '@/types/plan';
 import { DayEditor } from './DayEditor';
 
 // --- UI Components & Icons ---
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { GripVertical, PlusCircle, Trash2 } from 'lucide-react';
@@ -26,20 +26,19 @@ export const WeekEditor: React.FC<WeekEditorProps> = ({
   weekIndex,
   canEdit,
 }) => {
-  // --- STATE MANAGEMENT (Corrected) ---
-  // 1. Get all actions and the full state object using the main hook
+  // --- STATE MANAGEMENT ---
   const { plan, updateWeek, deleteWeek, addDay } = usePlanEditor();
 
-  // 2. Safely derive the specific week and its days from the full state object
+  // Safely derive the specific week and its days from the full state object
   const week = plan?.hierarchy.weeks[weekIndex];
-  const days = week?.days ?? []; // Provide a fallback empty array for safety
+  const days = week?.days ?? [];
 
-  // We still need this guard clause in case the plan is not loaded yet
+  // Guard clause in case the plan is not loaded yet
   if (!week) {
     return null;
   }
 
-  // --- HANDLERS (No changes needed, they already call the actions) ---
+  // --- HANDLERS ---
   const handleUpdate = (field: keyof PlanWeek, value: any) => {
     const finalValue = (field === 'week_number') ? (value === '' ? null : Number(value)) : value;
     updateWeek(weekIndex, { [field]: finalValue });
@@ -72,28 +71,26 @@ export const WeekEditor: React.FC<WeekEditorProps> = ({
   const weekLabel = `Week ${week.week_number}${week.description ? `: ${week.description}` : ''}`;
 
   return (
-    <AccordionItem value={week.id}>
-      <AccordionTrigger className="font-semibold text-lg hover:no-underline">
-        <div className="flex items-center justify-between w-full pr-4">
-          <div className="flex items-center gap-2">
+    <Card className="w-full">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between w-full">
+          <CardTitle className="flex items-center gap-2 text-xl font-semibold">
             <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
             <span>{weekLabel}</span>
-          </div>
+          </CardTitle>
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteWeek();
-            }}
+            onClick={handleDeleteWeek}
             disabled={!canEdit}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
-      </AccordionTrigger>
-      <AccordionContent className="pl-4 pr-2 pt-2 space-y-4">
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
         {/* Week Details Editor */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-3 bg-muted/50 rounded-md">
           <Input
@@ -111,7 +108,7 @@ export const WeekEditor: React.FC<WeekEditorProps> = ({
           />
         </div>
 
-        {/* Days List (Using the safe `days` variable) */}
+        {/* Days List */}
         <div className="space-y-4">
           {[...days] // Create a copy first
             .slice()
@@ -135,7 +132,7 @@ export const WeekEditor: React.FC<WeekEditorProps> = ({
           <PlusCircle className="mr-2 h-4 w-4" />
           Add Day
         </Button>
-      </AccordionContent>
-    </AccordionItem>
+      </CardContent>
+    </Card>
   );
 };

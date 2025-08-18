@@ -54,32 +54,32 @@ export const SetDisplayRow: React.FC<SetDisplayRowProps> = ({ set }) => {
 
     if (set.target_reps != null) {
       metrics.push(
-        <div key="reps" className="flex items-center gap-1.5" title="Repetitions">
-          <Repeat className="h-4 w-4 text-muted-foreground" />
+        <div key="reps" className="flex items-center gap-1" title="Repetitions">
+          <Repeat className="h-3 w-3 text-muted-foreground" />
           <span>{set.target_reps} reps</span>
         </div>
       );
     }
     if (set.target_weight != null) {
       metrics.push(
-        <div key="weight" className="flex items-center gap-1.5" title="Weight">
-          <Dumbbell className="h-4 w-4 text-muted-foreground" />
+        <div key="weight" className="flex items-center gap-1" title="Weight">
+          <Dumbbell className="h-3 w-3 text-muted-foreground" />
           <span>{set.target_weight} kg</span>
         </div>
       );
     }
     if (set.target_duration_seconds != null) {
       metrics.push(
-        <div key="duration" className="flex items-center gap-1.5" title="Duration">
-          <Clock className="h-4 w-4 text-muted-foreground" />
+        <div key="duration" className="flex items-center gap-1" title="Duration">
+          <Clock className="h-3 w-3 text-muted-foreground" />
           <span>{set.target_duration_seconds}s</span>
         </div>
       );
     }
     if (set.target_distance_meters != null) {
       metrics.push(
-        <div key="distance" className="flex items-center gap-1.5" title="Distance">
-          <Route className="h-4 w-4 text-muted-foreground" />
+        <div key="distance" className="flex items-center gap-1" title="Distance">
+          <Route className="h-3 w-3 text-muted-foreground" />
           <span>{set.target_distance_meters}m</span>
         </div>
       );
@@ -90,15 +90,15 @@ export const SetDisplayRow: React.FC<SetDisplayRowProps> = ({ set }) => {
         switch (setType) {
             case 'amrap':
             case 'failure':
-                return <div className="flex items-center gap-1.5"><Zap className="h-4 w-4 text-muted-foreground" /><span>Max Effort</span></div>;
+                return <div className="flex items-center gap-1"><Zap className="h-3 w-3 text-muted-foreground" /><span>Max Effort</span></div>;
             case 'pyramid':
-                return <div className="flex items-center gap-1.5"><ChevronsUp className="h-4 w-4 text-muted-foreground" /><span>Pyramid Set</span></div>;
+                return <div className="flex items-center gap-1"><ChevronsUp className="h-3 w-3 text-muted-foreground" /><span>Pyramid Set</span></div>;
             case 'rest_pause':
-                return <div className="flex items-center gap-1.5"><PauseCircle className="h-4 w-4 text-muted-foreground" /><span>Rest-Pause</span></div>;
+                return <div className="flex items-center gap-1"><PauseCircle className="h-3 w-3 text-muted-foreground" /><span>Rest-Pause</span></div>;
             case 'technique':
-                return <div className="flex items-center gap-1.5"><BrainCircuit className="h-4 w-4 text-muted-foreground" /><span>Focus on Form</span></div>;
+                return <div className="flex items-center gap-1"><BrainCircuit className="h-3 w-3 text-muted-foreground" /><span>Focus on Form</span></div>;
             default:
-                return <span className="text-muted-foreground italic">No specific target</span>;
+                return <span className="text-muted-foreground text-xs italic">No specific target</span>;
         }
     }
 
@@ -107,20 +107,20 @@ export const SetDisplayRow: React.FC<SetDisplayRowProps> = ({ set }) => {
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md text-sm">
+      <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 rounded-md text-sm">
         {/* Set Number Badge */}
-        <Badge variant="outline" className="font-mono w-16 justify-center h-7 text-xs shrink-0">
+        <Badge variant="outline" className="font-mono w-16 justify-center text-xs shrink-0 h-5 px-1.5 py-0.5">
           Set {set.set_number}
         </Badge>
 
         {/* Metrics Display */}
-        <div className="flex flex-grow items-center gap-4 text-foreground font-medium flex-wrap">
+        <div className="flex flex-grow items-center gap-x-3 gap-y-1 text-foreground font-medium flex-wrap">
           {renderMetrics()}
         </div>
 
         {/* Set Type Badge (always visible if not 'normal') */}
         {badgeDetails && (
-          <Badge className={`text-xs uppercase ml-auto shrink-0 ${badgeDetails.className}`}>
+          <Badge className={`text-xs uppercase ml-auto shrink-0 ${badgeDetails.className} h-5 px-1.5 py-0.5`}>
             {badgeDetails.text}
           </Badge>
         )}
@@ -128,7 +128,7 @@ export const SetDisplayRow: React.FC<SetDisplayRowProps> = ({ set }) => {
 
       {/* Optional Notes Display */}
       {set.notes && (
-        <p className="text-xs italic text-muted-foreground mt-1.5 pl-[72px] pr-2">
+        <p className="text-xs italic text-muted-foreground mt-1 px-3 pl-[72px]">
           {set.notes}
         </p>
       )}

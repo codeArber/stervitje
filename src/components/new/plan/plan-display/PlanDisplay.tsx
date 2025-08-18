@@ -8,7 +8,7 @@ import { SessionDisplay } from './SessionDisplay';
 
 // --- UI Components & Icons ---
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+// Removed Accordion components as per instructions
 import { Calendar } from 'lucide-react';
 
 interface PlanDisplayProps {
@@ -24,7 +24,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planDetails }) => {
     return (
       <Card className="p-8 text-center text-muted-foreground">
         <h3 className="text-lg font-semibold">This plan is empty.</h3>
-        <p>Go to the edit page to build the workout schedule.</p>
+        <p className="text-sm mt-2">Go to the edit page to build the workout schedule.</p>
       </Card>
     );
   }
@@ -45,17 +45,28 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planDetails }) => {
 
 const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean }> = ({ week, isPlanStarted }) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Week {week.week_number}</CardTitle>
+    <Card className="rounded-md shadow-sm border-l-4 border-primary/50">
+      <CardHeader className="pb-3 pt-4 px-4">
+        <CardTitle className="text-lg font-semibold leading-tight">Week {week.week_number}</CardTitle>
         {week.description && (
-          <CardDescription>{week.description}</CardDescription>
+          <CardDescription className="text-sm text-muted-foreground leading-snug">{week.description}</CardDescription>
         )}
       </CardHeader>
-      <CardContent >
-        {week.days && week.days.map((day) => (
-          <DayDisplay key={day.id} day={day} isPlanStarted={isPlanStarted} />
-        ))}
+      <CardContent className="p-0">
+        {week.days && week.days.length > 0 ? (
+          week.days.sort((a,b) => a.day_number - b.day_number).map((day, index) => (
+            <React.Fragment key={day.id}>
+              <DayDisplay day={day} isPlanStarted={isPlanStarted} />
+              {index < week.days.length - 1 && (
+                <div className="border-t border-border mx-4 my-2" />
+              )}
+            </React.Fragment>
+          ))
+        ) : (
+          <p className="text-sm text-center text-muted-foreground py-4 px-4">
+            No days defined for this week.
+          </p>
+        )}
       </CardContent>
     </Card>
   );
@@ -63,14 +74,17 @@ const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean }> = ({ wee
 
 const DayDisplay: React.FC<{ day: PlanDay, isPlanStarted: boolean }> = ({ day, isPlanStarted }) => {
   return (
-        <div className="flex items-center gap-3 flex flex-col">
-          <Calendar className="h-4 w-4" />
-          <span>Day {day.day_number}: {day.title || 'Workout'}</span>
-          {day.is_rest_day && (
-            <span className="text-xs font-normal text-muted-foreground">(Rest Day)</span>
-          )}
-     {day.is_rest_day ? (
-          <p className="text-muted-foreground italic">This is a scheduled rest day. Time to recover!</p>
+    <div className="px-4 py-3">
+      <div className="flex items-center gap-2 text-base font-semibold text-foreground">
+        <Calendar className="h-4 w-4 text-muted-foreground" />
+        <span>Day {day.day_number}: {day.title || 'Workout'}</span>
+        {day.is_rest_day && (
+          <span className="text-xs font-normal text-muted-foreground ml-1">(Rest Day)</span>
+        )}
+      </div>
+      <div className="pl-6 mt-2 space-y-3">
+        {day.is_rest_day ? (
+          <p className="text-sm text-muted-foreground italic">This is a scheduled rest day. Time to recover!</p>
         ) : (
           (day.sessions && day.sessions.length > 0) ? (
             day.sessions
@@ -86,6 +100,7 @@ const DayDisplay: React.FC<{ day: PlanDay, isPlanStarted: boolean }> = ({ day, i
             <p className="text-sm text-muted-foreground">No sessions defined for this day.</p>
           )
         )}
-        </div>
+      </div>
+    </div>
   );
 };
