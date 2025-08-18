@@ -31,7 +31,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   checkUserSession: async () => {
     try {
-      console.log('Checking user session...');
       set({ isLoading: true }); // Ensure loading is true at the start of the check
 
       // Get current session
@@ -44,12 +43,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (!session?.user) {
-        console.log('No session found');
         set({ user: null, profile: null, isLoading: false });
         return;
       }
 
-      console.log('Session found, fetching profile...');
       set({ user: session.user });
 
       // Fetch user profile
@@ -65,7 +62,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return;
       }
 
-      console.log('Profile loaded:', profileData);
       set({ profile: profileData, isLoading: false });
       
     } catch (error) {

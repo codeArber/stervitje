@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { getNextTempId } from '@/utils/tempId';
-import { ExerciseSelectorDialog } from '../plan-editor/ExerciseSelectorDialog';
+import { ExerciseSelectorDialog } from './ExerciseSelectorDialog';
 
 // --- UTILITY ---
 

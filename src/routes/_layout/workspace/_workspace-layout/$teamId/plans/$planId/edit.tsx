@@ -20,11 +20,10 @@ import { ArrowLeft, PlusCircle, Save } from 'lucide-react';
 // --- API Hooks & Skeletons ---
 import { usePlanDetailsQuery, useSavePlanChangesMutation, useSavePlanHierarchyMutation } from '@/api/plan';
 import { useEffect, useRef } from 'react';
-import { PlanEditPageSkeleton } from '@/components/new/plan/plan-editor/PlanEditorSkeleton';
 import { WeekEditor } from '@/components/new/plan/plan-edit/WeekEditor';
 import { PlanEditorBasicDetailsForm } from '@/components/new/plan/plan-edit/PlanEditorBasicDetailsForm';
 import { PlanWeek } from '@/types/plan';
-import { diffPlan } from '@/utils/plan-diff';
+import { PlanEditPageSkeleton } from '@/components/new/plan/plan-edit/PlanEditorSkeleton';
 
 // --- Main Route Component ---
 // Wraps the actual page component with our state Provider.
