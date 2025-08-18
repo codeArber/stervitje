@@ -1,6 +1,7 @@
 // src/api/user/endpoint.ts
 
 import { supabase } from '@/lib/supabase/supabaseClient';
+import { Tables, TablesInsert } from '@/types/database.types';
 import type { Profile } from '@/types/index';
 import type { RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
 
@@ -106,4 +107,43 @@ export const fetchUserPlanHistory = async (userId: string): Promise<UserPlanHist
     throw new Error(error.message);
   }
   return (data as UserPlanHistoryItem[]) || [];
+};
+export const setCurrentUserWorkspace = async (workspaceId: string | null): Promise<void> => {
+  const { error } = await supabase
+    .rpc('set_current_user_workspace', { p_workspace_id: workspaceId });
+
+  if (error) {
+    console.error(`API Error setCurrentUserWorkspace (ID: ${workspaceId}):`, error);
+    throw new Error(error.message);
+  }
+};
+
+export const fetchUserMeasurements = async (userId: string): Promise<Tables<'user_measurements'>[]> => {
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .rpc('get_user_measurements', { p_user_id: userId });
+
+  if (error) {
+    console.error(`API Error fetchUserMeasurements (User ID: ${userId}):`, error);
+    throw new Error(error.message);
+  }
+  return data || [];
+};
+
+/**
+ * NEW: Inserts a new body measurement record for the current user.
+ * @param measurementData - The data for the new measurement.
+ */
+export const insertUserMeasurement = async (measurementData: TablesInsert<'user_measurements'>): Promise<Tables<'user_measurements'>> => {
+  // Pass the entire object as JSONB to the RPC
+  const { data, error } = await supabase
+    .rpc('insert_user_measurement', { p_measurement_data: measurementData })
+    .single(); // Expecting a single record returned
+
+  if (error || !data) {
+    console.error('API Error insertUserMeasurement:', error);
+    throw new Error(error?.message || 'Failed to insert measurement.');
+  }
+  return data as Tables<'user_measurements'>;
 };

@@ -1,0 +1,3504 @@
+import { supabase } from '@/lib/supabase/supabaseClient';
+import type { DashboardSummary } from '@/types/dashboard/index';
+
+/**
+ * Fetches the complete, aggregated summary data for the logged-in user's dashboard.
+ */
+export const fetchDashboardSummary = async (): Promise<DashboardSummary | null> => {
+  // The RPC call itself does not change, only the data it returns
+  const { data, error } = await supabase
+    .rpc('get_user_dashboard_summary')
+    .single(); // .single() is good practice here as we expect one object
+
+  if (error) {
+    console.error('API Error fetchDashboardSummary:', error);
+    throw new Error(error.message);
+  }
+  return data as DashboardSummary | null;
+};
+import { useQuery } from '@tanstack/react-query';
+import { fetchDashboardSummary } from './endpoint';
+import type { DashboardSummary } from '@/types/dashboard/index';
+
+const dashboardKeys = {
+  all: ['dashboard'] as const,
+  summary: () => [...dashboardKeys.all, 'summary'] as const,
+};
+
+/**
+ * Hook for fetching the complete summary data for the user's main dashboard.
+ */
+export const useDashboardSummaryQuery = () => {
+  return useQuery<DashboardSummary | null, Error>({
+    queryKey: dashboardKeys.summary(),
+    queryFn: fetchDashboardSummary,
+  });
+};
+// FILE: /src/api/exercise/endpoint.ts
+
+import { supabase } from "@/lib/supabase/supabaseClient";
+import type { ExerciseWithDetails, ExerciseWithMuscles } from "@/types/exercise";
+
+export interface ExerciseFilters {
+  searchTerm?: string;
+  muscleGroups?: string[];
+  tagIds?: number[];
+  difficultyLevel?: number;
+  pageLimit?: number;
+  pageOffset?: number;
+}
+
+/**
+ * Fetches a filtered list of exercises, including their muscle data.
+ */
+export const fetchFilteredExercisesWithDetails = async (filters: ExerciseFilters): Promise<ExerciseWithMuscles[]> => {
+  const { data, error } = await supabase
+    .rpc('get_filtered_exercises_with_details', {
+      p_search_term: filters.searchTerm,
+      p_muscle_groups: filters.muscleGroups,
+      p_tag_ids: filters.tagIds,
+      p_difficulty_level: filters.difficultyLevel,
+      p_page_limit: filters.pageLimit,
+      p_page_offset: filters.pageOffset
+    });
+
+  if (error) {
+    console.error('API Error fetchFilteredExercisesWithDetails:', error);
+    throw new Error(error.message);
+  }
+  return (data as ExerciseWithMuscles[]) || [];
+};
+
+/**
+ * Fetches the complete details for a single exercise.
+ */
+export const fetchExerciseDetails = async (exerciseId: string): Promise<ExerciseWithDetails | null> => {
+  const { data, error } = await supabase
+    .rpc('get_exercise_details', { p_exercise_id: exerciseId });
+
+  if (error) { throw new Error(error.message); }
+  return data as ExerciseWithDetails | null;
+};
+// FILE: /src/api/exercise/index.ts
+
+import { useQuery } from '@tanstack/react-query';
+import {
+    fetchExerciseDetails,
+    fetchFilteredExercisesWithDetails,
+    type ExerciseFilters
+} from './endpoint';
+import type { ExerciseWithDetails, ExerciseWithMuscles } from '@/types/exercise';
+
+const exerciseKeys = {
+  all: ['exercises'] as const,
+  lists: () => [...exerciseKeys.all, 'list'] as const,
+  list: (filters: ExerciseFilters) => [...exerciseKeys.lists(), filters] as const,
+  details: () => [...exerciseKeys.all, 'details'] as const,
+  detail: (exerciseId: string) => [...exerciseKeys.details(), exerciseId] as const,
+};
+
+/**
+ * Hook for fetching a filtered list of exercises, including their muscle data.
+ */
+export const useFilteredExercisesQuery = (filters: ExerciseFilters) => {
+  return useQuery<ExerciseWithMuscles[], Error>({
+    queryKey: exerciseKeys.list(filters),
+    queryFn: () => fetchFilteredExercisesWithDetails(filters),
+  });
+};
+
+/**
+ * Hook for fetching the complete details of a single exercise.
+ */
+export const useExerciseDetailsQuery = (exerciseId: string | undefined) => {
+  return useQuery<ExerciseWithDetails | null, Error>({
+    queryKey: exerciseKeys.detail(exerciseId!),
+    queryFn: () => fetchExerciseDetails(exerciseId!),
+    enabled: !!exerciseId,
+  });
+};
+// FILE: /src/api/plan/endpoint.ts
+
+import { supabase } from "@/lib/supabase/supabaseClient";
+import type {
+  AddPlanDayPayload, AddPlanWeekPayload, DeletePlanSessionPayload, DeletePlanWeekPayload, FullPlan, PlanDay, PlanPerformanceEntry, PlanSession, PlanWeek, RichPlanCardData, UpdatePlanSessionPayload, UpdatePlanWeekPayload, UserPlanStatus,
+  // NEW IMPORTS for Day and Session Payloads
+  UpdatePlanDayPayload, DeletePlanDayPayload, AddPlanSessionPayload,
+  AddPlanSessionExercisePayload,
+  PlanExercise,
+  DeletePlanSessionExercisePayload,
+  UpdatePlanSessionExerciseSetPayload,
+  AddPlanSessionExerciseSetPayload,
+  DeletePlanSessionExerciseSetPayload,
+  PlanSet,
+  UpdatePlanSessionExercisePayload
+} from "@/types/plan";
+import type { Tag } from "@/types/exercise";
+import type { Tables } from "@/types/database.types";
+import { Update } from "vite/types/hmrPayload.js";
+
+export interface PlanFilters {
+  searchTerm?: string;
+  tagIds?: number[];
+  difficultyLevel?: number;
+  pageLimit?: number;
+  pageOffset?: number;
+}
+
+/**
+ * Fetches the complete, aggregated details for a single plan.
+ */
+export const fetchPlanDetails = async (planId: string): Promise<FullPlan | null> => {
+  const { data, error } = await supabase.rpc('get_plan_details_for_user', { p_plan_id: planId });
+  if (error) { throw new Error(error.message); }
+  return data as FullPlan | null;
+};
+
+/**
+ * Fetches the rich, analytical data for plan cards on the explore page.
+ */
+export const fetchRichPlanCards = async (filters: PlanFilters): Promise<RichPlanCardData[]> => {
+    const { data, error } = await supabase
+      .rpc('get_filtered_plans_rich', {
+        p_search_term: filters.searchTerm,
+        p_tag_ids: filters.tagIds,
+        p_difficulty_level: filters.difficultyLevel,
+        p_page_limit: filters.pageLimit,
+        p_page_offset: filters.pageOffset
+      });
+
+    if (error) { throw new Error(error.message); }
+    return (data as RichPlanCardData[]) || [];
+};
+
+/**
+ * Fetches the performance leaderboard for a specific plan.
+ */
+export const fetchPlanPerformanceList = async (planId: string): Promise<PlanPerformanceEntry[]> => {
+  const { data, error } = await supabase.rpc('get_plan_user_performance_list', { p_plan_id: planId });
+  if (error) { throw new Error(error.message); }
+  return (data as PlanPerformanceEntry[]) || [];
+};
+
+/**
+ * Creates an 'active' status record for the user and the given plan.
+ */
+export const startPlanForUser = async (planId: string): Promise<UserPlanStatus> => {
+  const { data, error } = await supabase
+    .rpc('start_plan_for_user', { p_plan_id: planId })
+    .single();
+
+  if (error || !data) { throw new Error(error?.message || "Failed to start plan."); }
+  return data as UserPlanStatus;
+};
+
+/**
+ * Creates a new session_log for a given plan_session_id.
+ */
+export const startWorkout = async (planSessionId: string): Promise<Tables<'session_logs'>> => {
+  const { data, error } = await supabase
+    .rpc('start_workout_session', { p_plan_session_id: planSessionId })
+    .single();
+
+  if (error || !data) { throw new Error(error?.message || "Failed to start workout session."); }
+  return data as Tables<'session_logs'>;
+};
+
+/**
+ * RESTORED: Fetches a single session_log record by its ID. This is critical for the workout player.
+ */
+export const fetchSessionLog = async (sessionId: string): Promise<Tables<'session_logs'> | null> => {
+  const { data, error } = await supabase
+    .rpc('get_session_log', { p_session_log_id: sessionId })
+    .single();
+
+  if (error) { throw new Error(error.message); }
+  return data as Tables<'session_logs'> | null;
+};
+
+/**
+ * Fetches all tags of a specific type (e.g., 'equipment').
+ */
+export const fetchTagsByType = async (tagType: string): Promise<Tag[]> => {
+  const { data, error } = await supabase.from('tags').select('id, name, tag_type').eq('tag_type', tagType);
+  if (error) { throw new Error(error.message); }
+  return data || [];
+};
+
+export const createBasicPlan = async (planData: {
+  p_title: string;
+  p_description?: string | null;
+  p_difficulty_level?: number | null;
+  p_private?: boolean | null;
+  p_team_id?: string | null;
+}): Promise<Tables<'plans'>> => {
+  const { data, error } = await supabase.rpc('create_basic_plan', planData).single();
+
+  if (error || !data) {
+    console.error('API Error createBasicPlan:', error);
+    throw new Error(error?.message || "Failed to create basic plan.");
+  }
+  return data as Tables<'plans'>;
+};
+
+/**
+ * NEW: Adds a new week to a plan.
+ * @param payload - The data for the new week.
+ */
+export const addPlanWeek = async (payload: AddPlanWeekPayload): Promise<PlanWeek> => {
+  const { data, error } = await supabase.rpc('add_plan_week', payload).single();
+  if (error || !data) {
+    console.error('API Error addPlanWeek:', error);
+    throw new Error(error?.message || "Failed to add plan week.");
+  }
+  return data as PlanWeek;
+};
+
+/**
+ * NEW: Updates an existing plan week.
+ * @param payload - The data to update the week.
+ */
+export const updatePlanWeek = async (payload: UpdatePlanWeekPayload): Promise<PlanWeek> => {
+  const { data, error } = await supabase.rpc('update_plan_week', payload).single();
+  if (error || !data) {
+    console.error('API Error updatePlanWeek:', error);
+    throw new Error(error?.message || "Failed to update plan week.");
+  }
+  return data as PlanWeek;
+};
+
+/**
+ * NEW: Deletes a plan week and its contents.
+ * @param payload - The ID of the week to delete.
+ */
+export const deletePlanWeek = async (payload: DeletePlanWeekPayload): Promise<void> => {
+  const { error } = await supabase.rpc('delete_plan_week', payload);
+  if (error) {
+    console.error('API Error deletePlanWeek:', error);
+    throw new Error(error.message || "Failed to delete plan week.");
+  }
+};
+
+/**
+ * NEW: Adds a new day to a plan week.
+ * @param payload - The data for the new day.
+ */
+export const addPlanDay = async (payload: AddPlanDayPayload): Promise<PlanDay> => {
+  const { data, error } = await supabase.rpc('add_plan_day', payload).single();
+  if (error || !data) {
+    console.error('API Error addPlanDay:', error);
+    throw new Error(error?.message || "Failed to add plan day.");
+  }
+  return data as PlanDay;
+};
+
+/**
+ * NEW: Updates an existing plan day.
+ * @param payload - The data to update the day.
+ */
+export const updatePlanDay = async (payload: UpdatePlanDayPayload): Promise<PlanDay> => { // <--- ADDED
+  const { data, error } = await supabase.rpc('update_plan_day', payload).single();
+  if (error || !data) {
+    console.error('API Error updatePlanDay:', error);
+    throw new Error(error?.message || "Failed to update plan day.");
+  }
+  return data as PlanDay;
+};
+
+/**
+ * NEW: Deletes a plan day and its contents.
+ * @param payload - The ID of the day to delete.
+ */
+export const deletePlanDay = async (payload: DeletePlanDayPayload): Promise<void> => { // <--- ADDED
+  const { error } = await supabase.rpc('delete_plan_day', payload);
+  if (error) {
+    console.error('API Error deletePlanDay:', error);
+    throw new Error(error.message || "Failed to delete plan day.");
+  }
+};
+
+/**
+ * NEW: Adds a new session to a plan day.
+ * @param payload - The data for the new session.
+ */
+export const addPlanSession = async (payload: AddPlanSessionPayload): Promise<PlanSession> => { // <--- ADDED
+  const { data, error } = await supabase.rpc('add_plan_session', payload).single();
+  if (error || !data) {
+    console.error('API Error addPlanSession:', error);
+    throw new Error(error?.message || "Failed to add plan session.");
+  }
+  return data as PlanSession;
+};
+
+/**
+ * NEW: Updates an existing plan session.
+ * @param payload - The data to update the session.
+ */
+export const updatePlanSession = async (payload: UpdatePlanSessionPayload): Promise<PlanSession> => {
+  const { data, error } = await supabase.rpc('update_plan_session', payload).single();
+  if (error || !data) {
+    console.error('API Error updatePlanSession:', error);
+    throw new Error(error?.message || "Failed to update plan session.");
+  }
+  return data as PlanSession;
+};
+
+/**
+ * NEW: Deletes a plan session and its contents.
+ * @param payload - The ID of the session to delete.
+ */
+export const deletePlanSession = async (payload: DeletePlanSessionPayload): Promise<void> => {
+  const { error } = await supabase.rpc('delete_plan_session', payload);
+  if (error) {
+    console.error('API Error deletePlanSession:', error);
+    throw new Error(error.message || "Failed to delete plan session.");
+  }
+};
+
+export const addPlanSessionExercise = async (payload: AddPlanSessionExercisePayload): Promise<PlanExercise> => { // <--- Return type is PlanExercise
+  const { data, error } = await supabase.rpc('add_plan_session_exercise', payload).single();
+  if (error || !data) {
+    console.error('API Error addPlanSessionExercise:', error);
+    throw new Error(error?.message || "Failed to add plan session exercise.");
+  }
+  return data as PlanExercise; // <--- Cast to PlanExercise
+};
+
+
+/**
+ * NEW: Updates an existing exercise within a plan session.
+ * @param payload - The data to update the exercise.
+ */
+export const updatePlanSessionExercise = async (payload: UpdatePlanSessionExercisePayload): Promise<PlanExercise> => {
+  const { data, error } = await supabase.rpc('update_plan_session_exercise', payload).single();
+  if (error || !data) {
+    console.error('API Error updatePlanSessionExercise:', error);
+    throw new Error(error?.message || "Failed to update plan session exercise.");
+  }
+  return data as PlanExercise;
+};
+
+/**
+ * NEW: Deletes an exercise from a plan session and its contents.
+ * @param payload - The ID of the exercise to delete.
+ */
+export const deletePlanSessionExercise = async (payload: DeletePlanSessionExercisePayload): Promise<void> => {
+  const { error } = await supabase.rpc('delete_plan_session_exercise', payload);
+  if (error) {
+    console.error('API Error deletePlanSessionExercise:', error);
+    throw new Error(error.message || "Failed to delete plan session exercise.");
+  }
+};
+
+// --- NEW: Plan Session Exercise Set Endpoints ---
+/**
+ * NEW: Adds a new set to a plan session exercise.
+ * @param payload - The data for the new set.
+ */
+export const addPlanSessionExerciseSet = async (payload: AddPlanSessionExerciseSetPayload): Promise<PlanSet> => {
+  // --- FIX: Pass the entire payload object as a single JSONB parameter ---
+  const { data, error } = await supabase.rpc('add_exercise_set', { p_set_data: payload }).single(); // <--- Changed RPC name and param
+  if (error || !data) {
+    console.error('API Error addPlanSessionExerciseSet:', error);
+    throw new Error(error?.message || "Failed to add plan session exercise set.");
+  }
+  return data as PlanSet;
+};
+
+/**
+ * NEW: Updates an existing set within a plan session exercise.
+ * @param payload - The data to update the set.
+ */
+export const updatePlanSessionExerciseSet = async (payload: UpdatePlanSessionExerciseSetPayload): Promise<PlanSet> => {
+  const { data, error } = await supabase.rpc('update_plan_session_exercise_set', payload).single();
+  if (error || !data) {
+    console.error('API Error updatePlanSessionExerciseSet:', error);
+    throw new Error(error?.message || "Failed to update plan session exercise set.");
+  }
+  return data as PlanSet;
+};
+
+/**
+ * NEW: Deletes a set from a plan session exercise.
+ * @param payload - The ID of the set to delete.
+ */
+export const deletePlanSessionExerciseSet = async (payload: DeletePlanSessionExerciseSetPayload): Promise<void> => {
+  const { error } = await supabase.rpc('delete_plan_session_exercise_set', payload);
+  if (error) {
+    console.error('API Error deletePlanSessionExerciseSet:', error);
+    throw new Error(error.message || "Failed to delete plan session exercise set.");
+  }
+};
+// FILE: /src/api/plan/index.ts
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  fetchPlanDetails,
+  fetchRichPlanCards,
+  fetchPlanPerformanceList,
+  startPlanForUser,
+  startWorkout,
+  fetchTagsByType,
+  fetchSessionLog,
+  createBasicPlan,
+  addPlanWeek,
+  updatePlanWeek,
+  deletePlanWeek,
+  addPlanDay,
+  // --- FIX: Add missing imports for update/delete day endpoints ---
+  updatePlanDay,
+  deletePlanDay,
+  addPlanSession,
+  updatePlanSession,
+  deletePlanSession,
+  PlanFilters,
+  addPlanSessionExercise,
+  updatePlanSessionExercise,
+  deletePlanSessionExercise,
+  addPlanSessionExerciseSet,
+  updatePlanSessionExerciseSet,
+  deletePlanSessionExerciseSet,
+} from './endpoint';
+import type {
+  AddPlanDayPayload,
+  AddPlanWeekPayload,
+  DeletePlanSessionPayload,
+  DeletePlanWeekPayload,
+  FullPlan,
+  Plan,
+  PlanDay,
+  PlanPerformanceEntry,
+  PlanSession,
+  PlanWeek,
+  RichPlanCardData,
+  UpdatePlanSessionPayload,
+  UpdatePlanWeekPayload,
+  UserPlanStatus,
+  // --- FIX: Add missing imports for day payloads ---
+  UpdatePlanDayPayload,
+  DeletePlanDayPayload,
+  AddPlanSessionPayload,
+  PlanExercise,
+  AddPlanSessionExercisePayload,
+  UpdatePlanSessionExercisePayload,
+  DeletePlanSessionExercisePayload,
+  AddPlanSessionExerciseSetPayload,
+  PlanSet,
+  UpdatePlanSessionExerciseSetPayload,
+  DeletePlanSessionExerciseSetPayload,
+} from '@/types/plan';
+import type { Tag } from '@/types/exercise';
+import type { Tables } from '@/types/database.types';
+import { toast } from 'sonner';
+
+const planKeys = {
+  all: ['plans'] as const,
+  lists: () => [...planKeys.all, 'list'] as const,
+  list: (filters: PlanFilters) => [...planKeys.lists(), filters] as const,
+  details: () => [...planKeys.all, 'details'] as const,
+  detail: (planId: string) => [...planKeys.details(), planId] as const,
+  performanceLists: () => [...planKeys.all, 'performance', 'list'] as const,
+  performanceList: (planId: string) => [...planKeys.performanceLists(), planId] as const,
+  sessionLogs: () => [...planKeys.all, 'sessionLog'] as const,
+  sessionLog: (sessionId: string) => [...planKeys.sessionLogs(), sessionId] as const,
+  teamPlans: (teamId: string) => [...planKeys.all, 'team', teamId] as const,
+  planWeeks: (planId: string) => [...planKeys.detail(planId), 'weeks'] as const, // Key for specific plan's weeks
+  planDays: (weekId: string) => [...planKeys.all, 'week', weekId, 'days'] as const, // Key for specific week's days
+  planSessions: (dayId: string) => [...planKeys.all, 'day', dayId, 'sessions'] as const,
+  // New keys for plan session exercises and sets
+  planSessionExercises: (sessionId: string) => [...planKeys.all, 'session', sessionId, 'exercises'] as const,
+  planSessionExerciseSets: (exerciseId: string) => [...planKeys.all, 'exercise', exerciseId, 'sets'] as const,};
+
+const tagKeys = {
+  all: ['tags'] as const,
+  lists: () => [...tagKeys.all, 'list'] as const,
+  list: (type: string) => [...tagKeys.lists(), { type }] as const,
+};
+
+// --- QUERIES ---
+
+export const usePlanDetailsQuery = (planId: string | undefined) => {
+  return useQuery<FullPlan | null, Error>({
+    queryKey: planKeys.detail(planId!),
+    queryFn: () => fetchPlanDetails(planId!),
+    enabled: !!planId,
+  });
+};
+
+export const useRichPlanCardsQuery = (filters: PlanFilters) => {
+  return useQuery<RichPlanCardData[], Error>({
+    queryKey: planKeys.list(filters),
+    queryFn: () => fetchRichPlanCards(filters),
+    placeholderData: (prev) => prev,
+  });
+};
+
+export const usePlanPerformanceQuery = (planId: string | undefined) => {
+  return useQuery<PlanPerformanceEntry[], Error>({
+    queryKey: planKeys.performanceList(planId!),
+    queryFn: () => fetchPlanPerformanceList(planId!),
+    enabled: !!planId,
+  });
+};
+
+/**
+ * Hook for fetching a single session_log record.
+ */
+export const useSessionLogQuery = (sessionId: string | undefined) => {
+  return useQuery<Tables<'session_logs'> | null, Error>({
+    queryKey: planKeys.sessionLog(sessionId!),
+    queryFn: () => fetchSessionLog(sessionId!),
+    enabled: !!sessionId,
+  });
+};
+
+// --- MUTATIONS ---
+
+export const useStartPlanForUserMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<UserPlanStatus, Error, string>({
+    mutationFn: (planId) => startPlanForUser(planId),
+    onSuccess: (_, planId) => {
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(planId) });
+    },
+  });
+};
+
+/**
+ * Hook for the mutation to start a workout session.
+ */
+export const useStartWorkoutMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<Tables<'session_logs'>, Error, string>({
+    mutationFn: (planSessionId) => startWorkout(planSessionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: planKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+    onError: (error) => {
+      console.error("Error starting workout:", error);
+    }
+  });
+};
+
+export const useTagsQuery = (tagType: string) => {
+  return useQuery<Tag[], Error>({
+    queryKey: tagKeys.list(tagType),
+    queryFn: () => fetchTagsByType(tagType),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+};
+
+export const useCreateBasicPlanMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<Plan, Error, {
+    p_title: string;
+    p_description?: string | null;
+    p_difficulty_level?: number | null;
+    p_private?: boolean | null;
+    p_team_id?: string | null;
+  }>({
+    mutationFn: (planData) => createBasicPlan(planData),
+    onSuccess: (newPlan) => {
+      toast.success(`Plan "${newPlan.title}" created!`);
+      if (newPlan.team_id) {
+        queryClient.invalidateQueries({ queryKey: planKeys.teamPlans(newPlan.team_id) });
+        queryClient.invalidateQueries({ queryKey: ['teams', 'details', newPlan.team_id] });
+      }
+      queryClient.invalidateQueries({ queryKey: planKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['user', 'current'] });
+    },
+    onError: (error) => {
+      toast.error(`Failed to create plan: ${error.message}`);
+    }
+  });
+};
+
+export const useAddPlanWeekMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<PlanWeek, Error, AddPlanWeekPayload>({
+    mutationFn: (payload) => addPlanWeek(payload),
+    onSuccess: (newWeek) => {
+      toast.success(`Week ${newWeek.week_number} added!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(newWeek.plan_id) });
+    },
+    onError: (error) => {
+      toast.error(`Failed to add week: ${error.message}`);
+    }
+  });
+};
+
+/**
+ * Hook for updating an existing plan week.
+ */
+export const useUpdatePlanWeekMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<PlanWeek, Error, UpdatePlanWeekPayload>({
+    mutationFn: (payload) => updatePlanWeek(payload),
+    onSuccess: (updatedWeek) => {
+      toast.success(`Week ${updatedWeek.week_number} updated!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(updatedWeek.plan_id) });
+    },
+    onError: (error) => {
+      toast.error(`Failed to update week: ${error.message}`);
+    }
+  });
+};
+
+/**
+ * Hook for deleting a plan week.
+ */
+export const useDeletePlanWeekMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, DeletePlanWeekPayload>({
+    mutationFn: (payload) => deletePlanWeek(payload),
+    onSuccess: (_, deletedWeekPayload) => {
+      toast.success(`Week deleted successfully!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.all });
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete week: ${error.message}`);
+    }
+  });
+};
+
+/**
+ * Hook for adding a new plan day.
+ */
+export const useAddPlanDayMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<PlanDay, Error, AddPlanDayPayload>({
+    mutationFn: (payload) => addPlanDay(payload),
+    onSuccess: (newDay) => {
+      toast.success(`Day ${newDay.day_number} added!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(newDay.plan_week_id.split('-')[0]) });
+      queryClient.invalidateQueries({ queryKey: planKeys.planDays(newDay.plan_week_id) });
+    },
+    onError: (error) => {
+      toast.error(`Failed to add day: ${error.message}`);
+    }
+  });
+};
+
+/**
+ * NEW: Hook for updating an existing plan day.
+ */
+export const useUpdatePlanDayMutation = () => { // <--- ADDED HOOK
+  const queryClient = useQueryClient();
+  return useMutation<PlanDay, Error, UpdatePlanDayPayload>({
+    mutationFn: (payload) => updatePlanDay(payload),
+    onSuccess: (updatedDay) => {
+      toast.success(`Day ${updatedDay.day_number} updated!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(updatedDay.plan_week_id.split('-')[0]) });
+      queryClient.invalidateQueries({ queryKey: planKeys.planDays(updatedDay.plan_week_id) });
+      queryClient.invalidateQueries({ queryKey: planKeys.all }); // Fallback
+    },
+    onError: (error) => {
+      toast.error(`Failed to update day: ${error.message}`);
+    }
+  });
+};
+
+/**
+ * NEW: Hook for deleting a plan day.
+ */
+export const useDeletePlanDayMutation = () => { // <--- ADDED HOOK
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, DeletePlanDayPayload>({
+    mutationFn: (payload) => deletePlanDay(payload),
+    onSuccess: (_, deletedDayPayload) => {
+      toast.success(`Day deleted successfully!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.all }); // Broad invalidation as a fallback
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete day: ${error.message}`);
+    }
+  });
+};
+
+export const useUpdatePlanSessionMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<PlanSession, Error, UpdatePlanSessionPayload>({
+    mutationFn: (payload) => updatePlanSession(payload),
+    onSuccess: (updatedSession) => {
+      toast.success(`Session ${updatedSession.order_index} updated!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.all });
+      queryClient.invalidateQueries({ queryKey: planKeys.planSessions(updatedSession.plan_day_id) });
+    },
+    onError: (error) => {
+      toast.error(`Failed to update session: ${error.message}`);
+    }
+  });
+};
+
+/**
+ * NEW: Hook for deleting a plan session.
+ */
+export const useDeletePlanSessionMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, DeletePlanSessionPayload>({
+    mutationFn: (payload) => deletePlanSession(payload),
+    onSuccess: (_, deletedSessionPayload) => {
+      toast.success(`Session deleted successfully!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.all });
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete session: ${error.message}`);
+    }
+  });
+};
+
+
+
+/**
+ * Hook for adding a new plan day.
+ */
+export const useAddPlanSessionMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<PlanSession, Error, AddPlanSessionPayload>({
+    mutationFn: (payload) => addPlanSession(payload),
+    onSuccess: (newSession) => {
+      toast.success(`Session ${newSession.order_index} added!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(newSession.plan_day_id.split('-')[0]) });
+      queryClient.invalidateQueries({ queryKey: planKeys.planSessions(newSession.plan_day_id) });
+    },
+    onError: (error) => {
+      toast.error(`Failed to add session: ${error.message}`);
+    }
+  });
+};
+export const useAddPlanSessionExerciseMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<PlanExercise, Error, AddPlanSessionExercisePayload>({ // <--- Return type is PlanExercise
+    mutationFn: (payload) => addPlanSessionExercise(payload),
+    onSuccess: (newExercise) => { // newExercise is now PlanExercise
+      toast.success(`Exercise "${newExercise.exercise_details.name}" added!`); // This should now work
+      // Invalidate the full plan details query
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(newExercise.plan_session_id.split('-')[0]) }); // This assumes plan_session_id contains plan_id prefix (which it doesn't in your schema)
+      // For now, let's use a broad invalidation or assume the parent will handle it.
+      queryClient.invalidateQueries({ queryKey: planKeys.all }); // Broad invalidation as a fallback
+      // Alternatively, the RPC could return the planId, or you could add it to payload.
+      // Since the parent PlanEditPage refetches, it will eventually update.
+      queryClient.invalidateQueries({ queryKey: planKeys.planSessionExercises(newExercise.plan_session_id) }); // More specific
+    },
+    onError: (error) => {
+      toast.error(`Failed to add exercise: ${error.message}`);
+    }
+  });
+};
+/**
+ * NEW: Hook for updating an existing plan session exercise.
+ */
+export const useUpdatePlanSessionExerciseMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<PlanExercise, Error, UpdatePlanSessionExercisePayload>({
+    mutationFn: (payload) => updatePlanSessionExercise(payload),
+    onSuccess: (updatedExercise) => {
+      toast.success(`Exercise "${updatedExercise.exercise_details.name}" updated!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.all }); // Broad invalidation as a fallback
+      queryClient.invalidateQueries({ queryKey: planKeys.planSessionExercises(updatedExercise.plan_session_id) });
+    },
+    onError: (error) => {
+      toast.error(`Failed to update exercise: ${error.message}`);
+    }
+  });
+};
+
+/**
+ * NEW: Hook for deleting a plan session exercise.
+ */
+export const useDeletePlanSessionExerciseMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, DeletePlanSessionExercisePayload>({
+    mutationFn: (payload) => deletePlanSessionExercise(payload),
+    onSuccess: (_, deletedExercisePayload) => {
+      toast.success(`Exercise deleted successfully!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.all }); // Broad invalidation as a fallback
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete exercise: ${error.message}`);
+    }
+  });
+};
+
+export const useAddPlanSessionExerciseSetMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<PlanSet, Error, AddPlanSessionExerciseSetPayload>({
+    mutationFn: (payload) => addPlanSessionExerciseSet(payload),
+    onSuccess: (newSet) => {
+      toast.success(`Set ${newSet.set_number} added!`);
+      // Invalidate the full plan details query (will cause entire hierarchy to refetch)
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(newSet.plan_session_exercise_id.split('-')[0]) }); // This still needs plan_id
+      // For now, simpler invalidation.
+      queryClient.invalidateQueries({ queryKey: planKeys.all }); // Broad invalidation as a fallback
+      queryClient.invalidateQueries({ queryKey: planKeys.planSessionExerciseSets(newSet.plan_session_exercise_id) });
+    },
+    onError: (error) => {
+      toast.error(`Failed to add set: ${error.message}`);
+    }
+  });
+};
+
+/**
+ * NEW: Hook for updating an existing plan session exercise set.
+ */
+export const useUpdatePlanSessionExerciseSetMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<PlanSet, Error, UpdatePlanSessionExerciseSetPayload>({
+    mutationFn: (payload) => updatePlanSessionExerciseSet(payload),
+    onSuccess: (updatedSet) => {
+      toast.success(`Set ${updatedSet.set_number} updated!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.all }); // Broad invalidation as a fallback
+      queryClient.invalidateQueries({ queryKey: planKeys.planSessionExerciseSets(updatedSet.plan_session_exercise_id) });
+    },
+    onError: (error) => {
+      toast.error(`Failed to update set: ${error.message}`);
+    }
+  });
+};
+
+/**
+ * NEW: Hook for deleting a plan session exercise set.
+ */
+export const useDeletePlanSessionExerciseSetMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, DeletePlanSessionExerciseSetPayload>({
+    mutationFn: (payload) => deletePlanSessionExerciseSet(payload),
+    onSuccess: (_, deletedSetPayload) => {
+      toast.success(`Set deleted successfully!`);
+      queryClient.invalidateQueries({ queryKey: planKeys.all }); // Broad invalidation as a fallback
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete set: ${error.message}`);
+    }
+  });
+};
+// src/api/team/endpoint.ts
+
+import { supabase } from '@/lib/supabase/supabaseClient';
+import type { NewTeam, Team, TeamDetails, RichTeamCardData, TeamInvitationWithRelations } from '@/types/team';
+import type { TeamMemberRole } from '@/types/team/index';
+
+export interface TeamFilters {
+  searchTerm?: string;
+}
+
+export const fetchTeamDetails = async (teamId: string): Promise<TeamDetails | null> => {
+  const { data, error } = await supabase.rpc('get_team_details_and_members', { p_team_id: teamId });
+  if (error) { throw new Error(error.message); }
+  return data;
+};
+
+/**
+ * NEW & REPLACES OLD FUNCTION: Fetches rich data for team cards on the Explore page.
+ */
+export const fetchRichTeamCards = async (filters: TeamFilters): Promise<RichTeamCardData[]> => {
+    const { data, error } = await supabase
+      .rpc('get_filtered_teams_rich', {
+        p_search_term: filters.searchTerm,
+      });
+
+    if (error) {
+      console.error('API Error fetchRichTeamCards:', error);
+      throw new Error(error.message);
+    }
+    return (data as RichTeamCardData[]) || [];
+};
+
+export const createTeam = async (newTeamData: Omit<NewTeam, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'is_personal_workspace'>): Promise<Team> => {
+  const { name, description, is_private } = newTeamData;
+  const { data, error } = await supabase.rpc('create_new_team', { p_name: name, p_description: description, p_is_private: is_private }).single();
+  if (error) { throw new Error(error.message); }
+  return data as Team;
+};
+
+
+export const fetchPendingInvitations = async (): Promise<TeamInvitationWithRelations[]> => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    // The 'select' string has been corrected to remove the trailing comma.
+    const { data, error } = await supabase
+        .from('team_invitations')
+        .select(`
+            *,
+            teams(*),
+            profiles:invited_by(*)
+        `) // <--- The comma is now removed from the end of this line
+        .eq('status', 'pending')
+        .eq('invited_user_id', user.id);
+    
+    if (error) {
+        console.error('API Error fetchPendingInvitations:', error);
+        throw new Error(error.message);
+    }
+    return data || [];
+};
+
+
+
+const sendInvitationEmail = async (invitationId: string) => {
+  // The 'invoke' helper is simple. The second argument is the body object.
+  // It automatically handles POST, headers, and stringifying the body.
+  const { error } = await supabase.functions.invoke('send-invite-email', {
+    body: { invitationId }, // Just pass the object directly
+  });
+
+  if (error) {
+    // We log the error but don't re-throw, so the UI can succeed
+    // even if the email fails to send.
+    console.error(`Failed to send invitation email for invite ${invitationId}:`, error.message);
+  }
+};
+
+// This is the main function that orchestrates the entire process
+export const inviteMember = async ({ teamId, email, role, userId }: {
+  teamId: string;
+  role: TeamMemberRole;
+  email?: string;
+  userId?: string;
+}) => {
+  // Step 1: Call the RPC to create the database record and get the new ID back.
+  const { data: responseData, error: rpcError } = await supabase.rpc('invite_member_to_team', {
+    p_team_id: teamId,
+    p_role: role,
+    p_invited_email: email,
+    p_invited_user_id: userId
+  });
+
+  if (rpcError) {
+    // If the database operation fails, we stop immediately.
+    throw new Error(rpcError.message);
+  }
+
+  const newInvitationId = responseData?.id;
+
+  if (!newInvitationId) {
+    throw new Error("Failed to create invitation record in the database.");
+  }
+
+  // Step 2: If the record was created and an email was provided,
+  // invoke the Edge Function to send the notification.
+  if (email) {
+    await sendInvitationEmail(newInvitationId);
+  }
+};
+
+export const respondToInvitation = async ({ invitationId, accept }: { invitationId: string, accept: boolean }) => {
+  const { error } = await supabase
+    .rpc('respond_to_team_invitation', {
+      p_invitation_id: invitationId,
+      p_accepted: accept
+    });
+
+  if (error) {
+    console.error('API Error respondToInvitation:', error);
+    throw new Error(error.message);
+  }
+};
+// src/api/team/index.ts
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+// src/api/team/index.ts
+import {
+    createTeam,
+    fetchTeamDetails,
+    fetchRichTeamCards, 
+    type TeamFilters,
+    fetchPendingInvitations,
+    inviteMember,
+    respondToInvitation
+} from './endpoint';
+import type { NewTeam, RichTeamCardData, Team, TeamDetails, TeamInvitationWithRelations, TeamMemberRole } from '@/types/team';
+
+const teamKeys = {
+  all: ['teams'] as const,
+  lists: () => [...teamKeys.all, 'list'] as const,
+  list: (filters: TeamFilters) => [...teamKeys.lists(), filters] as const,
+  details: () => [...teamKeys.all, 'details'] as const,
+  detail: (teamId: string) => [...teamKeys.details(), teamId] as const,
+};
+
+const teamInvitationKeys = {
+    all: ['teamInvitations'] as const,
+    lists: () => [...teamInvitationKeys.all, 'list'] as const,
+    list: (status: string) => [...teamInvitationKeys.lists(), status] as const,
+};
+
+export const useTeamDetailsQuery = (teamId: string | undefined) => {
+  return useQuery<TeamDetails | null, Error>({
+    queryKey: teamKeys.detail(teamId!),
+    queryFn: () => fetchTeamDetails(teamId!),
+    enabled: !!teamId,
+  });
+};
+
+/**
+ * NEW & REPLACES OLD HOOK: Fetches rich data for team cards on the Explore page.
+ */
+export const useRichTeamCardsQuery = (filters: TeamFilters) => {
+    return useQuery<RichTeamCardData[], Error>({
+      queryKey: teamKeys.list(filters),
+      queryFn: () => fetchRichTeamCards(filters),
+    });
+};
+
+export const useCreateTeamMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<Team, Error, Omit<NewTeam, 'id' | 'created_by' | 'created_at' | 'updated_at'>>({
+    mutationFn: (newTeamData) => createTeam(newTeamData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamKeys.all });
+    },
+  });
+};
+
+// ... (Your invitation mutation hooks can remain the same)
+
+export const usePendingInvitationsQuery = () => {
+    return useQuery<TeamInvitationWithRelations[], Error>({
+        queryKey: teamInvitationKeys.list('pending'),
+        queryFn: fetchPendingInvitations,
+    });
+};
+
+export const useInviteMemberMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, {
+    teamId: string;
+    role: TeamMemberRole;
+    email?: string;
+    userId?: string;
+  }>({
+    mutationFn: (inviteData) => inviteMember(inviteData),
+    onSuccess: (_, variables) => {
+      // On success, we know the DB record was created, so we can refresh the team details.
+      queryClient.invalidateQueries({ queryKey: teamKeys.detail(variables.teamId) });
+    },
+  });
+};
+
+/**
+ * **NEW:** Hook for responding to a team invitation.
+ */
+export const useRespondToInvitationMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, { invitationId: string, accept: boolean }>({
+    mutationFn: (responseData) => respondToInvitation(responseData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: teamInvitationKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: teamKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['user', 'details'] });
+    },
+  });
+};
+// src/api/user/endpoint.ts
+
+import { supabase } from '@/lib/supabase/supabaseClient';
+import { Tables, TablesInsert } from '@/types/database.types';
+import type { Profile } from '@/types/index';
+import type { RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
+
+export interface UserFilters {
+  searchTerm?: string;
+  // NOTE: The roleFilter and excludeTeamId from the old discoverableUsers
+  // are not used by the new rich user card RPC, but the interface can
+  // be extended if needed in the future.
+}
+
+/**
+ * Fetches the simple profile record for the currently authenticated user.
+ * Good for quick access to name, username, etc.
+ */
+export const fetchCurrentUserProfile = async (): Promise<Profile | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      console.warn(`API Warning fetchCurrentUserProfile: Profile for user ${user.id} not found.`);
+      return null;
+    }
+    console.error(`API Error fetchCurrentUserProfile (User ID: ${user.id}):`, error);
+    throw new Error(error.message);
+  }
+
+  return data;
+};
+
+/**
+ * Fetches the complete, aggregated profile details for a specific user.
+ *
+ * @param userId - The UUID of the user whose profile we want to fetch.
+ */
+export const fetchUserProfileDetails = async (userId: string): Promise<UserProfileDetails | null> => {
+  if (!userId) {
+    console.warn("API Warning fetchUserProfileDetails: No userId provided.");
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .rpc('get_user_profile_details', { p_user_id: userId });
+
+  if (error) {
+    console.error(`API Error fetchUserProfileDetails (User ID: ${userId}):`, error);
+    throw new Error(error.message);
+  }
+
+  return data as UserProfileDetails | null;
+};
+
+/**
+ * NEW & REPLACES discoverableUsers: Fetches rich, analytical data for user/coach cards
+ * on the Explore page, powered by the coach_analytics_summary view.
+ */
+export const fetchRichUserCards = async (filters: UserFilters): Promise<RichUserCardData[]> => {
+    const { data, error } = await supabase
+      .rpc('get_filtered_users_rich', {
+        p_search_term: filters.searchTerm,
+        // NOTE: p_page_limit and p_page_offset can be added here if pagination is needed
+      });
+
+    if (error) {
+      console.error('API Error fetchRichUserCards:', error);
+      throw new Error(error.message);
+    }
+    return (data as RichUserCardData[]) || [];
+};
+
+/**
+ * Calls the RPC to mark the current user's onboarding as complete.
+ */
+export const completeOnboarding = async (): Promise<void> => {
+  const { error } = await supabase
+    .rpc('complete_onboarding');
+
+  if (error) {
+    console.error('API Error completeOnboarding:', error);
+    throw new Error(error.message);
+  }
+};
+
+
+/**
+ * Fetches the complete workout plan history for a specific user.
+ * @param userId - The UUID of the user.
+ */
+export const fetchUserPlanHistory = async (userId: string): Promise<UserPlanHistoryItem[]> => {
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .rpc('get_user_plan_history', { p_user_id: userId });
+
+  if (error) {
+    console.error(`API Error fetchUserPlanHistory (User ID: ${userId}):`, error);
+    throw new Error(error.message);
+  }
+  return (data as UserPlanHistoryItem[]) || [];
+};
+export const setCurrentUserWorkspace = async (workspaceId: string | null): Promise<void> => {
+  const { error } = await supabase
+    .rpc('set_current_user_workspace', { p_workspace_id: workspaceId });
+
+  if (error) {
+    console.error(`API Error setCurrentUserWorkspace (ID: ${workspaceId}):`, error);
+    throw new Error(error.message);
+  }
+};
+
+export const fetchUserMeasurements = async (userId: string): Promise<Tables<'user_measurements'>[]> => {
+  if (!userId) return [];
+
+  const { data, error } = await supabase
+    .rpc('get_user_measurements', { p_user_id: userId });
+
+  if (error) {
+    console.error(`API Error fetchUserMeasurements (User ID: ${userId}):`, error);
+    throw new Error(error.message);
+  }
+  return data || [];
+};
+
+/**
+ * NEW: Inserts a new body measurement record for the current user.
+ * @param measurementData - The data for the new measurement.
+ */
+export const insertUserMeasurement = async (measurementData: TablesInsert<'user_measurements'>): Promise<Tables<'user_measurements'>> => {
+  // Pass the entire object as JSONB to the RPC
+  const { data, error } = await supabase
+    .rpc('insert_user_measurement', { p_measurement_data: measurementData })
+    .single(); // Expecting a single record returned
+
+  if (error || !data) {
+    console.error('API Error insertUserMeasurement:', error);
+    throw new Error(error?.message || 'Failed to insert measurement.');
+  }
+  return data as Tables<'user_measurements'>;
+};
+// src/api/user/index.ts
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  completeOnboarding,
+  fetchCurrentUserProfile,
+  fetchUserPlanHistory,
+  fetchUserProfileDetails,
+  fetchRichUserCards, // The new function
+  fetchUserMeasurements,
+  type UserFilters,
+  setCurrentUserWorkspace,
+  insertUserMeasurement
+} from './endpoint';
+import { useAuthStore } from '@/stores/auth-store';
+import type { Profile } from '@/types/index';
+import type { RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
+import { Tables, TablesInsert } from '@/types/database.types';
+import { toast } from 'sonner';
+
+// --- Query Keys ---
+const userKeys = {
+  all: ['user'] as const,
+  currentUser: () => [...userKeys.all, 'current'] as const,
+  profileDetails: (userId: string) => [...userKeys.all, 'details', userId] as const,
+  // Key for the new rich user card lists
+  richLists: () => [...userKeys.all, 'rich', 'list'] as const,
+  richList: (filters: UserFilters) => [...userKeys.richLists(), filters] as const,
+  planHistory: (userId: string) => [...userKeys.all, 'planHistory', userId] as const, 
+   measurements: () => [...userKeys.all, 'measurements'] as const, // Base key for all measurements
+  userMeasurements: (userId: string) => [...userKeys.measurements(), userId] as const, // Specific user's measurements
+
+};
+
+// --- Hooks ---
+
+/**
+ * Hook for fetching the current authenticated user's simple profile record.
+ * This is now powered by the Zustand store.
+ */
+export const useCurrentUserQuery = () => {
+  const { user } = useAuthStore();
+
+  return useQuery<Profile | null, Error>({
+    queryKey: userKeys.currentUser(),
+    queryFn: fetchCurrentUserProfile,
+    enabled: !!user,
+  });
+};
+
+/**
+ * Hook for fetching the complete, aggregated profile details for any user.
+ */
+export const useUserProfileDetailsQuery = (userId: string | undefined) => {
+  return useQuery<UserProfileDetails | null, Error>({
+    queryKey: userKeys.profileDetails(userId!),
+    queryFn: () => fetchUserProfileDetails(userId!),
+    enabled: !!userId,
+  });
+};
+
+/**
+ * NEW & REPLACES useDiscoverableUsersQuery: Hook for fetching rich, analytical data
+ * for user/coach cards on the Explore page.
+ */
+export const useRichUserCardsQuery = (filters: UserFilters) => {
+    return useQuery<RichUserCardData[], Error>({
+      queryKey: userKeys.richList(filters),
+      queryFn: () => fetchRichUserCards(filters),
+    });
+};
+
+/**
+ * Hook for fetching a user's complete workout plan history.
+ */
+export const useUserPlanHistoryQuery = (userId: string | undefined) => {
+  return useQuery<UserPlanHistoryItem[], Error>({
+    queryKey: userKeys.planHistory(userId!),
+    queryFn: () => fetchUserPlanHistory(userId!),
+    enabled: !!userId,
+  });
+};
+
+/**
+ * Hook for the mutation to complete the user's onboarding process.
+ */
+export const useCompleteOnboardingMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, void>({
+    mutationFn: completeOnboarding,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.currentUser() });
+    },
+    onError: (error) => {
+      console.error('Error completing onboarding mutation:', error);
+    }
+  });
+};
+
+
+export const useSetCurrentUserWorkspaceMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string | null>({ // <--- CHANGED: parameter can be string | null
+    mutationFn: (workspaceId) => setCurrentUserWorkspace(workspaceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'summary'] });
+      queryClient.invalidateQueries({ queryKey: userKeys.currentUser() });
+    },
+    onError: (error) => {
+      console.error('Error setting current workspace:', error);
+    }
+  });
+};
+
+export const useUserMeasurementsQuery = (userId: string | undefined) => {
+  return useQuery<Tables<'user_measurements'>[], Error>({
+    queryKey: userKeys.userMeasurements(userId!),
+    queryFn: () => fetchUserMeasurements(userId!),
+    enabled: !!userId, // Only run if userId is available
+  });
+};
+
+/**
+ * NEW: Hook for inserting a new user measurement.
+ */
+export const useInsertUserMeasurementMutation = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore(); // Get current user from auth store
+
+  return useMutation<Tables<'user_measurements'>, Error, TablesInsert<'user_measurements'>>({
+    mutationFn: (newMeasurementData) => insertUserMeasurement(newMeasurementData),
+    onSuccess: (newRecord) => {
+      // Invalidate the measurements query for the current user to refetch the updated list
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: userKeys.userMeasurements(user.id) });
+      }
+      toast.success('Measurement added successfully!');
+    },
+    onError: (error) => {
+      toast.error(`Error adding measurement: ${error.message}`);
+    }
+  });
+};
+import { supabase } from "@/lib/supabase/supabaseClient";
+import { TeamDetails } from "@/types/team"; // Import TeamDetails
+import { WorkspaceData } from "@/types/workspace"; // Keep WorkspaceData
+
+/**
+ * Fetches the complete, aggregated data for a specific workspace (team).
+ * Now uses get_team_details_and_members RPC for a richer dataset.
+ * @param teamId - The UUID of the team to fetch data for.
+ */
+export const fetchWorkspaceData = async (teamId: string): Promise<WorkspaceData | null> => {
+  if (!teamId) return null;
+
+  // CHANGED: Calling get_team_details_and_members instead of get_workspace_data
+  const { data, error } = await supabase
+    .rpc('get_team_details_and_members', { p_team_id: teamId })
+    .single();
+
+  if (error) {
+    console.error(`API Error fetchWorkspaceData (Team ID: ${teamId}):`, error);
+    throw new Error(error.message);
+  }
+
+  // Cast the data to TeamDetails which matches the RPC output
+  // Then, transform it to WorkspaceData if there are any subtle differences,
+  // or simply use TeamDetails as your WorkspaceData if they are identical now.
+  // Given your current type definitions, they are effectively the same.
+  return data as WorkspaceData | null; // Type cast directly as they are now aligned
+};
+import { useQuery } from '@tanstack/react-query';
+import { fetchWorkspaceData } from './endpoint';
+import type { WorkspaceData } from '@/types/workspace/index'; // Keep this type
+
+const workspaceKeys = {
+  all: ['workspace'] as const,
+  details: () => [...workspaceKeys.all, 'details'] as const,
+  detail: (teamId: string) => [...workspaceKeys.details(), teamId] as const,
+};
+
+/**
+ * Hook for fetching all the necessary data for a given workspace view.
+ * @param teamId - The ID of the workspace (team) to fetch.
+ */
+export const useWorkspaceDataQuery = (teamId: string | undefined) => {
+  return useQuery<WorkspaceData | null, Error>({
+    queryKey: workspaceKeys.detail(teamId!),
+    queryFn: () => fetchWorkspaceData(teamId!),
+    enabled: !!teamId, // Only runs when a teamId is provided
+  });
+};
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Profile } from "@/types";
+import { Link } from "@tanstack/react-router";
+
+export function PeopleCard({ profile, className }: { profile: Profile, className?: string }) {
+  return (
+    <Card className={`cursor-pointer hover:shadow-md transition-shadow ${className}`}>
+      <CardHeader>
+        <CardTitle>{profile.full_name || profile.username}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground mb-4">{profile.bio || "No bio provided"}</p>
+        <div className="flex justify-between text-sm text-muted-foreground">
+          <span>Username: {profile.username}</span>
+          <span>Unit: {profile.unit}</span>
+        </div>
+        <div className="mt-4">
+          <Link to={'/explore/people/$peopleId'} params={{ peopleId: profile.id }} className="block w-full">
+            <Button className="w-full">
+              View Profile
+            </Button>
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+/**
+ * UserIcon Component
+ *
+ * Renders the User icon SVG. Accepts Tailwind classes via `className`
+ * and other standard SVG props. Inherits color via `currentColor`.
+ *
+ * @param {object} props - Component props.
+ * @param {string} [props.className] - Tailwind classes for styling (size, color, etc.).
+ * @param {number|string} [props.size=24] - Size of the icon (applied to width and height).
+ * @param {number|string} [props.strokeWidth=1.5] - Stroke width for outlined icons.
+ * @param {React.SVGProps<SVGSVGElement>} [props...rest] - Other SVG props.
+ */
+const Diff1 = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  // --- IMPORTANT ---
+  // Replace the viewBox and path data below with the actual values
+  // exported from your Figma icon.
+  // Make sure fill="none" and stroke="currentColor" are set if it's
+  // an outline icon, or fill="currentColor" and stroke="none" for a solid icon.
+  // Using "currentColor" allows Tailwind text color classes to control the icon color.
+  // --- /IMPORTANT ---
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M14.25 14.25H3.75V3.75H14.25M14.25 2.25H3.75C3.35218 2.25 2.97064 2.40804 2.68934 2.68934C2.40804 2.97064 2.25 3.35218 2.25 3.75V14.25C2.25 14.6478 2.40804 15.0294 2.68934 15.3107C2.97064 15.592 3.35218 15.75 3.75 15.75H14.25C14.6478 15.75 15.0294 15.592 15.3107 15.3107C15.592 15.0294 15.75 14.6478 15.75 14.25V3.75C15.75 3.35218 15.592 2.97064 15.3107 2.68934C15.0294 2.40804 14.6478 2.25 14.25 2.25ZM9 12.75H10.5V5.25H7.5V6.75H9" fill="currentColor" />
+    </svg>
+  );
+};
+
+const Diff2 = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  // --- IMPORTANT ---
+  // Replace the viewBox and path data below with the actual values
+  // exported from your Figma icon.
+  // Make sure fill="none" and stroke="currentColor" are set if it's
+  // an outline icon, or fill="currentColor" and stroke="none" for a solid icon.
+  // Using "currentColor" allows Tailwind text color classes to control the icon color.
+  // --- /IMPORTANT ---
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M11.25 11.25H8.25V9.75H9.75C10.1478 9.75 10.5294 9.59196 10.8107 9.31066C11.092 9.02936 11.25 8.64782 11.25 8.25V6.75C11.25 6.35218 11.092 5.97064 10.8107 5.68934C10.5294 5.40804 10.1478 5.25 9.75 5.25H6.75V6.75H9.75V8.25H8.25C7.85218 8.25 7.47064 8.40804 7.18934 8.68934C6.90804 8.97064 6.75 9.35218 6.75 9.75V12.75H11.25M14.25 14.25H3.75V3.75H14.25M14.25 2.25H3.75C3.35218 2.25 2.97064 2.40804 2.68934 2.68934C2.40804 2.97064 2.25 3.35218 2.25 3.75V14.25C2.25 14.6478 2.40804 15.0294 2.68934 15.3107C2.97064 15.592 3.35218 15.75 3.75 15.75H14.25C14.6478 15.75 15.0294 15.592 15.3107 15.3107C15.592 15.0294 15.75 14.6478 15.75 14.25V3.75C15.75 3.35218 15.592 2.97064 15.3107 2.68934C15.0294 2.40804 14.6478 2.25 14.25 2.25Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+
+const Diff3 = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  // --- IMPORTANT ---
+  // Replace the viewBox and path data below with the actual values
+  // exported from your Figma icon.
+  // Make sure fill="none" and stroke="currentColor" are set if it's
+  // an outline icon, or fill="currentColor" and stroke="none" for a solid icon.
+  // Using "currentColor" allows Tailwind text color classes to control the icon color.
+  // --- /IMPORTANT ---
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M11.25 11.25V10.125C11.25 9.82663 11.1315 9.54048 10.9205 9.3295C10.7095 9.11853 10.4234 9 10.125 9C10.4234 9 10.7095 8.88147 10.9205 8.6705C11.1315 8.45952 11.25 8.17337 11.25 7.875V6.75C11.25 6.35218 11.092 5.97064 10.8107 5.68934C10.5294 5.40804 10.1478 5.25 9.75 5.25H6.75V6.75H9.75V8.25H8.25V9.75H9.75V11.25H6.75V12.75H9.75C10.1478 12.75 10.5294 12.592 10.8107 12.3107C11.092 12.0294 11.25 11.6478 11.25 11.25ZM14.25 14.25H3.75V3.75H14.25M14.25 2.25H3.75C3.35218 2.25 2.97064 2.40804 2.68934 2.68934C2.40804 2.97064 2.25 3.35218 2.25 3.75V14.25C2.25 14.6478 2.40804 15.0294 2.68934 15.3107C2.97064 15.592 3.35218 15.75 3.75 15.75H14.25C14.6478 15.75 15.0294 15.592 15.3107 15.3107C15.592 15.0294 15.75 14.6478 15.75 14.25V3.75C15.75 3.35218 15.592 2.97064 15.3107 2.68934C15.0294 2.40804 14.6478 2.25 14.25 2.25Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+const Diff4 = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  // --- IMPORTANT ---
+  // Replace the viewBox and path data below with the actual values
+  // exported from your Figma icon.
+  // Make sure fill="none" and stroke="currentColor" are set if it's
+  // an outline icon, or fill="currentColor" and stroke="none" for a solid icon.
+  // Using "currentColor" allows Tailwind text color classes to control the icon color.
+  // --- /IMPORTANT ---
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M14.25 14.25H3.75V3.75H14.25M14.25 2.25H3.75C3.35218 2.25 2.97064 2.40804 2.68934 2.68934C2.40804 2.97064 2.25 3.35218 2.25 3.75V14.25C2.25 14.6478 2.40804 15.0294 2.68934 15.3107C2.97064 15.592 3.35218 15.75 3.75 15.75H14.25C14.6478 15.75 15.0294 15.592 15.3107 15.3107C15.592 15.0294 15.75 14.6478 15.75 14.25V3.75C15.75 3.35218 15.592 2.97064 15.3107 2.68934C15.0294 2.40804 14.6478 2.25 14.25 2.25ZM9.75 12.75H11.25V5.25H9.75V8.25H8.25V5.25H6.75V9.75H9.75" fill="currentColor" />
+    </svg>
+  );
+};
+
+const Diff5 = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  // --- IMPORTANT ---
+  // Replace the viewBox and path data below with the actual values
+  // exported from your Figma icon.
+  // Make sure fill="none" and stroke="currentColor" are set if it's
+  // an outline icon, or fill="currentColor" and stroke="none" for a solid icon.
+  // Using "currentColor" allows Tailwind text color classes to control the icon color.
+  // --- /IMPORTANT ---
+
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M11.25 11.25V9.75C11.25 9.35218 11.092 8.97064 10.8107 8.68934C10.5294 8.40804 10.1478 8.25 9.75 8.25H8.25V6.75H11.25V5.25H6.75V9.75H9.75V11.25H6.75V12.75H9.75C10.1478 12.75 10.5294 12.592 10.8107 12.3107C11.092 12.0294 11.25 11.6478 11.25 11.25ZM14.25 14.25H3.75V3.75H14.25M14.25 2.25H3.75C3.35218 2.25 2.97064 2.40804 2.68934 2.68934C2.40804 2.97064 2.25 3.35218 2.25 3.75V14.25C2.25 14.6478 2.40804 15.0294 2.68934 15.3107C2.97064 15.592 3.35218 15.75 3.75 15.75H14.25C14.6478 15.75 15.0294 15.592 15.3107 15.3107C15.592 15.0294 15.75 14.6478 15.75 14.25V3.75C15.75 3.35218 15.592 2.97064 15.3107 2.68934C15.0294 2.40804 14.6478 2.25 14.25 2.25Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+
+const Gym = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path fillRule="evenodd" clipRule="evenodd" d="M1.5 9.75C1.49991 10.4337 1.73333 11.0969 2.1616 11.6297C2.58988 12.1626 3.18732 12.5333 3.855 12.6802C3.99949 13.1358 4.28527 13.5335 4.67093 13.8157C5.05659 14.098 5.5221 14.2501 6 14.25C6.39782 14.25 6.77936 14.092 7.06066 13.8107C7.34196 13.5294 7.5 13.1478 7.5 12.75V10.5H10.5V12.75C10.5 13.1478 10.658 13.5294 10.9393 13.8107C11.2206 14.092 11.6022 14.25 12 14.25C13.005 14.25 13.857 13.59 14.145 12.6802C14.8127 12.5333 15.4101 12.1626 15.8384 11.6297C16.2667 11.0969 16.5001 10.4337 16.5 9.75V8.25C16.5001 7.56634 16.2667 6.90315 15.8384 6.37026C15.4101 5.83736 14.8127 5.46674 14.145 5.31975C14.0005 4.86421 13.7147 4.46651 13.3291 4.18428C12.9434 3.90204 12.4779 3.74994 12 3.75C11.6022 3.75 11.2206 3.90804 10.9393 4.18934C10.658 4.47064 10.5 4.85218 10.5 5.25V7.5H7.5V5.25C7.5 4.85218 7.34196 4.47064 7.06066 4.18934C6.77936 3.90804 6.39782 3.75 6 3.75C4.995 3.75 4.143 4.41 3.855 5.31975C3.18732 5.46674 2.58988 5.83736 2.1616 6.37026C1.73333 6.90315 1.49991 7.56634 1.5 8.25V9.75Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+const Home = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M3 14.25V7.5C3 7.2625 3.05325 7.0375 3.15975 6.825C3.26625 6.6125 3.413 6.4375 3.6 6.3L8.1 2.925C8.3625 2.725 8.6625 2.625 9 2.625C9.3375 2.625 9.6375 2.725 9.9 2.925L14.4 6.3C14.5875 6.4375 14.7345 6.6125 14.841 6.825C14.9475 7.0375 15.0005 7.2625 15 7.5V14.25C15 14.6625 14.853 15.0158 14.559 15.3098C14.265 15.6038 13.912 15.7505 13.5 15.75H11.25C11.0375 15.75 10.8595 15.678 10.716 15.534C10.5725 15.39 10.5005 15.212 10.5 15V11.25C10.5 11.0375 10.428 10.8595 10.284 10.716C10.14 10.5725 9.962 10.5005 9.75 10.5H8.25C8.0375 10.5 7.8595 10.572 7.716 10.716C7.5725 10.86 7.5005 11.038 7.5 11.25V15C7.5 15.2125 7.428 15.3907 7.284 15.5347C7.14 15.6787 6.962 15.7505 6.75 15.75H4.5C4.0875 15.75 3.7345 15.6033 3.441 15.3098C3.1475 15.0163 3.0005 14.663 3 14.25Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+
+const Outdoor = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M1.5 15.75L6.75 3.75L10.5 12.75L12 8.25L16.5 15.75H1.5ZM13.875 5.25C14.3723 5.25 14.8492 5.05246 15.2008 4.70083C15.5525 4.34919 15.75 3.87228 15.75 3.375C15.75 2.87772 15.5525 2.40081 15.2008 2.04917C14.8492 1.69754 14.3723 1.5 13.875 1.5C13.3777 1.5 12.9008 1.69754 12.5492 2.04917C12.1975 2.40081 12 2.87772 12 3.375C12 3.87228 12.1975 4.34919 12.5492 4.70083C12.9008 5.05246 13.3777 5.25 13.875 5.25Z" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
+const Strength = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <g clipPath="url(#clip0_4_96)">
+        <path d="M5.83265 0.657007C0.548205 2.08407 -1.48312 6.98028 3.2597 8.62647H3.2212C3.24353 8.6295 3.26599 8.63301 3.28821 8.63632C3.60409 8.74449 3.9502 8.83787 4.32645 8.91546C6.0947 9.60997 7.37369 11.2929 7.4774 12.9375C6.29917 13.7495 5.38665 15.1469 5.38665 15.1469L6.31056 16.5069L4.86142 17.332H7.74318C6.32199 15.9105 7.32974 14.3119 9.0132 14.3119C10.7197 14.3119 11.6128 16.0033 10.2843 17.332H13.1364L11.717 16.5069L12.641 15.1469C12.641 15.1469 11.7137 13.7266 10.5217 12.9177C10.6343 11.2794 11.9104 9.60719 13.6715 8.91542C14.0479 8.83783 14.3938 8.74456 14.7097 8.63635C14.7319 8.63301 14.7544 8.6295 14.7767 8.62651H14.7372C19.4807 6.98049 17.45 2.08414 12.1653 0.656937C10.7336 2.04104 12.3952 4.23173 13.699 2.65652C14.9963 5.08511 14.0014 7.142 11.1579 5.58876C10.7402 6.44981 9.9551 7.04332 9.02434 7.04332C8.08556 7.04332 7.29578 6.43979 6.88086 5.56675C4.006 7.16214 2.99568 5.09664 4.2991 2.65652C5.60304 4.23169 7.26452 2.041 5.83282 0.656972L5.83265 0.657007ZM9.02448 1.91982C8.06162 1.91982 7.21991 2.88858 7.21991 4.15611C7.21991 5.4237 8.06162 6.37078 9.02448 6.37078C9.98734 6.37078 10.8289 5.42367 10.8289 4.15614C10.8289 2.88848 9.98731 1.91985 9.02445 1.91985L9.02448 1.91982Z" fill="currentColor" />
+      </g>
+      <defs>
+        <clipPath id="clip0_4_96">
+          <rect width="18" height="18" fill="currentColor" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+};
+
+const Endurance = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M9.74998 1.5C10.3056 1.4991 10.8418 1.70378 11.2555 2.07463C11.6692 2.44548 11.9311 2.95627 11.9907 3.50865C12.0503 4.06103 11.9034 4.61592 11.5783 5.06648C11.2532 5.51703 10.773 5.83139 10.23 5.949L10.1017 5.973L11.1787 7.69575L12.4717 7.17825C12.6496 7.10646 12.8482 7.10552 13.0267 7.17564C13.2052 7.24576 13.3501 7.3816 13.4315 7.55524C13.513 7.72888 13.5248 7.92713 13.4646 8.10922C13.4043 8.29131 13.2766 8.44341 13.1077 8.53425L13.0282 8.57175L11.736 9.0885C11.4297 9.21106 11.0915 9.2292 10.7738 9.14012C10.4561 9.05104 10.1767 8.85971 9.97873 8.59575L9.90673 8.49075L9.78448 8.29575L9.32998 10.1138C9.29065 10.2719 9.2258 10.4227 9.13798 10.56L9.07048 10.6575L10.3102 11.5785C10.6059 11.7983 10.8104 12.1191 10.8847 12.48L10.9065 12.6165L11.1712 15H11.25C11.4411 15.0002 11.625 15.0734 11.764 15.2046C11.903 15.3359 11.9867 15.5152 11.9979 15.706C12.0091 15.8969 11.947 16.0848 11.8243 16.2314C11.7016 16.378 11.5276 16.4722 11.3377 16.4948L11.25 16.5H10.5675C10.3798 16.5001 10.1977 16.4361 10.0512 16.3187C9.9048 16.2013 9.80276 16.0375 9.76198 15.8543L9.74698 15.7665L9.41548 12.7823L7.05298 11.0273C7.01093 10.9964 6.97222 10.9612 6.93748 10.9223C6.72909 10.7555 6.56897 10.5361 6.47365 10.2868C6.37833 10.0375 6.35126 9.76727 6.39523 9.504L6.41998 9.38625L7.01548 7.0035L5.83798 7.356L5.21173 9.237C5.15158 9.419 5.02404 9.57106 4.85528 9.66196C4.68653 9.75286 4.48937 9.7757 4.30431 9.72578C4.11924 9.67587 3.96031 9.55699 3.86015 9.39357C3.75999 9.23014 3.7262 9.03456 3.76573 8.847L3.78823 8.763L4.41523 6.882C4.48488 6.67329 4.5996 6.48246 4.75125 6.32303C4.90289 6.16361 5.08776 6.0395 5.29273 5.9595L5.40748 5.91975L7.98523 5.1465C7.72276 4.81493 7.55904 4.41609 7.51286 3.99573C7.46667 3.57537 7.53989 3.1505 7.72411 2.76985C7.90833 2.38919 8.1961 2.06816 8.55441 1.84356C8.91273 1.61896 9.32709 1.49989 9.74998 1.5ZM7.19998 11.4C7.35911 11.5194 7.46431 11.697 7.49244 11.8939C7.52057 12.0909 7.46933 12.2909 7.34998 12.45L6.43798 13.6665C6.26543 13.8965 6.01135 14.0518 5.72792 14.1003C5.44449 14.1488 5.15324 14.087 4.91398 13.9275L3.46648 12.9623C3.31665 13.0825 3.1264 13.1406 2.93496 13.1247C2.74352 13.1088 2.56548 13.0201 2.43755 12.8767C2.30963 12.7334 2.24157 12.5465 2.24742 12.3545C2.25327 12.1625 2.33257 11.98 2.46898 11.8448L2.84023 11.4743C2.96401 11.3502 3.12696 11.2729 3.30132 11.2556C3.47568 11.2382 3.65067 11.2818 3.79648 11.379L5.45098 12.4823L6.14998 11.55C6.20907 11.4712 6.28311 11.4048 6.36786 11.3546C6.45261 11.3045 6.54641 11.2715 6.64391 11.2575C6.74141 11.2436 6.84071 11.249 6.93612 11.2735C7.03153 11.2979 7.12119 11.3409 7.19998 11.4Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+const Mobility = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M8.21099 15.75L9.05849 13.1925C9.36149 12.2813 9.51299 11.8252 9.28649 11.5095C9.06074 11.1945 8.58149 11.1945 7.62524 11.1945H6.69974M6.69974 11.1945L5.94374 11.1938C5.23274 11.1938 4.87649 11.1938 4.64999 10.9148C4.42349 10.6343 4.48799 10.32 4.61774 9.69C4.83524 8.6355 5.27174 7.32525 6.06899 6.43425C6.28949 6.18825 6.39899 6.06525 6.64124 6.01425C6.88349 5.96325 7.07699 6.05175 7.46399 6.22875L8.86049 6.86625L9.44774 7.13475C10.1377 7.44975 10.4827 7.60725 10.8465 7.59075C11.2102 7.5735 11.5395 7.3845 12.198 7.0065L13.5 6.2595M6.69974 11.1945C6.88049 10.2082 7.56599 7.95975 8.85974 6.86625M9.74999 3.375C9.74999 3.67337 9.63146 3.95952 9.42049 4.1705C9.20951 4.38147 8.92336 4.5 8.62499 4.5C8.32662 4.5 8.04047 4.38147 7.82949 4.1705C7.61852 3.95952 7.49999 3.67337 7.49999 3.375C7.49999 3.07663 7.61852 2.79048 7.82949 2.5795C8.04047 2.36853 8.32662 2.25 8.62499 2.25C8.92336 2.25 9.20951 2.36853 9.42049 2.5795C9.63146 2.79048 9.74999 3.07663 9.74999 3.375Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
+const Power = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path fillRule="evenodd" clipRule="evenodd" d="M1.5 9.75C1.49991 10.4337 1.73333 11.0969 2.1616 11.6297C2.58988 12.1626 3.18732 12.5333 3.855 12.6802C3.99949 13.1358 4.28527 13.5335 4.67093 13.8157C5.05659 14.098 5.5221 14.2501 6 14.25C6.39782 14.25 6.77936 14.092 7.06066 13.8107C7.34196 13.5294 7.5 13.1478 7.5 12.75V10.5H10.5V12.75C10.5 13.1478 10.658 13.5294 10.9393 13.8107C11.2206 14.092 11.6022 14.25 12 14.25C13.005 14.25 13.857 13.59 14.145 12.6802C14.8127 12.5333 15.4101 12.1626 15.8384 11.6297C16.2667 11.0969 16.5001 10.4337 16.5 9.75V8.25C16.5001 7.56634 16.2667 6.90315 15.8384 6.37026C15.4101 5.83736 14.8127 5.46674 14.145 5.31975C14.0005 4.86421 13.7147 4.46651 13.3291 4.18428C12.9434 3.90204 12.4779 3.74994 12 3.75C11.6022 3.75 11.2206 3.90804 10.9393 4.18934C10.658 4.47064 10.5 4.85218 10.5 5.25V7.5H7.5V5.25C7.5 4.85218 7.34196 4.47064 7.06066 4.18934C6.77936 3.90804 6.39782 3.75 6 3.75C4.995 3.75 4.143 4.41 3.855 5.31975C3.18732 5.46674 2.58988 5.83736 2.1616 6.37026C1.73333 6.90315 1.49991 7.56634 1.5 8.25V9.75Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+const Speed = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M4.05 15L3 13.95L10.2 6.75H8.25V8.25H6.75V5.25H11.1187C11.3187 5.25 11.5125 5.2875 11.7 5.3625C11.8875 5.4375 12.05 5.54375 12.1875 5.68125L14.4375 7.9125C14.775 8.25 15.1875 8.5125 15.675 8.7C16.1625 8.8875 16.6875 8.9875 17.25 9V10.5C16.475 10.5 15.772 10.3812 15.141 10.1437C14.51 9.90625 13.9505 9.55 13.4625 9.075L12.7125 8.2875L11.0625 9.9375L12.75 11.625L7.8375 14.4562L7.0875 13.1625L10.3125 11.3063L9.0375 10.0313L4.05 15ZM2.25 9.75V8.25H6V9.75H2.25ZM0.75 7.5V6H4.5V7.5H0.75ZM14.6063 6C14.1938 6 13.8375 5.85325 13.5375 5.55975C13.2375 5.26625 13.0875 4.913 13.0875 4.5C13.0875 4.087 13.2375 3.734 13.5375 3.441C13.8375 3.148 14.1938 3.001 14.6063 3C15.0188 2.999 15.375 3.146 15.675 3.441C15.975 3.736 16.125 4.089 16.125 4.5C16.125 4.911 15.975 5.26425 15.675 5.55975C15.375 5.85525 15.0188 6.002 14.6063 6ZM2.25 5.25V3.75H6V5.25H2.25Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+const Agility = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M10.125 5.0625C10.3835 5.0625 10.6396 5.01158 10.8784 4.91264C11.1173 4.8137 11.3343 4.66868 11.5171 4.48587C11.6999 4.30305 11.845 4.08602 11.9439 3.84716C12.0428 3.6083 12.0938 3.35229 12.0938 3.09375C12.0938 2.83521 12.0428 2.5792 11.9439 2.34034C11.845 2.10148 11.6999 1.88445 11.5171 1.70163C11.3343 1.51882 11.1173 1.3738 10.8784 1.27486C10.6396 1.17592 10.3835 1.125 10.125 1.125C9.60286 1.125 9.1021 1.33242 8.73289 1.70163C8.36368 2.07085 8.15626 2.57161 8.15626 3.09375C8.15626 3.61589 8.36368 4.11665 8.73289 4.48587C9.1021 4.85508 9.60286 5.0625 10.125 5.0625ZM7.71076 5.23462L7.68826 5.22787C7.49135 5.16774 7.28254 5.15769 7.08076 5.19862L4.31776 5.75887C4.121 5.79865 3.93687 5.8857 3.78125 6.01251C3.62563 6.13931 3.5032 6.30207 3.42451 6.48675L2.50538 8.6445C2.38445 8.92758 2.37336 9.24558 2.47428 9.53639C2.57521 9.82721 2.7809 10.07 3.0512 10.2173C3.3215 10.3646 3.637 10.4059 3.93609 10.3331C4.23519 10.2602 4.49641 10.0786 4.66876 9.8235C4.69967 9.77579 4.72532 9.72486 4.74526 9.67163L5.30776 8.23162C5.36221 8.09259 5.46967 7.98087 5.60649 7.92106C5.74331 7.86125 5.89828 7.85824 6.03732 7.91269C6.17636 7.96714 6.28807 8.07459 6.34789 8.21141C6.4077 8.34823 6.41071 8.50321 6.35626 8.64225L6.35176 8.6535L6.35401 8.6625L6.35626 8.6715L6.18526 9.10575L6.16613 9.15525L3.79913 15.1853C3.73468 15.3374 3.70135 15.501 3.70113 15.6662C3.7009 15.8315 3.73378 15.9951 3.79782 16.1475C3.86186 16.2998 3.95577 16.4378 4.074 16.5533C4.19223 16.6687 4.3324 16.7593 4.48622 16.8198C4.64004 16.8802 4.8044 16.9092 4.96961 16.905C5.13482 16.9009 5.29753 16.8637 5.44813 16.7957C5.59874 16.7276 5.73419 16.6301 5.84649 16.5089C5.95879 16.3876 6.04568 16.2451 6.10201 16.0898L7.42163 12.7283C7.45888 12.6443 7.51536 12.5704 7.5865 12.5123C7.65764 12.4543 7.74144 12.4138 7.83113 12.3941C7.93015 12.3641 8.03544 12.3615 8.13585 12.3864C8.23626 12.4114 8.32805 12.463 8.40151 12.5359L8.71651 12.8711C8.87465 13.0394 8.97716 13.2523 9.01013 13.4809L9.34651 15.8141C9.36664 15.9776 9.41918 16.1353 9.50106 16.2782C9.58294 16.4211 9.69251 16.5462 9.82335 16.6461C9.95419 16.7461 10.1037 16.819 10.263 16.8605C10.4224 16.9019 10.5884 16.9112 10.7514 16.8877C10.9144 16.8642 11.071 16.8084 11.2122 16.7236C11.3533 16.6387 11.4761 16.5266 11.5734 16.3937C11.6706 16.2608 11.7404 16.1099 11.7785 15.9497C11.8167 15.7895 11.8225 15.6233 11.7956 15.4609L11.3535 12.3907C11.3172 12.1394 11.2045 11.9053 11.0306 11.7203L9.71326 10.3163C9.6339 10.2309 9.57448 10.129 9.53926 10.0179C9.50405 9.90686 9.49393 9.78934 9.50963 9.67387L9.52763 9.54225C9.54223 9.43909 9.58674 9.34246 9.65564 9.26431C9.72455 9.18616 9.81484 9.12991 9.91537 9.1025C10.0159 9.0751 10.1222 9.07774 10.2213 9.11011C10.3203 9.14247 10.4077 9.20315 10.4726 9.28463L10.9643 9.90112C11.0903 10.0586 11.2523 10.1824 11.4368 10.2634L13.4561 11.1465C13.7569 11.2779 14.0975 11.2845 14.4031 11.1648C14.7087 11.045 14.9543 10.8088 15.0857 10.5081C15.2171 10.2073 15.2237 9.86666 15.104 9.56106C14.9842 9.25545 14.748 9.00993 14.4473 8.8785L12.9634 8.2305C12.7962 8.15695 12.6495 8.04382 12.5359 7.90087L11.5391 6.65213C11.3849 6.45832 11.176 6.31528 10.9395 6.2415L10.8889 6.22575C10.7204 6.17634 10.5438 6.16029 10.3691 6.1785C9.57668 6.24207 8.79031 5.99701 8.17426 5.4945C8.03476 5.382 7.88176 5.28637 7.71076 5.23462Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+
+const Balance = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M11.0774 16.9235L9.07521 12.8763L7.49317 10.8527C7.25938 10.4569 7.13603 10.0057 7.13599 9.54598V4.99219H7.68899C8.06464 4.99284 8.4247 5.14242 8.69023 5.40815C8.95575 5.67387 9.10507 6.03404 9.10544 6.40969V12.1233" fill="currentColor" />
+      <path d="M11.0774 16.9235L9.07521 12.8763L7.49317 10.8527C7.25938 10.4569 7.13603 10.0057 7.13599 9.54598V4.99219H7.68899C8.06464 4.99284 8.4247 5.14242 8.69023 5.40815C8.95575 5.67387 9.10507 6.03404 9.10544 6.40969V12.1233" stroke="currentColor" strokeLinecap="square" strokeLinejoin="round" />
+      <path d="M4.50635 10.248V7.61941L6.78975 5.33074" stroke="currentColor" strokeLinecap="square" strokeLinejoin="round" />
+      <path d="M13.231 10.3968L10.2797 8.41465V6.84386L13.9598 9.40851L13.231 10.3968ZM6.1569 17.5282L5.4035 16.5821L8.22761 13.7155L8.77358 14.843L6.1569 17.5282Z" fill="currentColor" />
+      <path d="M9.10619 3.67699C9.83197 3.67699 10.4203 3.08863 10.4203 2.36285C10.4203 1.63707 9.83197 1.04871 9.10619 1.04871C8.38041 1.04871 7.79205 1.63707 7.79205 2.36285C7.79205 3.08863 8.38041 3.67699 9.10619 3.67699Z" fill="currentColor" stroke="currentColor" strokeWidth="0.5" strokeLinecap="square" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
+const Coordination = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M6.19978 4.62462C6.51807 4.62462 6.82331 4.48635 7.04838 4.24025C7.27344 3.99414 7.39988 3.66035 7.39988 3.31231C7.39988 2.96426 7.27344 2.63047 7.04838 2.38437C6.82331 2.13826 6.51807 2 6.19978 2C5.8815 2 5.57625 2.13826 5.35119 2.38437C5.12613 2.63047 4.99969 2.96426 4.99969 3.31231C4.99969 3.66035 5.12613 3.99414 5.35119 4.24025C5.57625 4.48635 5.8815 4.62462 6.19978 4.62462ZM4.09212 7.48162C4.11712 7.47068 4.13962 7.45975 4.16462 7.44881L3.74209 9.18488C3.60208 9.76175 3.73959 10.3769 4.10962 10.8171L5.87726 12.925L6.4273 15.3336C6.53481 15.8011 6.96984 16.0882 7.39738 15.9706C7.82491 15.853 8.08743 15.3773 7.97992 14.9098L7.40488 12.3918C7.35737 12.1786 7.25986 11.9845 7.12485 11.8232L5.88726 10.3468L6.36979 8.55607L6.60981 9.18488C6.71982 9.47469 6.92234 9.71254 7.17986 9.85471L7.84741 10.2183C8.24244 10.4343 8.72248 10.2593 8.91999 9.82737C9.11751 9.3954 8.9575 8.87048 8.56247 8.65449L8.02492 8.36196L7.64239 7.35586C7.21236 6.23219 6.20728 5.49949 5.09219 5.49949C4.52215 5.49949 3.95961 5.63072 3.43957 5.88224L3.23955 5.97793C2.41699 6.37709 1.78694 7.13714 1.50441 8.06942L1.43941 8.28267C1.2994 8.74198 1.52692 9.23683 1.94445 9.38993C2.36198 9.54304 2.81702 9.29424 2.95703 8.83767L3.02203 8.62442C3.16454 8.15691 3.47957 7.77962 3.8896 7.58004L4.08962 7.48435L4.09212 7.48162ZM3.34206 11.1752L2.71701 12.8812L1.23439 14.5052C0.921869 14.8469 0.921869 15.4019 1.23439 15.7437C1.54692 16.0854 2.05446 16.0854 2.36698 15.7437L3.9071 14.0568C4.02211 13.9311 4.11212 13.7807 4.17212 13.6167L4.53465 12.627L3.51707 11.4131C3.45457 11.3393 3.39706 11.26 3.34206 11.178V11.1752ZM14.7654 6.19392C14.4529 5.85217 13.9454 5.85217 13.6329 6.19392C13.3203 6.53566 13.3203 7.09066 13.6329 7.43241L14.2679 8.1241H10.6001C10.1576 8.1241 9.80006 8.51506 9.80006 8.99897C9.80006 9.48289 10.1576 9.87385 10.6001 9.87385H14.2679L13.6329 10.5683C13.3203 10.91 13.3203 11.465 13.6329 11.8068C13.9454 12.1485 14.4529 12.1485 14.7654 11.8068L16.7656 9.61959C17.0781 9.27784 17.0781 8.72284 16.7656 8.3811L14.7654 6.19392ZM10.8001 2C10.4676 2 10.2001 2.29254 10.2001 2.65615V3.96846C10.2001 4.33208 10.4676 4.62462 10.8001 4.62462C11.1327 4.62462 11.4002 4.33208 11.4002 3.96846V2.65615C11.4002 2.29254 11.1327 2 10.8001 2ZM11.4002 6.15564C11.4002 5.79202 11.1327 5.49949 10.8001 5.49949C10.4676 5.49949 10.2001 5.79202 10.2001 6.15564V6.59308C10.2001 6.9567 10.4676 7.24923 10.8001 7.24923C11.1327 7.24923 11.4002 6.9567 11.4002 6.59308V6.15564ZM10.8001 10.7487C10.4676 10.7487 10.2001 11.0413 10.2001 11.4049V11.8423C10.2001 12.2059 10.4676 12.4985 10.8001 12.4985C11.1327 12.4985 11.4002 12.2059 11.4002 11.8423V11.4049C11.4002 11.0413 11.1327 10.7487 10.8001 10.7487ZM11.4002 14.0295C11.4002 13.6659 11.1327 13.3733 10.8001 13.3733C10.4676 13.3733 10.2001 13.6659 10.2001 14.0295V15.3418C10.2001 15.7054 10.4676 15.9979 10.8001 15.9979C11.1327 15.9979 11.4002 15.7054 11.4002 15.3418V14.0295Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+const Recovery = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M9.00002 1.5C9.82502 1.5 10.5 2.175 10.5 3C10.5 3.825 9.82502 4.5 9.00002 4.5C8.17502 4.5 7.50002 3.825 7.50002 3C7.50002 2.175 8.17502 1.5 9.00002 1.5ZM14.85 13.275L14.4 8.475C14.325 7.875 13.875 7.5 13.275 7.5H12C10.875 7.5 9.82502 7.125 9.15002 6.45L7.65002 4.95C7.57502 4.8 7.20002 4.5 6.60002 4.5C6.22502 4.5 5.85002 4.65 5.55002 4.95L3.07502 7.425C2.70002 7.95 2.70002 8.625 2.92502 9L3.97502 11.1L1.65002 14.1L2.85002 15L5.62502 11.475L5.40002 10.5L6.00002 11.1V15H7.50002V10.425L5.92502 8.85L7.72502 7.05C8.40002 7.725 9.00002 8.4 10.425 8.775L9.75002 15H10.875L11.175 12.375H13.575L13.65 13.275C13.35 13.5 13.125 13.8 13.125 14.25C13.125 14.85 13.65 15.375 14.25 15.375C14.85 15.375 15.375 14.85 15.375 14.25C15.375 13.875 15.15 13.5 14.85 13.275ZM11.325 11.25L11.625 8.625H13.125L13.425 11.25H11.325Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+const CoreStability = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M9.1875 4.875C9.63505 4.875 10.0643 4.69721 10.3807 4.38074C10.6972 4.06427 10.875 3.63505 10.875 3.1875C10.875 2.73995 10.6972 2.31072 10.3807 1.99426C10.0643 1.67779 9.63505 1.5 9.1875 1.5C8.73995 1.5 8.31073 1.67779 7.99426 1.99426C7.67779 2.31072 7.5 2.73995 7.5 3.1875C7.5 3.63505 7.67779 4.06427 7.99426 4.38074C8.31073 4.69721 8.73995 4.875 9.1875 4.875Z" fill="currentColor" />
+      <path fillRule="evenodd" clipRule="evenodd" d="M6.12225 6.92775C6.26131 6.44715 6.58317 6.04018 7.01879 5.79412C7.45441 5.54806 7.96911 5.4825 8.4525 5.6115C8.68275 5.673 8.88225 5.7945 9.0375 5.955C9.0935 6.0025 9.142 6.05825 9.183 6.12225L10.5367 8.25H12C12.0985 8.24872 12.1963 8.26685 12.2878 8.30336C12.3792 8.33987 12.4626 8.39404 12.5332 8.46277C12.6037 8.53151 12.6601 8.61347 12.6989 8.70398C12.7378 8.79448 12.7585 8.89176 12.7598 8.99025C12.761 9.08874 12.7429 9.18652 12.7064 9.278C12.6699 9.36949 12.6157 9.45288 12.547 9.52343C12.4782 9.59398 12.3963 9.6503 12.3058 9.68918C12.2153 9.72805 12.118 9.74872 12.0195 9.75H15C15.3978 9.75 15.7794 9.90803 16.0607 10.1893C16.342 10.4706 16.5 10.8522 16.5 11.25V16.5H15V11.25H3V16.5H1.5V11.25C1.5 10.8522 1.65804 10.4706 1.93934 10.1893C2.22064 9.90803 2.60218 9.75 3 9.75H5.556C5.47326 9.47319 5.47222 9.17838 5.553 8.901L6.12225 6.92775ZM9.0045 9.75H9.71325L9.132 8.8365L9.0045 9.75Z" fill="currentColor" />
+      <path d="M6.0195 12L5.847 13.2037L4.275 15.3C4.21591 15.3788 4.17291 15.4685 4.14846 15.5639C4.12402 15.6593 4.11861 15.7586 4.13254 15.8561C4.14647 15.9536 4.17946 16.0474 4.22964 16.1321C4.27982 16.2169 4.34621 16.2909 4.425 16.35C4.50379 16.4091 4.59345 16.4521 4.68886 16.4765C4.78427 16.501 4.88356 16.5064 4.98107 16.4925C5.07857 16.4785 5.17237 16.4455 5.25712 16.3954C5.34187 16.3452 5.41591 16.2788 5.475 16.2L7.278 13.7963L7.5345 12H6.0195ZM7.58625 12L9.3105 13.6875L10.3733 16.0455C10.4111 16.1374 10.4669 16.2209 10.5372 16.291C10.6076 16.3612 10.6913 16.4167 10.7833 16.4542C10.8753 16.4918 10.9739 16.5107 11.0733 16.5098C11.1727 16.5089 11.2709 16.4883 11.3622 16.4491C11.4536 16.41 11.5362 16.353 11.6054 16.2817C11.6746 16.2103 11.7288 16.1259 11.7651 16.0333C11.8013 15.9408 11.8188 15.8419 11.8165 15.7426C11.8142 15.6432 11.7922 15.5453 11.7517 15.4545L10.5645 12.9L9.67125 12H7.58625Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+
+const Pull = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <g clipPath="url(#clip0_5_151)">
+        <path d="M7.00002 0.844604L7.43867 4.29898L7.90139 1.07923L7.00002 0.844604ZM10.5222 1.50482L8.59783 4.39139L11.3603 2.1877L10.5222 1.50482ZM3.91095 2.15664V3.08782L6.33205 4.39142L3.91095 2.15664ZM9.96877 4.47151C11.4008 7.98001 10.8815 12 9.96877 15.4063H15.4063V4.47151H9.96877ZM7.51258 4.82973C7.49487 4.82952 7.47697 4.82973 7.45889 4.83035C7.06773 4.84326 6.6317 5.04204 6.27473 5.37017C5.7818 5.82414 5.52964 6.44048 5.64452 6.91079C4.23827 7.29673 3.25095 8.86964 3.09327 10.1039C2.96927 11.2654 3.57208 12.0231 3.1107 12.7737L1.27408 13.9856L0.634766 14.298L1.72908 15.5059H2.21927L1.67958 14.5006L3.95789 13.2952C4.4172 13.0265 4.45992 12.5534 4.56039 12.0111C5.06498 12.3822 5.60967 12.7362 6.04664 13.0261C5.84789 13.8913 4.84214 14.6778 4.21814 15.506H6.65023L6.55945 15.3432C6.55945 15.3432 5.33977 15.1303 5.19164 15.1089C5.18695 15.1092 5.18258 15.109 5.17892 15.1082C5.1687 15.1059 5.17633 15.1067 5.19164 15.1089C5.44611 15.0939 7.22686 13.4855 7.17698 13.092C6.75517 12.3696 6.11355 11.6909 5.45905 11.0209C5.5167 10.2248 5.53092 9.37292 6.73248 8.65848L10.1714 8.51579C10.142 7.81657 10.0298 6.64654 9.84792 6.45273C9.54473 6.68835 9.50817 7.41657 9.48455 7.97264L7.00133 7.90129C6.73742 7.8816 6.53436 7.6561 6.34039 7.5006C6.76539 7.54923 7.27852 7.34717 7.69095 6.9686C8.33698 6.37479 8.54364 5.53557 8.15252 5.09417C8.00267 4.92504 7.77845 4.83276 7.51258 4.82979V4.82973Z" fill="currentColor" />
+      </g>
+      <defs>
+        <clipPath id="clip0_5_151">
+          <rect width="16" height="16" fill="currentColor" />
+        </clipPath>
+      </defs>   </svg>
+  );
+};
+
+
+const Push = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M2.93041 1.39575L2.14219 1.79344L3.30822 4.354L2.93041 1.39575ZM5.75041 2.107L4.47732 4.69688L6.51847 2.72156L5.75035 2.107H5.75041ZM0.567505 3.93225L0.899692 4.76975L2.32775 4.95422L0.567505 3.93225ZM3.43929 4.79047C3.32475 4.79125 3.21672 4.81547 3.11879 4.86219C2.57885 5.11981 2.45763 5.992 2.84807 6.81031C3.03607 7.20375 3.31963 7.53156 3.63613 7.7215C3.3141 10.3385 4.55135 12.0273 6.49132 12.832C6.27516 13.9267 5.45144 14.7253 4.55835 15.4577L7.49544 15.5482L7.18616 15.2618L5.84575 15.0155C6.88919 14.3182 7.28225 13.8228 7.62244 12.7843C7.45775 12.4608 7.03254 12.0047 6.82769 11.6626C7.45097 11.7348 8.36466 11.8415 8.50722 11.9793C8.62535 12.2868 9.17191 12.9728 9.37454 13.8491L9.57254 14.4904L11.1102 13.0381L11.0273 12.7153L9.79069 13.5463C9.81782 12.6649 9.43194 11.5065 9.0785 11.1208C9.0785 11.1208 8.17688 10.5691 6.63454 10.3647C5.89085 9.84094 5.50904 9.03994 5.2011 8.4746L6.825 8.59344L9.35138 8.29894C9.35138 8.29894 9.4395 8.3666 9.55316 8.44644C9.74035 8.7466 10.0735 8.94794 10.4506 8.94794C10.9395 8.94794 11.3547 8.60981 11.4735 8.15625H15.1875V7.59375H11.4643C11.3348 7.15644 10.9279 6.83406 10.4505 6.83406C10.1308 6.83406 9.84282 6.97881 9.64844 7.20575C9.59054 7.20044 9.53282 7.195 9.47813 7.18685L9.19616 7.59391L6.85016 7.79641L4.86266 7.51516C5.10744 7.11016 5.08416 6.46703 4.80341 5.87728C4.49341 5.22766 3.94038 4.78703 3.43925 4.79041L3.43929 4.79047ZM10.4505 7.39653C10.727 7.39653 10.9451 7.61453 10.9451 7.89097C10.9451 8.16741 10.7269 8.38541 10.4506 8.38541C10.3701 8.38541 10.2948 8.36647 10.2281 8.33341C10.2951 8.00391 10.223 7.60216 10.1945 7.46685C10.2719 7.42062 10.3604 7.39631 10.4506 7.39653H10.4505ZM12 12L11 15.5H15V12H12Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+
+const Isometric = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M3.33621 6.40761C3.33621 7.18501 2.71095 7.81522 1.93966 7.81522C1.16836 7.81522 0.543103 7.18501 0.543103 6.40761C0.543103 5.63021 1.16836 5 1.93966 5C2.71095 5 3.33621 5.63021 3.33621 6.40761Z" fill="currentColor" />
+      <path d="M3.72413 10.0598H1.125C0.535341 10.1511 0.543103 10.9728 1.125 11.2391C2.19827 11.2518 4.39913 11.2696 4.61638 11.2391C4.83362 11.2087 4.96551 10.9221 5.00431 10.7826V7.73913H5.39224V8.99457C5.89655 9.27355 7.02931 9.83913 7.52586 9.86957C8.18534 9.90999 9.03879 10.1359 9.62068 10.212C12.3476 10.7529 15.7885 11.5969 16.4095 11.3913C17.2819 11.1024 16.9077 10.287 16.5646 10.1359C12.9569 8.81703 5.55517 6.12609 4.81034 5.91304C4.06551 5.7 3.77586 6.30616 3.72413 6.63587V10.0598Z" fill="currentColor" />
+      <path d="M0 11.5435H18V12H0V11.5435Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+
+const Plyometric = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <g clipPath="url(#clip0_5_169)">
+        <path d="M10.4021 0.715001C9.88689 0.711556 9.34007 1.28284 9.09935 1.7565C8.81142 2.32312 8.60154 3.28123 8.89453 3.82137L8.41535 4.04929C8.21285 3.91489 6.78495 3.58242 6.18694 3.67143C5.21722 3.90564 4.32401 4.40774 3.41687 4.86112L3.84455 5.79863C4.65771 5.4323 5.35345 4.79794 6.30162 4.72904C7.05864 4.67398 7.5183 5.13456 8.08706 5.38125C8.04959 7.80338 7.49503 8.93819 6.18757 11.0217C5.25495 11.6121 4.03555 11.6449 2.87902 11.8195L3.32269 12.8153C4.75798 12.6247 6.14282 12.4614 7.15286 11.8783C9.19554 10.41 10.1646 9.68782 12.3751 8.63061C13.4403 8.96213 13.8248 10.0055 14.3097 10.7768L15.1592 9.98124C14.7197 9.01936 13.6071 7.8128 12.3751 7.02579C11.5772 7.2734 10.8251 7.6238 10.1204 8.08083C10.3538 7.21353 10.3542 6.50664 10.0614 5.6393C10.722 5.88093 11.3584 6.00095 11.9697 5.99568C12.9378 5.27849 13.4703 4.36774 14.1726 3.53242L13.5 2.97295C12.9213 3.63835 12.587 4.30372 11.7631 4.96912C11.1893 4.92341 10.6292 4.67226 10.0716 4.38236L9.97559 4.11465C10.5173 3.88121 11.036 3.26794 11.2178 2.75058C11.4482 2.09502 11.2731 0.990802 10.62 0.753567C10.5501 0.728284 10.4764 0.715261 10.4021 0.715001ZM0.632812 13.5V17.3672H5.625V13.5H0.632812ZM12.375 13.5V17.3672H17.3672V13.5H12.375Z" fill="currentColor" />
+      </g>
+      <defs>
+        <clipPath id="clip0_5_169">
+          <rect width="18" height="18" fill="currentColor" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+};
+
+
+
+const Rotational = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <path d="M17.8173 5.35024C17.8173 6.64825 16.7741 7.70049 15.4873 7.70049C14.2005 7.70049 13.1574 6.64825 13.1574 5.35024C13.1574 4.05224 14.2005 3 15.4873 3C16.7741 3 17.8173 4.05224 17.8173 5.35024Z" fill="currentColor" />
+      <path fillRule="evenodd" clipRule="evenodd" d="M10.8246 6.19355C10.9347 6.17231 11.0499 6.19301 11.1734 6.28022L11.3828 6.42612C11.9542 6.82085 13.0422 7.5543 13.321 7.75515C13.643 7.98717 14.6042 8.81822 14.8343 9.05034C14.9511 9.16808 15.1131 9.36675 15.2463 9.58282C15.3783 9.79695 15.4873 10.0369 15.4873 10.235V11.7151L15.4365 11.7094C15.3005 11.6942 15.0826 11.6759 14.8717 11.6705C14.7663 11.6678 14.6632 11.6685 14.5733 11.6742C14.494 11.6793 14.4274 11.6882 14.3792 11.7014L14.3596 11.7073C14.2088 11.758 14.0146 11.7317 13.8501 11.6725C13.767 11.6426 13.6891 11.6034 13.6254 11.559C13.5703 11.5206 13.523 11.4764 13.4935 11.4285L13.482 11.4077C13.4708 11.3852 13.4592 11.3505 13.4474 11.3091C13.4353 11.2669 13.4221 11.2147 13.4083 11.1554C13.3806 11.0368 13.3499 10.8881 13.3192 10.73C13.2623 10.4368 13.2051 10.1098 13.1667 9.87993L12.5301 10.0806L12.8476 11.0413L10.5123 12.2627H18V13H0V12.2627H0.806452L0.367445 10.8014L0.362448 10.7847L0.369676 10.7687C0.416425 10.6666 0.502432 10.5072 0.609524 10.3589C0.71541 10.2122 0.847127 10.0689 0.987052 10.0084C1.13365 9.945 1.2755 9.98627 1.38778 10.0564C1.48571 10.1176 1.56604 10.2035 1.61701 10.273L1.637 10.3016L1.63914 10.3049L1.64074 10.3085C1.70178 10.4471 1.83489 10.7834 1.87247 11.0109C1.89699 11.1593 1.8961 11.2896 1.888 11.381L4.16789 9.78876C4.21803 9.69199 4.31397 9.56068 4.44851 9.46473C4.58937 9.3643 4.7746 9.3014 4.99174 9.36114L5.09195 9.38805C5.33898 9.45313 5.6733 9.53334 5.98477 9.61441C6.16199 9.66055 6.33128 9.7068 6.4708 9.75032C6.60867 9.79333 6.72235 9.83508 6.78489 9.87291L7.43001 10.2599C7.70352 10.4237 8.00225 10.6023 8.20791 10.7253L8.91996 9.55825L8.92692 9.55303C8.99121 9.50439 9.10269 9.43749 9.23164 9.39201C9.36004 9.34672 9.51141 9.32066 9.65218 9.36123C9.77334 9.39614 9.92386 9.40397 10.065 9.39867C10.1875 9.39407 10.3002 9.37928 10.376 9.36582L10.455 8.84855L8.6802 8.71093V7.40566L8.6927 7.39234C8.82366 7.25247 9.04282 7.04524 9.27607 6.87723C9.3927 6.79323 9.51402 6.71817 9.6304 6.66635C9.74602 6.61487 9.86119 6.58434 9.96394 6.5947L9.98295 6.59614C10.0773 6.60107 10.1648 6.57141 10.2516 6.52378C10.3459 6.47202 10.4328 6.40324 10.5274 6.33765C10.6193 6.27392 10.7174 6.21421 10.8246 6.19355ZM4.79695 10.6959C4.67512 10.911 4.39492 11.3503 4.24873 11.3872C4.10251 11.4241 3.21319 12.017 2.7868 12.3088H7.90355L5.71066 11.3872L4.79695 10.6959Z" fill="currentColor" />
+    </svg>
+  );
+};
+
+
+const Dynamic = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <g clipPath="url(#clip0_5_187)">
+        <path d="M11.5602 3.62998C12.5759 3.66039 13.4234 2.8723 13.4532 1.87016C13.4832 0.868108 12.6843 0.0310731 11.6685 0.000846334C10.6533 -0.0294718 9.80563 0.758525 9.77559 1.7603C9.74582 2.76253 10.545 3.59957 11.5602 3.62998Z" fill="currentColor" />
+        <path d="M13.6128 4.9395C13.6323 4.74874 13.5698 4.55861 13.4411 4.41633C13.3125 4.27415 13.1295 4.19333 12.9376 4.19342L5.44386 4.19799C5.04461 4.19799 4.72088 4.52025 4.72088 4.91959C4.72088 5.31875 5.04461 5.6412 5.44386 5.6412H9.63451L9.12979 10.8575H5.69773C5.34889 10.8575 5.01447 10.9972 4.76791 11.244C4.52135 11.4909 4.38327 11.826 4.38373 12.1748L4.39113 17.0202C4.39204 17.5631 4.83229 17.9999 5.37482 17.9999C5.37528 17.9999 5.37601 17.9999 5.37646 17.9999C5.91991 17.9999 6.35961 17.5589 6.35888 17.0155L6.35294 13.0085C6.35285 12.9593 6.3724 12.9121 6.40719 12.8773C6.44189 12.8424 6.48901 12.8229 6.53832 12.8229H11.9276C12.4709 12.8229 12.8542 12.4084 12.9115 11.8397C12.9142 11.8121 13.4179 6.85785 13.6128 4.9395Z" fill="currentColor" />
+      </g>
+      <defs>
+        <clipPath id="clip0_5_187">
+          <rect width="18" height="18" fill="currentColor" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+};
+
+const TikTok = ({ className = '', size = 24, strokeWidth = 1.5, ...rest }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 18 18" fill="currentColor" {...rest}>
+      <g clipPath="url(#clip0_7_217)">
+        <path d="M13.3397 7.20142C14.653 8.12177 16.2619 8.66328 17.9995 8.66328V5.38535C17.6706 5.38548 17.3426 5.35182 17.0209 5.28494V7.86515C15.2834 7.86515 13.6747 7.3237 12.3611 6.40342V13.0928C12.3611 16.4392 9.59391 19.1518 6.18066 19.1518C4.90709 19.1518 3.72331 18.7743 2.73999 18.1269C3.86232 19.252 5.42747 19.9498 7.15899 19.9498C10.5725 19.9498 13.3398 17.2373 13.3398 13.8907V7.20142H13.3397ZM14.5469 3.89439C13.8757 3.17556 13.435 2.24659 13.3397 1.21956V0.797974H12.4123C12.6458 2.10328 13.442 3.21846 14.5469 3.89439ZM4.89886 15.5591C4.52384 15.0771 4.32114 14.4874 4.32209 13.8811C4.32209 12.3507 5.58779 11.1097 7.14936 11.1097C7.44033 11.1095 7.72958 11.1533 8.00696 11.2396V7.88832C7.68282 7.8448 7.35572 7.82625 7.02877 7.83308V10.4415C6.75126 10.3553 6.46186 10.3115 6.17075 10.3117C4.60925 10.3117 3.34362 11.5525 3.34362 13.0832C3.34362 14.1656 3.97622 15.1026 4.89886 15.5591Z" fill="currentColor" />
+        <path d="M12.3611 6.40335C13.6748 7.32363 15.2833 7.86508 17.0209 7.86508V5.28487C16.051 5.08232 15.1924 4.58549 14.5469 3.89439C13.4419 3.21839 12.6458 2.10322 12.4123 0.797974H9.97648V13.8906C9.97092 15.4169 8.70741 16.6528 7.14921 16.6528C6.23107 16.6528 5.4153 16.2238 4.89872 15.559C3.97622 15.1026 3.34355 14.1655 3.34355 13.0833C3.34355 11.5527 4.60917 10.3118 6.17067 10.3118C6.46985 10.3118 6.7582 10.3574 7.0287 10.4416V7.83315C3.67535 7.90108 0.978516 10.5871 0.978516 13.8907C0.978516 15.5398 1.65007 17.0347 2.74005 18.1271C3.72338 18.7743 4.90709 19.1519 6.18073 19.1519C9.59405 19.1519 12.3612 16.4391 12.3612 13.0928L12.3611 6.40335Z" fill="currentColor" />
+        <path d="M17.0209 5.28483V4.58731C16.1463 4.58855 15.289 4.34844 14.5469 3.89441C15.2037 4.59939 16.0687 5.08554 17.0209 5.28497M12.4123 0.797931C12.39 0.673212 12.373 0.547661 12.3611 0.421586V0H8.99775V13.0928C8.99241 14.619 7.72889 15.8548 6.17063 15.8548C5.72887 15.8555 5.29315 15.7542 4.89867 15.5592C5.41526 16.2238 6.23102 16.6528 7.14916 16.6528C8.70729 16.6528 9.97094 15.417 9.97643 13.8907V0.798L12.4123 0.797931ZM7.02886 7.8331V7.09041C6.74781 7.05278 6.46448 7.03393 6.18082 7.034C2.76715 7.034 0 9.74669 0 13.0928C0 15.1906 1.08752 17.0394 2.74015 18.127C1.65016 17.0347 0.978609 15.5397 0.978609 13.8906C0.978609 10.5872 3.67538 7.90103 7.02886 7.8331Z" fill="currentColor" />
+      </g>
+      <defs>
+        <clipPath id="clip0_7_217">
+          <rect width="18" height="20" fill="currentColor" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+};
+
+
+
+
+
+
+// --- Create the Icons object ---
+const Icons = {
+  // Assign individual icon components here
+  diff1: Diff1,
+  diff2: Diff2,
+  diff3: Diff3,
+  diff4: Diff4,
+  diff5: Diff5,
+  gym: Gym,
+  home: Home,
+  outdoor: Outdoor,
+  studio: Outdoor,
+  strength: Strength,
+  endurance: Endurance,
+  mobility: Mobility,
+  power: Power,
+  speed: Speed,
+  agility: Agility,
+  balance: Balance,
+  coordination: Coordination,
+  recovery: Recovery,
+  core_stability: CoreStability,
+  isometric: Isometric,
+  plyometric: Plyometric,
+  push: Push,
+  pull: Pull,
+  rotational: Rotational,
+  dynamic: Dynamic,
+  tiktok: TikTok,
+};
+
+// Export the Icons object as the default export
+export default Icons;
+"use client";
+
+import createGlobe, { COBEOptions } from "cobe";
+import { useMotionValue, useSpring } from "motion/react";
+import { useEffect, useRef } from "react";
+
+import { cn } from "@/lib/utils";
+
+const MOVEMENT_DAMPING = 1400;
+
+const GLOBE_CONFIG: COBEOptions = {
+  width: 800,
+  height: 800,
+  onRender: () => {},
+  devicePixelRatio: 2,
+  phi: 0,
+  theta: 0.3,
+  dark: 0,
+  diffuse: 0.4,
+  mapSamples: 16000,
+  mapBrightness: 1.2,
+  baseColor: [1, 1, 1],
+  markerColor: [251 / 255, 100 / 255, 21 / 255],
+  glowColor: [1, 1, 1],
+  markers: [
+    { location: [14.5995, 120.9842], size: 0.03 },
+    { location: [19.076, 72.8777], size: 0.1 },
+    { location: [23.8103, 90.4125], size: 0.05 },
+    { location: [30.0444, 31.2357], size: 0.07 },
+    { location: [39.9042, 116.4074], size: 0.08 },
+    { location: [-23.5505, -46.6333], size: 0.1 },
+    { location: [19.4326, -99.1332], size: 0.1 },
+    { location: [40.7128, -74.006], size: 0.1 },
+    { location: [34.6937, 135.5022], size: 0.05 },
+    { location: [41.0082, 28.9784], size: 0.06 },
+  ],
+};
+
+export function Globe({
+  className,
+  config = GLOBE_CONFIG,
+}: {
+  className?: string;
+  config?: COBEOptions;
+}) {
+  let phi = 0;
+  let width = 0;
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pointerInteracting = useRef<number | null>(null);
+  const pointerInteractionMovement = useRef(0);
+
+  const r = useMotionValue(0);
+  const rs = useSpring(r, {
+    mass: 1,
+    damping: 30,
+    stiffness: 100,
+  });
+
+  const updatePointerInteraction = (value: number | null) => {
+    pointerInteracting.current = value;
+    if (canvasRef.current) {
+      canvasRef.current.style.cursor = value !== null ? "grabbing" : "grab";
+    }
+  };
+
+  const updateMovement = (clientX: number) => {
+    if (pointerInteracting.current !== null) {
+      const delta = clientX - pointerInteracting.current;
+      pointerInteractionMovement.current = delta;
+      r.set(r.get() + delta / MOVEMENT_DAMPING);
+    }
+  };
+
+  useEffect(() => {
+    const onResize = () => {
+      if (canvasRef.current) {
+        width = canvasRef.current.offsetWidth;
+      }
+    };
+
+    window.addEventListener("resize", onResize);
+    onResize();
+
+    const globe = createGlobe(canvasRef.current!, {
+      ...config,
+      width: width * 2,
+      height: width * 2,
+      onRender: (state) => {
+        if (!pointerInteracting.current) phi += 0.005;
+        state.phi = phi + rs.get();
+        state.width = width * 2;
+        state.height = width * 2;
+      },
+    });
+
+    setTimeout(() => (canvasRef.current!.style.opacity = "1"), 0);
+    return () => {
+      globe.destroy();
+      window.removeEventListener("resize", onResize);
+    };
+  }, [rs, config]);
+
+  return (
+    <div
+      className={cn(
+        "absolute inset-0 mx-auto aspect-[1/1] w-full max-w-[600px]",
+        className,
+      )}
+    >
+      <canvas
+        className={cn(
+          "size-full opacity-0 transition-opacity duration-500 [contain:layout_paint_size]",
+        )}
+        ref={canvasRef}
+        onPointerDown={(e) => {
+          pointerInteracting.current = e.clientX;
+          updatePointerInteraction(e.clientX);
+        }}
+        onPointerUp={() => updatePointerInteraction(null)}
+        onPointerOut={() => updatePointerInteraction(null)}
+        onMouseMove={(e) => updateMovement(e.clientX)}
+        onTouchMove={(e) =>
+          e.touches[0] && updateMovement(e.touches[0].clientX)
+        }
+      />
+    </div>
+  );
+}
+import { cn } from "@/lib/utils";
+import { ComponentPropsWithoutRef } from "react";
+
+interface MarqueeProps extends ComponentPropsWithoutRef<"div"> {
+  /**
+   * Optional CSS class name to apply custom styles
+   */
+  className?: string;
+  /**
+   * Whether to reverse the animation direction
+   * @default false
+   */
+  reverse?: boolean;
+  /**
+   * Whether to pause the animation on hover
+   * @default false
+   */
+  pauseOnHover?: boolean;
+  /**
+   * Content to be displayed in the marquee
+   */
+  children: React.ReactNode;
+  /**
+   * Whether to animate vertically instead of horizontally
+   * @default false
+   */
+  vertical?: boolean;
+  /**
+   * Number of times to repeat the content
+   * @default 4
+   */
+  repeat?: number;
+}
+
+export function Marquee({
+  className,
+  reverse = false,
+  pauseOnHover = false,
+  children,
+  vertical = false,
+  repeat = 4,
+  ...props
+}: MarqueeProps) {
+  return (
+    <div
+      {...props}
+      className={cn(
+        "group flex overflow-hidden p-2 [--duration:40s] [--gap:1rem] [gap:var(--gap)]",
+        {
+          "flex-row": !vertical,
+          "flex-col": vertical,
+        },
+        className,
+      )}
+    >
+      {Array(repeat)
+        .fill(0)
+        .map((_, i) => (
+          <div
+            key={i}
+            className={cn("flex shrink-0 justify-around [gap:var(--gap)]", {
+              "animate-marquee flex-row": !vertical,
+              "animate-marquee-vertical flex-col": vertical,
+              "group-hover:[animation-play-state:paused]": pauseOnHover,
+              "[animation-direction:reverse]": reverse,
+            })}
+          >
+            {children}
+          </div>
+        ))}
+    </div>
+  );
+}
+"use client";
+
+import { cn } from "@/lib/utils";
+import React, { ElementType, ReactNode, useEffect, useState } from "react";
+
+export interface VideoTextProps {
+  /**
+   * The video source URL
+   */
+  src: string;
+  /**
+   * Additional className for the container
+   */
+  className?: string;
+  /**
+   * Whether to autoplay the video
+   */
+  autoPlay?: boolean;
+  /**
+   * Whether to mute the video
+   */
+  muted?: boolean;
+  /**
+   * Whether to loop the video
+   */
+  loop?: boolean;
+  /**
+   * Whether to preload the video
+   */
+  preload?: "auto" | "metadata" | "none";
+  /**
+   * The content to display (will have the video "inside" it)
+   */
+  children: ReactNode;
+  /**
+   * Font size for the text mask (in viewport width units)
+   * @default 10
+   */
+  fontSize?: string | number;
+  /**
+   * Font weight for the text mask
+   * @default "bold"
+   */
+  fontWeight?: string | number;
+  /**
+   * Text anchor for the text mask
+   * @default "middle"
+   */
+  textAnchor?: string;
+  /**
+   * Dominant baseline for the text mask
+   * @default "middle"
+   */
+  dominantBaseline?: string;
+  /**
+   * Font family for the text mask
+   * @default "sans-serif"
+   */
+  fontFamily?: string;
+  /**
+   * The element type to render for the text
+   * @default "div"
+   */
+  as?: ElementType;
+}
+
+export function VideoText({
+  src,
+  children,
+  className = "",
+  autoPlay = true,
+  muted = true,
+  loop = true,
+  preload = "auto",
+  fontSize = 20,
+  fontWeight = "bold",
+  textAnchor = "middle",
+  dominantBaseline = "middle",
+  fontFamily = "sans-serif",
+  as: Component = "div",
+}: VideoTextProps) {
+  const [svgMask, setSvgMask] = useState("");
+  const content = React.Children.toArray(children).join("");
+
+  useEffect(() => {
+    const updateSvgMask = () => {
+      const responsiveFontSize =
+        typeof fontSize === "number" ? `${fontSize}vw` : fontSize;
+      const newSvgMask = `<svg xmlns='http://www.w3.org/2000/svg' width='100%' height='100%'><text x='50%' y='50%' font-size='${responsiveFontSize}' font-weight='${fontWeight}' text-anchor='${textAnchor}' dominant-baseline='${dominantBaseline}' font-family='${fontFamily}'>${content}</text></svg>`;
+      setSvgMask(newSvgMask);
+    };
+
+    updateSvgMask();
+    window.addEventListener("resize", updateSvgMask);
+    return () => window.removeEventListener("resize", updateSvgMask);
+  }, [content, fontSize, fontWeight, textAnchor, dominantBaseline, fontFamily]);
+
+  const dataUrlMask = `url("data:image/svg+xml,${encodeURIComponent(svgMask)}")`;
+
+  return (
+    <Component className={cn(`relative size-full`, className)}>
+      {/* Create a container that masks the video to only show within text */}
+      <div
+        className="absolute inset-0 flex items-center justify-center"
+        style={{
+          maskImage: dataUrlMask,
+          WebkitMaskImage: dataUrlMask,
+          maskSize: "contain",
+          WebkitMaskSize: "contain",
+          maskRepeat: "no-repeat",
+          WebkitMaskRepeat: "no-repeat",
+          maskPosition: "center",
+          WebkitMaskPosition: "center",
+        }}
+      >
+        <video
+          className="w-full h-full object-cover"
+          autoPlay={autoPlay}
+          muted={muted}
+          loop={loop}
+          preload={preload}
+          playsInline
+        >
+          <source src={src} />
+          Your browser does not support the video tag.
+        </video>
+      </div>
+
+      {/* Add a backup text element for SEO/accessibility */}
+      <span className="sr-only">{content}</span>
+    </Component>
+  );
+}
+// FILE: src/components/measurements/measurement-entry-card.tsx
+
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Camera, CalendarDays, User, Zap, Target } from 'lucide-react'; // Icons
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime'; // For .fromNow()
+dayjs.extend(relativeTime);
+
+
+import type { Tables } from '@/types/database.types'; // For UserMeasurement type
+import { getMeasurementImageUrl } from '@/types/storage';
+
+interface MeasurementEntryCardProps {
+  measurement: Tables<'user_measurements'>;
+}
+
+export const MeasurementEntryCard: React.FC<MeasurementEntryCardProps> = ({ measurement: m }) => {
+  return (
+    <Card key={m.id} className="overflow-hidden">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <CalendarDays className="h-5 w-5" />
+            {dayjs(m.measurement_date).format('MMMM D, YYYY')}
+          </CardTitle>
+          <Badge variant="outline" className="text-xs">
+            {dayjs(m.created_at).fromNow()}
+          </Badge>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="space-y-6">
+        {/* Basic Measurements */}
+        {(m.weight_kg || m.height_cm || m.body_fat_percentage || m.resting_heart_rate) && (
+          <div>
+            <h4 className="font-semibold text-sm text-muted-foreground mb-2 flex items-center gap-1">
+              <User className="h-3 w-3" />
+              BASIC INFO
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {m.weight_kg && (
+                <div className="text-sm">
+                  <span className="font-medium">Weight:</span> {m.weight_kg} kg
+                </div>
+              )}
+              {m.height_cm && (
+                <div className="text-sm">
+                  <span className="font-medium">Height:</span> {m.height_cm} cm
+                </div>
+              )}
+              {m.body_fat_percentage && (
+                <div className="text-sm">
+                  <span className="font-medium">Body Fat:</span> {m.body_fat_percentage}%
+                </div>
+              )}
+              {m.resting_heart_rate && (
+                <div className="text-sm">
+                  <span className="font-medium">RHR:</span> {m.resting_heart_rate} bpm
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Upper Body Measurements */}
+        {(m.chest_cm || m.waist_cm || m.biceps_left_cm || m.biceps_right_cm || m.forearm_left_cm || m.forearm_right_cm) && (
+          <div>
+            <h4 className="font-semibold text-sm text-muted-foreground mb-2 flex items-center gap-1">
+              <Zap className="h-3 w-3" />
+              UPPER BODY
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {m.chest_cm && (
+                <div className="text-sm">
+                  <span className="font-medium">Chest:</span> {m.chest_cm} cm
+                </div>
+              )}
+              {m.waist_cm && (
+                <div className="text-sm">
+                  <span className="font-medium">Waist:</span> {m.waist_cm} cm
+                </div>
+              )}
+              {m.biceps_left_cm && (
+                <div className="text-sm">
+                  <span className="font-medium">Biceps L:</span> {m.biceps_left_cm} cm
+                </div>
+              )}
+              {m.biceps_right_cm && (
+                <div className="text-sm">
+                  <span className="font-medium">Biceps R:</span> {m.biceps_right_cm} cm
+                </div>
+              )}
+              {m.forearm_left_cm && (
+                <div className="text-sm">
+                  <span className="font-medium">Forearm L:</span> {m.forearm_left_cm} cm
+                </div>
+              )}
+              {m.forearm_right_cm && (
+                <div className="text-sm">
+                  <span className="font-medium">Forearm R:</span> {m.forearm_right_cm} cm
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+      {/* Lower Body Measurements */}
+        {(m.hips_cm || m.thigh_left_cm || m.thigh_right_cm || m.calf_left_cm || m.calf_right_cm) && (
+          <div>
+            <h4 className="font-semibold text-sm text-muted-foreground mb-2 flex items-center gap-1">
+              <Target className="h-3 w-3" />
+              LOWER BODY
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {m.hips_cm && (
+                <div className="text-sm">
+                  <span className="font-medium">Hips:</span> {m.hips_cm} cm
+                </div>
+              )}
+              {m.thigh_left_cm && (
+                <div className="text-sm">
+                  <span className="font-medium">Thigh L:</span> {m.thigh_left_cm} cm
+                </div>
+              )}
+              {m.thigh_right_cm && (
+                <div className="text-sm">
+                  <span className="font-medium">Thigh R:</span> {m.thigh_right_cm} cm
+                </div>
+              )}
+              {m.calf_left_cm && (
+                <div className="text-sm">
+                  <span className="font-medium">Calf L:</span> {m.calf_left_cm} cm
+                </div>
+              )}
+              {m.calf_right_cm && (
+                <div className="text-sm">
+                  <span className="font-medium">Calf R:</span> {m.calf_right_cm} cm
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Progress Photos */}
+        {(m.body_fat_photo_url || m.biceps_left_photo_url || m.biceps_right_photo_url || 
+          m.waist_photo_url || m.chest_photo_url || m.thigh_left_photo_url || 
+          m.thigh_right_photo_url || m.calf_left_photo_url || m.calf_right_photo_url || 
+          m.hips_photo_url || m.forearm_left_photo_url || m.forearm_right_photo_url) && (
+          <div>
+            <h4 className="font-semibold text-sm text-muted-foreground mb-3 flex items-center gap-1">
+              <Camera className="h-3 w-3" />
+              PROGRESS PHOTOS
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {m.body_fat_photo_url && (
+                <div className="space-y-1">
+                  <img 
+                    src={getMeasurementImageUrl(m.body_fat_photo_url)} 
+                    alt="Body Fat" 
+                    className="w-full h-24 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">Body Fat</p>
+                </div>
+              )}
+              {m.chest_photo_url && (
+                <div className="space-y-1">
+                  <img 
+                    src={getMeasurementImageUrl(m.chest_photo_url)} 
+                    alt="Chest" 
+                    className="w-full h-24 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">Chest</p>
+                </div>
+              )}
+              {m.waist_photo_url && (
+                <div className="space-y-1">
+                  <img 
+                    src={getMeasurementImageUrl(m.waist_photo_url)} 
+                    alt="Waist" 
+                    className="w-full h-24 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">Waist</p>
+                </div>
+              )}
+              {m.biceps_left_photo_url && (
+                <div className="space-y-1">
+                  <img 
+                    src={getMeasurementImageUrl(m.biceps_left_photo_url)} 
+                    alt="Biceps Left" 
+                    className="w-full h-24 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">Biceps L</p>
+                </div>
+              )}
+              {m.biceps_right_photo_url && (
+                <div className="space-y-1">
+                  <img 
+                    src={getMeasurementImageUrl(m.biceps_right_photo_url)} 
+                    alt="Biceps Right" 
+                    className="w-full h-24 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">Biceps R</p>
+                </div>
+              )}
+              {m.forearm_left_photo_url && (
+                <div className="space-y-1">
+                  <img 
+                    src={getMeasurementImageUrl(m.forearm_left_photo_url)} 
+                    alt="Forearm Left" 
+                    className="w-full h-24 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">Forearm L</p>
+                </div>
+              )}
+              {m.forearm_right_photo_url && (
+                <div className="space-y-1">
+                  <img 
+                    src={getMeasurementImageUrl(m.forearm_right_photo_url)} 
+                    alt="Forearm Right" 
+                    className="w-full h-24 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">Forearm R</p>
+                </div>
+              )}
+              {m.hips_photo_url && (
+                <div className="space-y-1">
+                  <img 
+                    src={getMeasurementImageUrl(m.hips_photo_url)} 
+                    alt="Hips" 
+                    className="w-full h-24 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">Hips</p>
+                </div>
+              )}
+              {m.thigh_left_photo_url && (
+                <div className="space-y-1">
+                  <img 
+                    src={getMeasurementImageUrl(m.thigh_left_photo_url)} 
+                    alt="Thigh Left" 
+                    className="w-full h-24 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">Thigh L</p>
+                </div>
+              )}
+              {m.thigh_right_photo_url && (
+                <div className="space-y-1">
+                  <img 
+                    src={getMeasurementImageUrl(m.thigh_right_photo_url)} 
+                    alt="Thigh Right" 
+                    className="w-full h-24 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">Thigh R</p>
+                </div>
+              )}
+              {m.calf_left_photo_url && (
+                <div className="space-y-1">
+                  <img 
+                    src={getMeasurementImageUrl(m.calf_left_photo_url)} 
+                    alt="Calf Left" 
+                    className="w-full h-24 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">Calf L</p>
+                </div>
+              )}
+              {m.calf_right_photo_url && (
+                <div className="space-y-1">
+                  <img 
+                    src={getMeasurementImageUrl(m.calf_right_photo_url)} 
+                    alt="Calf Right" 
+                    className="w-full h-24 object-cover rounded-md border hover:scale-105 transition-transform cursor-pointer" 
+                  />
+                  <p className="text-xs text-center text-muted-foreground">Calf R</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Notes */}
+        {m.overall_notes && (
+          <div className="border-l-4 border-primary/20 pl-4 py-2 bg-muted/30 rounded-r-md">
+            <h4 className="font-semibold text-sm text-muted-foreground mb-1">NOTES</h4>
+            <p className="text-sm italic">{m.overall_notes}</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+// FILE: src/components/measurements/measurement-form.tsx
+
+import React from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import dayjs from 'dayjs';
+import { toast } from 'sonner';
+
+import { useAuthStore } from '@/stores/auth-store';
+import { useInsertUserMeasurementMutation } from '@/api/user';
+import { uploadMeasurementImage } from '@/types/storage';
+
+import type { TablesInsert } from '@/types/database.types';
+
+// Shadcn UI components
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+
+// Icons
+import { Ruler, PlusCircle, Scale, CalendarDays, Percent, HeartPulse, User, Zap, Target } from 'lucide-react';
+import { MeasurementInputWithPhoto } from './MeasurementInputWithPhoto';
+
+// Import the reusable input component
+
+// --- CORRECTED ZOD SCHEMA ---
+// Fields are now z.string() for form input, then transformed to number | null.
+const toNullableNumber = z.literal('').transform(() => null).or(z.coerce.number());
+
+const measurementSchema = z.object({
+  measurement_date: z.string().optional(),
+  weight_kg: toNullableNumber.nullable().optional(),
+  height_cm: toNullableNumber.nullable().optional(),
+  body_fat_percentage: toNullableNumber.nullable().optional(),
+  body_fat_photo_url: z.string().nullable().optional(),
+  resting_heart_rate: toNullableNumber.nullable().optional(),
+  biceps_left_cm: toNullableNumber.nullable().optional(),
+  biceps_left_photo_url: z.string().nullable().optional(),
+  biceps_right_cm: toNullableNumber.nullable().optional(),
+  biceps_right_photo_url: z.string().nullable().optional(),
+  waist_cm: toNullableNumber.nullable().optional(),
+  waist_photo_url: z.string().nullable().optional(),
+  chest_cm: toNullableNumber.nullable().optional(),
+  chest_photo_url: z.string().nullable().optional(),
+  thigh_left_cm: toNullableNumber.nullable().optional(),
+  thigh_left_photo_url: z.string().nullable().optional(),
+  thigh_right_cm: toNullableNumber.nullable().optional(),
+  thigh_right_photo_url: z.string().nullable().optional(),
+  calf_left_cm: toNullableNumber.nullable().optional(),
+  calf_left_photo_url: z.string().nullable().optional(),
+  calf_right_cm: toNullableNumber.nullable().optional(),
+  calf_right_photo_url: z.string().nullable().optional(),
+  hips_cm: toNullableNumber.nullable().optional(),
+  hips_photo_url: z.string().nullable().optional(),
+  forearm_left_cm: toNullableNumber.nullable().optional(),
+  forearm_left_photo_url: z.string().nullable().optional(),
+  forearm_right_cm: toNullableNumber.nullable().optional(),
+  forearm_right_photo_url: z.string().nullable().optional(),
+  overall_notes: z.string().nullable().optional(),
+});
+
+export type MeasurementFormData = z.infer<typeof measurementSchema>;
+
+export const MeasurementForm: React.FC = () => {
+  const { user } = useAuthStore();
+  const { mutate: insertMeasurement, isPending } = useInsertUserMeasurementMutation();
+
+  const form = useForm<MeasurementFormData>({
+    resolver: zodResolver(measurementSchema),
+    defaultValues: {
+      measurement_date: dayjs().format('YYYY-MM-DD'),
+      // Initialize number fields with null (or undefined) directly now.
+      // The `toNullableNumber` transform handles '' from user input.
+      weight_kg: null,
+      height_cm: null,
+      body_fat_percentage: null,
+      body_fat_photo_url: null,
+      resting_heart_rate: null,
+      biceps_left_cm: null,
+      biceps_left_photo_url: null,
+      biceps_right_cm: null,
+      biceps_right_photo_url: null,
+      waist_cm: null,
+      waist_photo_url: null,
+      chest_cm: null,
+      chest_photo_url: null,
+      thigh_left_cm: null,
+      thigh_left_photo_url: null,
+      thigh_right_cm: null,
+      thigh_right_photo_url: null,
+      calf_left_cm: null,
+      calf_left_photo_url: null,
+      calf_right_cm: null,
+      calf_right_photo_url: null,
+      hips_cm: null,
+      hips_photo_url: null,
+      forearm_left_cm: null,
+      forearm_left_photo_url: null,
+      forearm_right_cm: null,
+      forearm_right_photo_url: null,
+      overall_notes: null,
+    },
+  });
+
+  const [isUploadingImage, setIsUploadingImage] = React.useState(false);
+
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    fieldName: keyof MeasurementFormData
+  ) => {
+    if (!user?.id) {
+      toast.error('You must be logged in to upload images.');
+      return;
+    }
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    const measurementDate = form.getValues('measurement_date') || dayjs().format('YYYY-MM-DD');
+
+    try {
+      const publicUrl = await uploadMeasurementImage(file, user.id, measurementDate, fieldName as string);
+      form.setValue(fieldName, publicUrl);
+      toast.success('Image uploaded successfully!');
+    } catch (err: any) {
+      toast.error(`Image upload failed: ${err.message}`);
+      console.error(err);
+    } finally {
+      setIsUploadingImage(false);
+      event.target.value = '';
+    }
+  };
+
+  const onSubmit = (data: MeasurementFormData) => {
+    // Zod's transform handles string to number|null.
+    // We just need to filter out `undefined` values, as `null` is fine for DB.
+    const payload: TablesInsert<'user_measurements'> = Object.fromEntries(
+      Object.entries(data).filter(([, value]) => value !== undefined)
+    ) as TablesInsert<'user_measurements'>;
+    
+    insertMeasurement(payload, {
+      onSuccess: () => {
+        form.reset({
+          measurement_date: dayjs().format('YYYY-MM-DD'),
+          // Reset number fields to null to match defaultValues
+          weight_kg: null,
+          height_cm: null,
+          body_fat_percentage: null,
+          body_fat_photo_url: null,
+          resting_heart_rate: null,
+          biceps_left_cm: null,
+          biceps_left_photo_url: null,
+          biceps_right_cm: null,
+          biceps_right_photo_url: null,
+          waist_cm: null,
+          waist_photo_url: null,
+          chest_cm: null,
+          chest_photo_url: null,
+          thigh_left_cm: null,
+          thigh_left_photo_url: null,
+          thigh_right_cm: null,
+          thigh_right_photo_url: null,
+          calf_left_cm: null,
+          calf_left_photo_url: null,
+          calf_right_cm: null,
+          calf_right_photo_url: null,
+          hips_cm: null,
+          hips_photo_url: null,
+          forearm_left_cm: null,
+          forearm_left_photo_url: null,
+          forearm_right_cm: null,
+          forearm_right_photo_url: null,
+          overall_notes: null,
+        });
+        toast.success('Measurement added successfully!');
+      },
+      onError: (error) => {
+        toast.error(`Error adding measurement: ${error.message}`);
+      }
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <PlusCircle className="h-5 w-5" />
+          Add New Measurement
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="measurement_date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    Measurement Date
+                  </FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Tabs defaultValue="basic" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="basic" className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Basic Info
+                </TabsTrigger>
+                <TabsTrigger value="upper" className="flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  Upper Body
+                </TabsTrigger>
+                <TabsTrigger value="lower" className="flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  Lower Body
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="basic" className="space-y-4 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {/* Weight */}
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="weight_kg"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <Scale className="h-4 w-4" />
+                            Weight (kg)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              placeholder="e.g., 70.5"
+                              {...field}
+                              value={field.value ?? ''} // Use nullish coalescing to ensure string for input
+                              onChange={(e) => field.onChange(e.target.value)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Height */}
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="height_cm"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <Ruler className="h-4 w-4" />
+                            Height (cm)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              placeholder="e.g., 175"
+                              {...field}
+                              value={field.value ?? ''}
+                              onChange={(e) => field.onChange(e.target.value)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Resting HR */}
+                  <div className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="resting_heart_rate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <HeartPulse className="h-4 w-4" />
+                            Resting HR (bpm)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="1"
+                              placeholder="e.g., 60"
+                              {...field}
+                              value={field.value ?? ''}
+                              onChange={(e) => field.onChange(e.target.value)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Body Fat % with Photo */}
+                  <div className="md:col-span-2 lg:col-span-3">
+                    <MeasurementInputWithPhoto
+                      form={form}
+                      measurementField="body_fat_percentage"
+                      photoField="body_fat_photo_url"
+                      label="Body Fat (%)"
+                      placeholder="e.g., 15.2"
+                      icon={Percent}
+                      onImageUpload={handleImageUpload}
+                      isUploadingImage={isUploadingImage}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="upper" className="space-y-4 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <MeasurementInputWithPhoto
+                    form={form}
+                    measurementField="chest_cm"
+                    photoField="chest_photo_url"
+                    label="Chest (cm)"
+                    placeholder="e.g., 100.0"
+                    onImageUpload={handleImageUpload}
+                    isUploadingImage={isUploadingImage}
+                  />
+
+                  <MeasurementInputWithPhoto
+                    form={form}
+                    measurementField="waist_cm"
+                    photoField="waist_photo_url"
+                    label="Waist (cm)"
+                    placeholder="e.g., 80.0"
+                    onImageUpload={handleImageUpload}
+                    isUploadingImage={isUploadingImage}
+                  />
+
+                  <MeasurementInputWithPhoto
+                    form={form}
+                    measurementField="biceps_left_cm"
+                    photoField="biceps_left_photo_url"
+                    label="Biceps Left (cm)"
+                    placeholder="e.g., 35.0"
+                    onImageUpload={handleImageUpload}
+                    isUploadingImage={isUploadingImage}
+                  />
+
+                  <MeasurementInputWithPhoto
+                    form={form}
+                    measurementField="biceps_right_cm"
+                    photoField="biceps_right_photo_url"
+                    label="Biceps Right (cm)"
+                    placeholder="e.g., 35.2"
+                    onImageUpload={handleImageUpload}
+                    isUploadingImage={isUploadingImage}
+                  />
+
+                  <MeasurementInputWithPhoto
+                    form={form}
+                    measurementField="forearm_left_cm"
+                    photoField="forearm_left_photo_url"
+                    label="Forearm Left (cm)"
+                    placeholder="e.g., 28.0"
+                    onImageUpload={handleImageUpload}
+                    isUploadingImage={isUploadingImage}
+                  />
+
+                  <MeasurementInputWithPhoto
+                    form={form}
+                    measurementField="forearm_right_cm"
+                    photoField="forearm_right_photo_url"
+                    label="Forearm Right (cm)"
+                    placeholder="e.g., 28.1"
+                    onImageUpload={handleImageUpload}
+                    isUploadingImage={isUploadingImage}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="lower" className="space-y-4 mt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <MeasurementInputWithPhoto
+                    form={form}
+                    measurementField="hips_cm"
+                    photoField="hips_photo_url"
+                    label="Hips (cm)"
+                    placeholder="e.g., 95.0"
+                    onImageUpload={handleImageUpload}
+                    isUploadingImage={isUploadingImage}
+                  />
+
+                  <MeasurementInputWithPhoto
+                    form={form}
+                    measurementField="thigh_left_cm"
+                    photoField="thigh_left_photo_url"
+                    label="Thigh Left (cm)"
+                    placeholder="e.g., 55.0"
+                    onImageUpload={handleImageUpload}
+                    isUploadingImage={isUploadingImage}
+                  />
+
+                  <MeasurementInputWithPhoto
+                    form={form}
+                    measurementField="thigh_right_cm"
+                    photoField="thigh_right_photo_url"
+                    label="Thigh Right (cm)"
+                    placeholder="e.g., 55.5"
+                    onImageUpload={handleImageUpload}
+                    isUploadingImage={isUploadingImage}
+                  />
+
+                  <MeasurementInputWithPhoto
+                    form={form}
+                    measurementField="calf_left_cm"
+                    photoField="calf_left_photo_url"
+                    label="Calf Left (cm)"
+                    placeholder="e.g., 38.0"
+                    onImageUpload={handleImageUpload}
+                    isUploadingImage={isUploadingImage}
+                  />
+
+                  <MeasurementInputWithPhoto
+                    form={form}
+                    measurementField="calf_right_cm"
+                    photoField="calf_right_photo_url"
+                    label="Calf Right (cm)"
+                    placeholder="e.g., 38.2"
+                    onImageUpload={handleImageUpload}
+                    isUploadingImage={isUploadingImage}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <FormField
+              control={form.control}
+              name="overall_notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Overall Notes</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Any additional notes about this measurement session..."
+                      {...field}
+                      rows={3}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button
+              type="submit"
+              disabled={isPending || isUploadingImage}
+              className="w-full sm:w-auto"
+              size="lg"
+            >
+              {(isPending || isUploadingImage) ? 'Processing...' : 'Add Measurement'}
+            </Button>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
+  );
+};
+// FILE: src/components/measurements/measurement-history.tsx
+
+import React from 'react';
+import { useAuthStore } from '@/stores/auth-store';
+import { useUserMeasurementsQuery } from '@/api/user'; // Only need query hook here
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Ruler, TrendingUp } from 'lucide-react'; // Icons
+
+
+import type { Tables } from '@/types/database.types'; // For UserMeasurement type
+import { MeasurementEntryCard } from './MeasurementEntryCard';
+import { MeasurementsHistorySkeleton } from './measurementsSkeleton';
+
+export const MeasurementHistory: React.FC = () => {
+  const { user } = useAuthStore();
+  const { data: measurements, isLoading, isError, error } = useUserMeasurementsQuery(user?.id);
+
+  if (!user) {
+    return (
+      <div className="text-destructive text-center py-8">
+        Please log in to view your measurement history.
+      </div>
+    );
+  }
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <TrendingUp className="h-6 w-6" />
+          Measurement History
+        </h2>
+        {measurements && measurements.length > 0 && (
+          <Badge variant="secondary" className="text-sm">
+            {measurements.length} {measurements.length === 1 ? 'Entry' : 'Entries'}
+          </Badge>
+        )}
+      </div>
+      
+      {isLoading ? (
+        <MeasurementsHistorySkeleton />
+      ) : isError ? (
+        <Card className="p-8 text-center">
+          <div className="text-destructive">Error loading history: {error?.message}</div>
+        </Card>
+      ) : !measurements || measurements.length === 0 ? (
+        <Card className="p-8 text-center">
+          <div className="space-y-2">
+            <Ruler className="h-12 w-12 mx-auto text-muted-foreground" />
+            <h3 className="text-lg font-semibold">No measurements recorded yet</h3>
+            <p className="text-muted-foreground">Add your first measurement above to start tracking your progress!</p>
+          </div>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {measurements.map(m => (
+            <MeasurementEntryCard key={m.id} measurement={m} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+};
+// FILE: src/components/measurements/measurement-input-with-photo.tsx
+
+import React from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { z } from 'zod';
+import { Input } from '@/components/ui/input';
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Camera, ImageIcon, Ruler } from 'lucide-react'; // Import Ruler for default icon
+import { getMeasurementImageUrl } from '@/types/storage';
+
+// --- CORRECTED ZOD SCHEMA FOR THIS COMPONENT'S TYPING ---
+// Matches the `toNullableNumber` pattern from MeasurementForm.
+const toNullableNumberForInput = z.literal('').transform(() => null).or(z.coerce.number());
+
+const measurementSchemaForInput = z.object({
+  measurement_date: z.string().optional(),
+  weight_kg: toNullableNumberForInput.nullable().optional(),
+  height_cm: toNullableNumberForInput.nullable().optional(),
+  body_fat_percentage: toNullableNumberForInput.nullable().optional(),
+  body_fat_photo_url: z.string().nullable().optional(),
+  resting_heart_rate: toNullableNumberForInput.nullable().optional(),
+  biceps_left_cm: toNullableNumberForInput.nullable().optional(),
+  biceps_left_photo_url: z.string().nullable().optional(),
+  biceps_right_cm: toNullableNumberForInput.nullable().optional(),
+  biceps_right_photo_url: z.string().nullable().optional(),
+  waist_cm: toNullableNumberForInput.nullable().optional(),
+  waist_photo_url: z.string().nullable().optional(),
+  chest_cm: toNullableNumberForInput.nullable().optional(),
+  chest_photo_url: z.string().nullable().optional(),
+  thigh_left_cm: toNullableNumberForInput.nullable().optional(),
+  thigh_left_photo_url: z.string().nullable().optional(),
+  thigh_right_cm: toNullableNumberForInput.nullable().optional(),
+  thigh_right_photo_url: z.string().nullable().optional(),
+  calf_left_cm: toNullableNumberForInput.nullable().optional(),
+  calf_left_photo_url: z.string().nullable().optional(),
+  calf_right_cm: toNullableNumberForInput.nullable().optional(),
+  calf_right_photo_url: z.string().nullable().optional(),
+  hips_cm: toNullableNumberForInput.nullable().optional(),
+  hips_photo_url: z.string().nullable().optional(),
+  forearm_left_cm: toNullableNumberForInput.nullable().optional(),
+  forearm_left_photo_url: z.string().nullable().optional(),
+  forearm_right_cm: toNullableNumberForInput.nullable().optional(),
+  forearm_right_photo_url: z.string().nullable().optional(),
+  overall_notes: z.string().nullable().optional(),
+});
+type MeasurementFormData = z.infer<typeof measurementSchemaForInput>;
+
+interface MeasurementInputWithPhotoProps {
+  form: UseFormReturn<MeasurementFormData>;
+  measurementField: keyof MeasurementFormData;
+  photoField: keyof MeasurementFormData;
+  label: string;
+  placeholder: string;
+  icon?: React.ElementType;
+  onImageUpload: (event: React.ChangeEvent<HTMLInputElement>, fieldName: keyof MeasurementFormData) => Promise<void>;
+  isUploadingImage: boolean;
+}
+
+export const MeasurementInputWithPhoto: React.FC<MeasurementInputWithPhotoProps> = ({
+  form,
+  measurementField,
+  photoField,
+  label,
+  placeholder,
+  icon: Icon = Ruler,
+  onImageUpload,
+  isUploadingImage,
+}) => {
+  return (
+    <div className="space-y-3">
+      <FormField
+        control={form.control}
+        name={measurementField}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="flex items-center gap-2">
+              {Icon && <Icon className="h-4 w-4" />}
+              {label}
+            </FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                step="0.1"
+                placeholder={placeholder}
+                {...field}
+                value={field.value ?? ''} // <--- FIX: Use nullish coalescing to ensure string for input
+                onChange={(e) => field.onChange(e.target.value)}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name={photoField}
+        render={({ field }) => {
+          // Narrow the field value to a string (or null) before passing to getMeasurementImageUrl
+          const photoValue = field.value as string | null | undefined;
+          const photoSrc = typeof photoValue === 'string' ? getMeasurementImageUrl(photoValue) : getMeasurementImageUrl(null);
+
+          return (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                <Camera className="h-4 w-4" />
+                Photo
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => onImageUpload(e, photoField)}
+                  disabled={isUploadingImage}
+                  className="cursor-pointer"
+                />
+              </FormControl>
+              {field.value && (
+                <div className="mt-2 flex items-center gap-2 p-2 bg-muted rounded-md">
+                  <img
+                    src={photoSrc}
+                    alt={`${label} Preview`}
+                    className="h-12 w-12 object-cover rounded-md border"
+                  />
+                  <div className="text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <ImageIcon className="h-3 w-3" />
+                      Photo uploaded
+                    </div>
+                  </div>
+                </div>
+              )}
+              <FormMessage />
+            </FormItem>
+          );
+        }}
+      />
+    </div>
+  );
+};
+// FILE: src/components/measurements/measurement-progress-graph.tsx
+
+import React from 'react';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import dayjs from 'dayjs';
+
+import { getMeasurementImageUrl } from '@/types/storage';
+import type { Tables } from '@/types/database.types'; // Your database types
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+interface MeasurementProgressGraphProps {
+  measurements: Tables<'user_measurements'>[];
+  selectedMetricKeys: string[]; // <--- NEW PROP: Keys of metrics to display
+}
+
+// Define the full configuration for all possible datasets
+const ALL_DATASETS_CONFIG = [
+  { key: 'weight_kg', label: 'Weight (kg)', borderColor: 'rgb(75, 192, 192)', backgroundColor: 'rgba(75, 192, 192, 0.5)' },
+  { key: 'height_cm', label: 'Height (cm)', borderColor: 'rgb(153, 102, 255)', backgroundColor: 'rgba(153, 102, 255, 0.5)' },
+  { key: 'body_fat_percentage', label: 'Body Fat (%)', borderColor: 'rgb(255, 159, 64)', backgroundColor: 'rgba(255, 159, 64, 0.5)', photoKey: 'body_fat_photo_url' },
+  { key: 'resting_heart_rate', label: 'Resting HR (bpm)', borderColor: 'rgb(255, 99, 132)', backgroundColor: 'rgba(255, 99, 132, 0.5)' },
+  { key: 'biceps_left_cm', label: 'Biceps Left (cm)', borderColor: 'rgb(53, 162, 235)', backgroundColor: 'rgba(53, 162, 235, 0.5)', photoKey: 'biceps_left_photo_url' },
+  { key: 'biceps_right_cm', label: 'Biceps Right (cm)', borderColor: 'rgb(53, 235, 162)', backgroundColor: 'rgba(53, 235, 162, 0.5)', photoKey: 'biceps_right_photo_url' },
+  { key: 'waist_cm', label: 'Waist (cm)', borderColor: 'rgb(255, 205, 86)', backgroundColor: 'rgba(255, 205, 86, 0.5)', photoKey: 'waist_photo_url' },
+  { key: 'chest_cm', label: 'Chest (cm)', borderColor: 'rgb(100, 100, 100)', backgroundColor: 'rgba(100, 100, 100, 0.5)', photoKey: 'chest_photo_url' },
+  { key: 'thigh_left_cm', label: 'Thigh Left (cm)', borderColor: 'rgb(201, 203, 207)', backgroundColor: 'rgba(201, 203, 207, 0.5)', photoKey: 'thigh_left_photo_url' },
+  { key: 'thigh_right_cm', label: 'Thigh Right (cm)', borderColor: 'rgb(100, 203, 207)', backgroundColor: 'rgba(100, 203, 207, 0.5)', photoKey: 'thigh_right_photo_url' },
+  { key: 'calf_left_cm', label: 'Calf Left (cm)', borderColor: 'rgb(75, 100, 192)', backgroundColor: 'rgba(75, 100, 192, 0.5)', photoKey: 'calf_left_photo_url' },
+  { key: 'calf_right_cm', label: 'Calf Right (cm)', borderColor: 'rgb(192, 75, 100)', backgroundColor: 'rgba(192, 75, 100, 0.5)', photoKey: 'calf_right_photo_url' },
+  { key: 'hips_cm', label: 'Hips (cm)', borderColor: 'rgb(235, 53, 162)', backgroundColor: 'rgba(235, 53, 162, 0.5)', photoKey: 'hips_photo_url' },
+  { key: 'forearm_left_cm', label: 'Forearm Left (cm)', borderColor: 'rgb(162, 235, 53)', backgroundColor: 'rgba(162, 235, 53, 0.5)', photoKey: 'forearm_left_photo_url' },
+  { key: 'forearm_right_cm', label: 'Forearm Right (cm)', borderColor: 'rgb(86, 205, 255)', backgroundColor: 'rgba(86, 205, 255, 0.5)', photoKey: 'forearm_right_photo_url' },
+];
+
+export const MeasurementProgressGraph: React.FC<MeasurementProgressGraphProps> = ({ measurements, selectedMetricKeys }) => {
+  const validMeasurements = measurements || [];
+  const sortedMeasurements = [...validMeasurements].sort((a, b) =>
+    dayjs(a.measurement_date).valueOf() - dayjs(b.measurement_date).valueOf()
+  );
+
+  const labels = sortedMeasurements.map(m => dayjs(m.measurement_date).format('MMM D, YY'));
+
+  const prepareMetricData = (
+    metricKey: keyof Tables<'user_measurements'>,
+    photoKey?: keyof Tables<'user_measurements'>
+  ) => {
+    const data = sortedMeasurements.map(m => m[metricKey] as number | null);
+    const pointStyles: (HTMLImageElement | string)[] = [];
+    
+    if (photoKey) {
+      sortedMeasurements.forEach(m => {
+        const imageUrl = m[photoKey] as string | null | undefined;
+        if (imageUrl) {
+          const img = new Image(30, 30);
+          img.src = getMeasurementImageUrl(imageUrl);
+          pointStyles.push(img);
+        } else {
+          pointStyles.push('circle');
+        }
+      });
+    }
+
+    return {
+      data,
+      pointStyles: photoKey ? pointStyles : 'circle',
+    };
+  };
+
+  // Filter datasets based on selectedMetricKeys. If no keys are selected, show all.
+  const filteredDatasetsConfig = selectedMetricKeys.length > 0
+    ? ALL_DATASETS_CONFIG.filter(config => selectedMetricKeys.includes(config.key))
+    : ALL_DATASETS_CONFIG; // Default to all if nothing is selected
+
+  const chartDatasets = filteredDatasetsConfig
+    .map(config => {
+      const { data, pointStyles } = prepareMetricData(config.key, config.photoKey);
+      
+      if (data.some(val => val !== null && val !== undefined)) {
+        return {
+          label: config.label,
+          data: data,
+          borderColor: config.borderColor,
+          backgroundColor: config.backgroundColor,
+          tension: 0.3,
+          pointStyle: pointStyles,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          fill: false,
+        };
+      }
+      return null;
+    })
+    .filter(Boolean);
+
+  const chartData = {
+    labels,
+    datasets: chartDatasets as any[],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: true,
+        text: 'Body Measurement Progress Over Time',
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null) {
+              label += context.parsed.y;
+            }
+            return label;
+          },
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        title: {
+          display: true,
+          text: 'Value',
+        },
+      },
+      x: {
+        title: {
+          display: true,
+          text: 'Date',
+        },
+      },
+    },
+  };
+
+  if (validMeasurements.length === 0) {
+    return (
+      <div className="text-muted-foreground text-center py-8">
+        No measurements available to generate a graph. Add your first measurement to see your trends!
+      </div>
+    );
+  }
+  
+  if (chartDatasets.length === 0) {
+    return (
+        <div className="text-muted-foreground text-center py-8">
+            No selected measurements have data to display in the graph.
+            <br />Please select metrics using the filter options above.
+        </div>
+    );
+  }
+
+  return (
+    <div className="relative h-[400px] w-full">
+      <Line data={chartData} options={options} />
+    </div>
+  );
+};
+// FILE: src/components/measurements/measurements-skeleton.tsx
+
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
+
+export const MeasurementsPageSkeleton: React.FC = () => {
+  return (
+    <div className="container mx-auto max-w-3xl py-8 space-y-8">
+      <header className="space-y-4">
+        <div className="flex items-center gap-6">
+          <Skeleton className="h-24 w-24 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-56" />
+          </div>
+        </div>
+        <Skeleton className="h-6 w-full" />
+        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-10 w-32 mt-4" />
+      </header>
+
+      <Separator />
+
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card><CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader><CardContent><Skeleton className="h-10 w-full" /></CardContent></Card>
+        <Card><CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader><CardContent><Skeleton className="h-10 w-full" /></CardContent></Card>
+      </section>
+    </div>
+  );
+};
+
+export const MeasurementsHistorySkeleton: React.FC = () => {
+  return (
+    <div className="space-y-4">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <Card key={i} className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-5 w-20" />
+          </div>
+          <div className="space-y-3">
+            <div>
+              <Skeleton className="h-4 w-20 mb-2" />
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+            <div>
+              <Skeleton className="h-4 w-24 mb-2" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+            </div>
+            <div>
+              <Skeleton className="h-4 w-32 mb-3" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                <Skeleton className="h-24 w-full rounded-md" />
+                <Skeleton className="h-24 w-full rounded-md" />
+                <Skeleton className="h-24 w-full rounded-md" />
+                <Skeleton className="h-24 w-full rounded-md" />
+              </div>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+};
+// FILE: src/components/profile/mini-measurement-graph.tsx
+
+import React from 'react';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip, // Only Tooltip, no Legend or Title needed for mini graph
+} from 'chart.js';
+import dayjs from 'dayjs';
+
+import type { Tables } from '@/types/database.types'; // Your database types
+
+// Register only the necessary Chart.js components for a mini graph
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Tooltip
+);
+
+interface MiniMeasurementGraphProps {
+  measurements: Tables<'user_measurements'>[];
+}
+
+export const MiniMeasurementGraph: React.FC<MiniMeasurementGraphProps> = ({ measurements }) => {
+  const validMeasurements = measurements || [];
+
+  // Filter for only 'weight_kg' data points that are not null, and sort by date
+  const weightDataPoints = validMeasurements
+    .filter(m => m.weight_kg !== null && m.weight_kg !== undefined)
+    .sort((a, b) => dayjs(a.measurement_date).valueOf() - dayjs(b.measurement_date).valueOf());
+
+  if (weightDataPoints.length < 2) { // Need at least two points to draw a line
+    return (
+      <div className="text-muted-foreground text-xs text-center py-2">
+        Need at least 2 weight entries for graph.
+      </div>
+    );
+  }
+
+  const labels = weightDataPoints.map(m => dayjs(m.measurement_date).format('MMM YY'));
+  const data = weightDataPoints.map(m => m.weight_kg);
+
+  const chartData = {
+    labels,
+    datasets: [
+      {
+        label: 'Weight',
+        data: data,
+        borderColor: 'rgb(75, 192, 192)',
+        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+        tension: 0.4, // Smooth line
+        pointRadius: 3, // Smaller points
+        pointHoverRadius: 5,
+        fill: true, // Fill area under the line
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false, // No legend for mini graph
+      },
+      title: {
+        display: false, // No title for mini graph
+      },
+      tooltip: {
+        mode: 'index' as const,
+        intersect: false,
+        callbacks: {
+          title: () => '', // No title in tooltip for mini graph
+          label: function(context: any) {
+            return `${context.parsed.y} kg`; // Only show weight value
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        display: false, // No x-axis labels for mini graph
+        grid: {
+          display: false,
+        },
+      },
+      y: {
+        display: false, // No y-axis labels for mini graph
+        grid: {
+          display: false,
+        },
+        beginAtZero: false,
+      },
+    },
+    elements: {
+      line: {
+        borderWidth: 2, // Thicker line
+      },
+      point: {
+        hitRadius: 10, // Easier to hit points on touch devices
+      },
+    },
+  };
+
+  return (
+    <div className="relative h-[100px] w-full"> {/* Fixed height for the mini graph */}
+      <Line data={chartData} options={options} />
+    </div>
+  );
+};
+// FILE: src/components/plan-editor/DayEditor.tsx

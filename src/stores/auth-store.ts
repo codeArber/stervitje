@@ -9,6 +9,7 @@ export interface Profile { // Ensure 'export' is here
   onboarding_completed: boolean;
   full_name: string | null;
   username: string | null;
+  current_workspace_id: string | null;
   // Add any other profile fields you use in your 'profiles' table
 }
 
@@ -26,6 +27,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   profile: null,
   isLoading: true, // Start as loading
+  current_workspace_id: null,
 
   checkUserSession: async () => {
     try {

@@ -7,11 +7,16 @@ import {
   fetchUserPlanHistory,
   fetchUserProfileDetails,
   fetchRichUserCards, // The new function
-  type UserFilters
+  fetchUserMeasurements,
+  type UserFilters,
+  setCurrentUserWorkspace,
+  insertUserMeasurement
 } from './endpoint';
 import { useAuthStore } from '@/stores/auth-store';
 import type { Profile } from '@/types/index';
 import type { RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
+import { Tables, TablesInsert } from '@/types/database.types';
+import { toast } from 'sonner';
 
 // --- Query Keys ---
 const userKeys = {
@@ -21,7 +26,10 @@ const userKeys = {
   // Key for the new rich user card lists
   richLists: () => [...userKeys.all, 'rich', 'list'] as const,
   richList: (filters: UserFilters) => [...userKeys.richLists(), filters] as const,
-  planHistory: (userId: string) => [...userKeys.all, 'planHistory', userId] as const,
+  planHistory: (userId: string) => [...userKeys.all, 'planHistory', userId] as const, 
+   measurements: () => [...userKeys.all, 'measurements'] as const, // Base key for all measurements
+  userMeasurements: (userId: string) => [...userKeys.measurements(), userId] as const, // Specific user's measurements
+
 };
 
 // --- Hooks ---
@@ -85,6 +93,51 @@ export const useCompleteOnboardingMutation = () => {
     },
     onError: (error) => {
       console.error('Error completing onboarding mutation:', error);
+    }
+  });
+};
+
+
+export const useSetCurrentUserWorkspaceMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string | null>({ // <--- CHANGED: parameter can be string | null
+    mutationFn: (workspaceId) => setCurrentUserWorkspace(workspaceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'summary'] });
+      queryClient.invalidateQueries({ queryKey: userKeys.currentUser() });
+    },
+    onError: (error) => {
+      console.error('Error setting current workspace:', error);
+    }
+  });
+};
+
+export const useUserMeasurementsQuery = (userId: string | undefined) => {
+  return useQuery<Tables<'user_measurements'>[], Error>({
+    queryKey: userKeys.userMeasurements(userId!),
+    queryFn: () => fetchUserMeasurements(userId!),
+    enabled: !!userId, // Only run if userId is available
+  });
+};
+
+/**
+ * NEW: Hook for inserting a new user measurement.
+ */
+export const useInsertUserMeasurementMutation = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore(); // Get current user from auth store
+
+  return useMutation<Tables<'user_measurements'>, Error, TablesInsert<'user_measurements'>>({
+    mutationFn: (newMeasurementData) => insertUserMeasurement(newMeasurementData),
+    onSuccess: (newRecord) => {
+      // Invalidate the measurements query for the current user to refetch the updated list
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: userKeys.userMeasurements(user.id) });
+      }
+      toast.success('Measurement added successfully!');
+    },
+    onError: (error) => {
+      toast.error(`Error adding measurement: ${error.message}`);
     }
   });
 };

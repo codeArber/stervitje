@@ -68,3 +68,113 @@ export type LogWorkoutPayload = {
   overall_feeling: number;
   notes: string;
 };
+
+export interface AddPlanWeekPayload {
+  p_plan_id: string;
+  p_week_number: number;
+  p_description?: string | null;
+}
+
+export interface UpdatePlanWeekPayload {
+  p_week_id: string;
+  p_week_number: number;
+  p_description?: string | null;
+}
+
+export interface DeletePlanWeekPayload {
+  p_week_id: string;
+}
+
+export interface AddPlanDayPayload {
+  p_plan_week_id: string;
+  p_day_number: number;
+  p_title?: string | null;
+  p_description?: string | null;
+  p_is_rest_day?: boolean | null;
+}
+export interface AddPlanSessionPayload {
+  p_plan_day_id: string;
+  p_order_index: number;
+  p_title?: string | null;
+  p_notes?: string | null;
+}
+
+export interface UpdatePlanSessionPayload { // <--- NEW
+  p_session_id: string;
+  p_order_index: number;
+  p_title?: string | null;
+  p_notes?: string | null;
+}
+
+export interface DeletePlanSessionPayload { // <--- NEW
+  p_session_id: string;
+}
+
+export interface UpdatePlanDayPayload { // <--- ADD THIS
+  p_day_id: string;
+  p_day_number: number;
+  p_title?: string | null;
+  p_description?: string | null;
+  p_is_rest_day?: boolean | null;
+}
+
+export interface DeletePlanDayPayload { // <--- ADD THIS
+  p_day_id: string;
+}
+
+
+export interface AddPlanSessionExercisePayload {
+  p_plan_session_id: string;
+  p_exercise_id: string;
+  p_order_within_session: number;
+  p_notes?: string | null;
+  p_execution_group?: number | null;
+  p_post_exercise_rest_seconds?: number | null;
+  p_post_group_rest_seconds?: number | null;
+}
+
+export interface DeletePlanSessionExercisePayload {
+  p_plan_session_exercise_id: string;
+}
+
+// --- NEW: Plan Session Exercise Set Mutation Payloads ---
+export interface AddPlanSessionExerciseSetPayload {
+  p_plan_session_exercise_id: string;
+  p_set_number: number;
+  p_target_reps?: number | null;
+  p_target_weight?: number | null;
+  p_target_duration_seconds?: number | null;
+  p_target_distance_meters?: number | null;
+  p_target_rest_seconds?: number | null;
+  p_notes?: string | null;
+  p_set_type?: Tables<'plan_session_exercise_sets'>['set_type']; // Use DB type for enum
+  p_metadata?: object | null; // jsonb
+}
+
+export interface UpdatePlanSessionExerciseSetPayload {
+  p_set_id: string;
+  p_set_number: number;
+  p_target_reps?: number | null;
+  p_target_weight?: number | null;
+  p_target_duration_seconds?: number | null;
+  p_target_distance_meters?: number | null;
+  p_target_rest_seconds?: number | null;
+  p_notes?: string | null;
+  p_set_type?: Tables<'plan_session_exercise_sets'>['set_type'];
+  p_metadata?: object | null;
+}
+
+
+export interface DeletePlanSessionExerciseSetPayload {
+  p_set_id: string;
+}
+
+export interface UpdatePlanSessionExercisePayload {
+  p_plan_session_exercise_id: string;
+  p_exercise_id: string; // Allow changing exercise, or make non-editable based on UI
+  p_order_within_session: number;
+  p_notes?: string | null;
+  p_execution_group?: number | null;
+  p_post_exercise_rest_seconds?: number | null;
+  p_post_group_rest_seconds?: number | null;
+}

@@ -32,9 +32,9 @@ const items = [
     icon: User,
   },
   {
-    title: "Profile",
-    url: "/profile",
-    icon: User,
+    title: "Exercises",
+    url: "/exercise",
+    icon: Dumbbell,
   },
   {
     title: "Explore",
@@ -56,9 +56,19 @@ const items = [
     ]
   },
   {
-    title: "Exercises",
-    url: "/exercise",
-    icon: Dumbbell,
+    title: "Profile",
+    url: "/profile",
+    icon: User,
+    items: [
+      {
+        title: "Measurements",
+        url: "/profile/measurements"
+      },
+      {
+        title: "Performance",
+        url: "/profile/performance"
+      },
+    ]
   },
   {
     title: "Settings",

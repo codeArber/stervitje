@@ -595,6 +595,7 @@ export type Database = {
         Row: {
           bio: string | null
           created_at: string | null
+          current_workspace_id: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -607,6 +608,7 @@ export type Database = {
         Insert: {
           bio?: string | null
           created_at?: string | null
+          current_workspace_id?: string | null
           email?: string | null
           full_name?: string | null
           id: string
@@ -619,6 +621,7 @@ export type Database = {
         Update: {
           bio?: string | null
           created_at?: string | null
+          current_workspace_id?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
@@ -628,7 +631,15 @@ export type Database = {
           updated_at?: string | null
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_current_workspace_id_fkey"
+            columns: ["current_workspace_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       session_exercise_logs: {
         Row: {
@@ -1243,6 +1254,87 @@ export type Database = {
       }
     }
     Functions: {
+      add_exercise_set: {
+        Args: { p_set_data: Json }
+        Returns: {
+          created_at: string | null
+          id: string
+          intent: Database["public"]["Enums"]["exercise_physical_intent"] | null
+          metadata: Json | null
+          notes: string | null
+          plan_session_exercise_id: string
+          set_number: number
+          set_type: Database["public"]["Enums"]["set_type"]
+          target_distance_meters: number | null
+          target_duration_seconds: number | null
+          target_reps: number | null
+          target_rest_seconds: number | null
+          target_weight: number | null
+          target_weight_unit:
+            | Database["public"]["Enums"]["weight_unit_enum"]
+            | null
+          updated_at: string | null
+        }
+      }
+      add_plan_day: {
+        Args: {
+          p_day_number: number
+          p_description?: string
+          p_is_rest_day?: boolean
+          p_plan_week_id: string
+          p_title?: string
+        }
+        Returns: {
+          day_number: number
+          description: string | null
+          id: string
+          is_rest_day: boolean | null
+          plan_week_id: string
+          title: string | null
+        }
+      }
+      add_plan_session: {
+        Args: {
+          p_notes?: string
+          p_order_index: number
+          p_plan_day_id: string
+          p_title?: string
+        }
+        Returns: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          order_index: number
+          plan_day_id: string
+          title: string | null
+          updated_at: string | null
+        }
+      }
+      add_plan_session_exercise: {
+        Args: {
+          p_execution_group?: number
+          p_exercise_id: string
+          p_notes?: string
+          p_order_within_session: number
+          p_plan_session_id: string
+          p_post_exercise_rest_seconds?: number
+          p_post_group_rest_seconds?: number
+        }
+        Returns: Json
+      }
+      add_plan_week: {
+        Args: {
+          p_description?: string
+          p_plan_id: string
+          p_week_number: number
+        }
+        Returns: {
+          description: string | null
+          id: string
+          plan_id: string
+          week_number: number
+        }
+      }
       assign_team_plan_to_member: {
         Args: {
           _plan_id_to_assign: string
@@ -1256,6 +1348,30 @@ export type Database = {
       complete_onboarding: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      create_basic_plan: {
+        Args: {
+          p_description?: string
+          p_difficulty_level?: number
+          p_private?: boolean
+          p_team_id?: string
+          p_title: string
+        }
+        Returns: {
+          allow_public_forking: boolean
+          created_at: string | null
+          created_by: string
+          description: string | null
+          difficulty_level: number | null
+          fork_count: number | null
+          forked_from: string | null
+          id: string
+          like_count: number | null
+          private: boolean
+          team_id: string | null
+          title: string
+          updated_at: string | null
+        }
       }
       create_new_team: {
         Args: {
@@ -1276,6 +1392,18 @@ export type Database = {
           sport: string | null
           updated_at: string | null
         }[]
+      }
+      delete_plan_day: {
+        Args: { p_day_id: string }
+        Returns: undefined
+      }
+      delete_plan_session: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
+      delete_plan_week: {
+        Args: { p_week_id: string }
+        Returns: undefined
       }
       fork_plan: {
         Args: { p_original_plan_id: string }
@@ -1406,6 +1534,43 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_user_measurements: {
+        Args: { p_user_id: string }
+        Returns: {
+          biceps_left_cm: number | null
+          biceps_left_photo_url: string | null
+          biceps_right_cm: number | null
+          biceps_right_photo_url: string | null
+          body_fat_percentage: number | null
+          body_fat_photo_url: string | null
+          calf_left_cm: number | null
+          calf_left_photo_url: string | null
+          calf_right_cm: number | null
+          calf_right_photo_url: string | null
+          chest_cm: number | null
+          chest_photo_url: string | null
+          created_at: string | null
+          forearm_left_cm: number | null
+          forearm_left_photo_url: string | null
+          forearm_right_cm: number | null
+          forearm_right_photo_url: string | null
+          height_cm: number | null
+          hips_cm: number | null
+          hips_photo_url: string | null
+          id: string
+          measurement_date: string
+          overall_notes: string | null
+          resting_heart_rate: number | null
+          thigh_left_cm: number | null
+          thigh_left_photo_url: string | null
+          thigh_right_cm: number | null
+          thigh_right_photo_url: string | null
+          user_id: string
+          waist_cm: number | null
+          waist_photo_url: string | null
+          weight_kg: number | null
+        }[]
+      }
       get_user_plan_history: {
         Args: { p_user_id: string }
         Returns: Json
@@ -1421,6 +1586,43 @@ export type Database = {
       get_workout_player_data: {
         Args: { p_session_log_id: string }
         Returns: Json
+      }
+      insert_user_measurement: {
+        Args: { p_measurement_data: Json }
+        Returns: {
+          biceps_left_cm: number | null
+          biceps_left_photo_url: string | null
+          biceps_right_cm: number | null
+          biceps_right_photo_url: string | null
+          body_fat_percentage: number | null
+          body_fat_photo_url: string | null
+          calf_left_cm: number | null
+          calf_left_photo_url: string | null
+          calf_right_cm: number | null
+          calf_right_photo_url: string | null
+          chest_cm: number | null
+          chest_photo_url: string | null
+          created_at: string | null
+          forearm_left_cm: number | null
+          forearm_left_photo_url: string | null
+          forearm_right_cm: number | null
+          forearm_right_photo_url: string | null
+          height_cm: number | null
+          hips_cm: number | null
+          hips_photo_url: string | null
+          id: string
+          measurement_date: string
+          overall_notes: string | null
+          resting_heart_rate: number | null
+          thigh_left_cm: number | null
+          thigh_left_photo_url: string | null
+          thigh_right_cm: number | null
+          thigh_right_photo_url: string | null
+          user_id: string
+          waist_cm: number | null
+          waist_photo_url: string | null
+          weight_kg: number | null
+        }
       }
       invite_member_to_team: {
         Args: {
@@ -1447,6 +1649,14 @@ export type Database = {
       }
       respond_to_team_invitation: {
         Args: { p_accepted: boolean; p_invitation_id: string }
+        Returns: undefined
+      }
+      save_plan_changes: {
+        Args: { p_changeset: Json }
+        Returns: Json
+      }
+      set_current_user_workspace: {
+        Args: { p_workspace_id?: string }
         Returns: undefined
       }
       start_and_log_plan_session: {
@@ -1506,6 +1716,53 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
         }[]
+      }
+      update_plan_day: {
+        Args: {
+          p_day_id: string
+          p_day_number: number
+          p_description?: string
+          p_is_rest_day?: boolean
+          p_title?: string
+        }
+        Returns: {
+          day_number: number
+          description: string | null
+          id: string
+          is_rest_day: boolean | null
+          plan_week_id: string
+          title: string | null
+        }
+      }
+      update_plan_session: {
+        Args: {
+          p_notes?: string
+          p_order_index: number
+          p_session_id: string
+          p_title?: string
+        }
+        Returns: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          order_index: number
+          plan_day_id: string
+          title: string | null
+          updated_at: string | null
+        }
+      }
+      update_plan_week: {
+        Args: {
+          p_description?: string
+          p_week_id: string
+          p_week_number: number
+        }
+        Returns: {
+          description: string | null
+          id: string
+          plan_id: string
+          week_number: number
+        }
       }
     }
     Enums: {
