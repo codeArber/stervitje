@@ -72,7 +72,7 @@ const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean }> = ({ wee
   );
 };
 
-const DayDisplay: React.FC<{ day: PlanDay, isPlanStarted: boolean }> = ({ day, isPlanStarted }) => {
+export  const DayDisplay: React.FC<{ day: PlanDay, isPlanStarted: boolean }> = ({ day, isPlanStarted }) => {
   return (
     <div className="px-4 py-3">
       <div className="flex items-center gap-2 text-base font-semibold text-foreground">

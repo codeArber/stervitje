@@ -161,7 +161,7 @@ function PlanCard({ planData }: { planData: RichPlanCardData }) {
     const plan = planData; // For clarity, the root object is the plan
   
     return (
-      <Link to="/plans/$planId" params={{ planId: plan.id }}>
+      <Link to="/explore/plans/$planId" params={{ planId: plan.id }}>
         <Card className="h-full flex flex-col hover:border-primary transition-colors duration-200">
           <CardHeader>
             <div className="flex items-center gap-3 mb-3">

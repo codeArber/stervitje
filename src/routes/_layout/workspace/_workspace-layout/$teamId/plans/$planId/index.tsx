@@ -27,6 +27,9 @@ import {
 import { useWorkoutStore } from '@/stores/workout-store';
 import { getExerciseImageUrl } from '@/types/storage';
 import { PlanDisplay } from '@/components/new/plan/plan-display/PlanDisplay';
+import { PlanWeeklyNavigator } from '@/components/new/plan/plan-display/PlanWeeklyNavigator';
+import { PlanCalendarView } from '@/components/new/plan/plan-display/PlanCalendarView';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export const Route = createFileRoute('/_layout/workspace/_workspace-layout/$teamId/plans/$planId/')({
   component: WorkspacePlanDetailsPage,
@@ -112,11 +115,32 @@ function WorkspacePlanDetailsPage() {
 
       {/* Plan Hierarchy */}
       <section>
-        <h2 className="text-3xl font-bold tracking-tight mb-4">Workout Schedule</h2>
         <div className="space-y-4">
-          {/* --- FIX: Safely access hierarchy.weeks --- */}
+          <section>
+            <Tabs defaultValue="overall" className="w-full">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-3xl font-bold tracking-tight">Workout Schedule</h2>
+                <TabsList>
+                  <TabsTrigger value="overall">Overall</TabsTrigger>
+                  <TabsTrigger value="compact">Compact</TabsTrigger>
+                  <TabsTrigger value="detailed">Detailed</TabsTrigger>
+                </TabsList>
+              </div>
 
-          <PlanDisplay planDetails={planDetails} />
+              <TabsContent value="overall">
+
+                <PlanCalendarView hierarchy={hierarchy} />
+              </TabsContent>
+
+              <TabsContent value="compact">
+                <PlanWeeklyNavigator planDetails={planDetails} />
+              </TabsContent>
+
+              <TabsContent value="detailed">
+                <PlanDisplay planDetails={planDetails} />
+              </TabsContent>
+            </Tabs>
+          </section>
         </div>
       </section>
     </div>
