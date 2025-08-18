@@ -18,7 +18,7 @@ import { Accordion } from '@/components/ui/accordion';
 import { ArrowLeft, PlusCircle, Save } from 'lucide-react';
 
 // --- API Hooks & Skeletons ---
-import { usePlanDetailsQuery, useSavePlanChangesMutation } from '@/api/plan';
+import { usePlanDetailsQuery, useSavePlanChangesMutation, useSavePlanHierarchyMutation } from '@/api/plan';
 import { useEffect, useRef } from 'react';
 import { PlanEditPageSkeleton } from '@/components/new/plan/plan-editor/PlanEditorSkeleton';
 import { WeekEditor } from '@/components/new/plan/plan-edit/WeekEditor';
@@ -48,8 +48,8 @@ function PlanEditPage() {
   const plan = usePlanEditorPlan();
   const isStoreLoading = usePlanEditorLoading();
   const originalPlan = usePlanEditorOriginalPlan(); // <-- We already have this!
-  const currentPlan = usePlanEditorPlan(); // <-- We already have this!
-  const { mutate: savePlan, isPending: isSaving } = useSavePlanChangesMutation();
+  const currentPlan = usePlanEditorPlan(); // <-- We already have this!  
+  const { mutate: saveHierarchy, isPending: isSaving } = useSavePlanHierarchyMutation();
   const hasLoaded = useRef(false);
 
   // Step 3: Load data into the store ONLY ONCE
@@ -67,9 +67,15 @@ function PlanEditPage() {
   // --- Fixed handleAddWeek function (with corrected type for newWeek) ---
   const handleAddWeek = () => {
     if (!plan) return;
-    const currentMaxWeekNumber = plan.hierarchy.weeks.length > 0
-      ? Math.max(...plan.hierarchy.weeks.map(w => w.week_number))
-      : 0;
+    let currentMaxWeekNumber;
+    if(plan.hierarchy.weeks)
+    {
+        currentMaxWeekNumber = plan.hierarchy.weeks.length > 0
+        ? Math.max(...plan.hierarchy.weeks.map(w => w.week_number))
+        : 0;
+    }else{
+      currentMaxWeekNumber = 0;
+    }
     const nextWeekNumber = currentMaxWeekNumber + 1;
 
     // To satisfy the PlanWeek type for our optimistic update
@@ -85,22 +91,29 @@ function PlanEditPage() {
     toast.info(`Optimistically added Week ${nextWeekNumber}.`);
   };
 
-  const handleSaveChanges = () => {
 
-    if (!currentPlan || !originalPlan) {
-      toast.error("Cannot save, plan data is missing.");
+  const handleSaveChanges = () => {
+    if (!plan) {
+      toast.error("Cannot save, no plan is loaded.");
       return;
     }
 
-    // Generate the changeset
-    const changeset = diffPlan(originalPlan, currentPlan);
-    console.log(currentPlan)
-
-    // Log it to see what it looks like!
-    console.log("Generated Changeset:", changeset);
-    toast.info("Check the browser console to see the generated changeset.");
+    const toastId = toast.loading("Saving your plan...");
     
-    savePlan(changeset);
+    // The payload is now just the plan ID and the current hierarchy from the store.
+    saveHierarchy({
+      planId: plan.plan.id,
+      hierarchy: plan.hierarchy,
+    }, {
+      onSuccess: () => {
+        toast.success("Plan saved successfully!", { id: toastId });
+        // The mutation hook's onSuccess already handles invalidating the query,
+        // which will cause the store to reload with the fresh, correct data.
+      },
+      onError: (err) => {
+        toast.error(`Save failed: ${err.message}`, { id: toastId });
+      }
+    });
   };
 
   // --- Render Logic ---
@@ -151,8 +164,9 @@ function PlanEditPage() {
           </Button>
         </div>
 
-        {/* We now safely map over the `weeks` variable */}
-        {weeks.length === 0 ? (
+        {weeks && 
+        <>
+         {weeks.length === 0 ? (
           <Card className="p-8 text-center text-muted-foreground">
             <h3 className="text-lg font-semibold">No weeks added yet.</h3>
             <p>Click "Add Week" to start building your plan's structure.</p>
@@ -168,6 +182,9 @@ function PlanEditPage() {
             ))}
           </Accordion>
         )}
+        </>
+        }
+       
       </section>
     </div>
   );

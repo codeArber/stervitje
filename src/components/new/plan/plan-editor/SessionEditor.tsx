@@ -322,17 +322,18 @@ const ExercisesSection: React.FC<ExercisesSectionProps> = ({
         <Accordion type="single" collapsible className="w-full">
           {exercises.map((exerciseField, exerciseIndex) => (
             <ExerciseEditor
-              key={exerciseField.fieldId || exerciseField.id} // Use fieldId if available, fallback to id
-              exercise={exerciseField as PlanExercise & { sets: PlanSet[] }}
-              exerciseIndex={exerciseIndex}
-              sessionIndex={sessionIndex}
-              dayIndex={dayIndex}
-              weekIndex={weekIndex}
-              canEdit={canEdit}
-              form={form}
-              control={control}
-              onDeleteSuccess={() => onRemoveExercise(exerciseIndex)}
-            />
+                  key={exerciseField.fieldId || exerciseField.id} // Use fieldId if available, fallback to id
+                  exercise={exerciseField as PlanExercise & { sets: PlanSet[]; }}
+                  exerciseIndex={exerciseIndex}
+                  sessionIndex={sessionIndex}
+                  dayIndex={dayIndex}
+                  weekIndex={weekIndex}
+                  canEdit={canEdit}
+                  form={form}
+                  control={control}
+                  onDeleteSuccess={() => onRemoveExercise(exerciseIndex)} refetchPlanDetails={function (): void {
+                      throw new Error('Function not implemented.');
+                  } }            />
           ))}
         </Accordion>
       )}

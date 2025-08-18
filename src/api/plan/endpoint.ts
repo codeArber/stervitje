@@ -12,7 +12,8 @@ import type {
   AddPlanSessionExerciseSetPayload,
   DeletePlanSessionExerciseSetPayload,
   PlanSet,
-  UpdatePlanSessionExercisePayload
+  UpdatePlanSessionExercisePayload,
+  PlanHierarchy
 } from "@/types/plan";
 import type { Tag } from "@/types/exercise";
 import type { Tables } from "@/types/database.types";
@@ -322,5 +323,17 @@ export const deletePlanSessionExerciseSet = async (payload: DeletePlanSessionExe
   if (error) {
     console.error('API Error deletePlanSessionExerciseSet:', error);
     throw new Error(error.message || "Failed to delete plan session exercise set.");
+  }
+};
+
+export const savePlanHierarchy = async (payload: { planId: string; hierarchy: PlanHierarchy }): Promise<void> => {
+  const { error } = await supabase.rpc('save_plan_hierarchy', {
+    p_plan_id: payload.planId,
+    p_hierarchy: payload.hierarchy,
+  });
+
+  if (error) {
+    console.error('API Error savePlanHierarchy:', error);
+    throw new Error(error.message);
   }
 };

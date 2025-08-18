@@ -28,6 +28,7 @@ import {
   updatePlanSessionExerciseSet,
   deletePlanSessionExerciseSet,
   savePlanChanges,
+  savePlanHierarchy,
 } from './endpoint';
 import type {
   AddPlanDayPayload,
@@ -56,6 +57,7 @@ import type {
   PlanSet,
   UpdatePlanSessionExerciseSetPayload,
   DeletePlanSessionExerciseSetPayload,
+  PlanHierarchy,
 } from '@/types/plan';
 import type { Tag } from '@/types/exercise';
 import type { Tables } from '@/types/database.types';
@@ -461,6 +463,23 @@ export const useDeletePlanSessionExerciseSetMutation = () => {
     },
     onError: (error) => {
       toast.error(`Failed to delete set: ${error.message}`);
+    }
+  });
+};
+
+export const useSavePlanHierarchyMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: { planId: string; hierarchy: PlanHierarchy }) => savePlanHierarchy(payload),
+    onSuccess: (data, variables) => {
+      // After a successful save, we MUST refetch the plan details.
+      // This gets the real DB IDs for any new items and confirms the structure.
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(variables.planId) });
+    },
+    onError: (error) => {
+      // The toast is handled in the component, but we can log here.
+      console.error("Save plan hierarchy mutation error:", error);
     }
   });
 };

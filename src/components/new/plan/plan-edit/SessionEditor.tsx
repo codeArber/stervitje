@@ -4,9 +4,8 @@ import React from 'react';
 
 // --- STATE MANAGEMENT IMPORTS ---
 import { usePlanEditor } from '@/stores/editor/PlanEditorProvider';
-import type { PlanSession, PlanExercise, AddPlanSessionExercisePayload } from '@/types/plan';
+import type { PlanSession, PlanExercise, PlanSet } from '@/types/plan';
 import type { Exercise } from '@/types/exercise';
-
 
 // --- CHILD COMPONENT & DIALOG ---
 import { ExerciseGroupEditor } from './ExerciseGroupEditor';
@@ -16,12 +15,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAddPlanSessionExerciseMutation } from '@/api/plan'; // Import the mutation hook
+import { getNextTempId } from '@/utils/tempId';
 import { ExerciseSelectorDialog } from '../plan-editor/ExerciseSelectorDialog';
 
+// --- UTILITY ---
 
 interface SessionEditorProps {
-  // We only need the indexes to locate the session within the Zustand store
   weekIndex: number;
   dayIndex: number;
   sessionIndex: number;
@@ -34,14 +33,14 @@ export const SessionEditor: React.FC<SessionEditorProps> = ({
   sessionIndex,
   canEdit,
 }) => {
-  // --- STATE MANAGEMENT ---
-  const { plan, addExercise: addExerciseToStore } = usePlanEditor();
-  const { mutate: addExerciseMutation, isPending: isAddingExercise } = useAddPlanSessionExerciseMutation();
+  // --- STATE MANAGEMENT (Corrected) ---
+  const { plan, addExercise } = usePlanEditor(); // Get the addExercise action from the store
   
   const session = plan?.hierarchy.weeks[weekIndex]?.days[dayIndex]?.sessions[sessionIndex];
   const exercises = session?.exercises ?? [];
 
   const exerciseGroups = React.useMemo(() => {
+    if (!exercises) return [];
     const groups = exercises.reduce((acc, exercise) => {
       const groupKey = exercise.execution_group;
       if (!acc[groupKey]) acc[groupKey] = [];
@@ -55,31 +54,29 @@ export const SessionEditor: React.FC<SessionEditorProps> = ({
     return null;
   }
 
-  // --- HANDLER WITH REAL MUTATION ---
+  // --- HANDLER (Corrected - No Mutation) ---
   const handleAddExercise = (exerciseId: string, exerciseDetails: Exercise) => {
     const nextOrder = exercises.length > 0 ? Math.max(...exercises.map(e => e.order_within_session)) + 1 : 1;
 
-    const payload: AddPlanSessionExercisePayload = {
-      p_plan_session_id: session.id,
-      p_exercise_id: exerciseId,
-      p_order_within_session: nextOrder,
-      // You can add default values for other fields if your RPC requires them
-      p_execution_group: nextOrder, // Default to its own group
+    // Create a new exercise object that matches the PlanExercise type for our store
+    const newExercise: PlanExercise = {
+      id: getNextTempId('exercise'), // Use our stable temporary ID generator
+      plan_session_id: session.id, // This can be a temporary session ID, which is fine
+      exercise_id: exerciseId,
+      order_within_session: nextOrder,
+      execution_group: nextOrder, // Default to its own group
+      notes: null,
+      post_exercise_rest_seconds: 60, // Sensible default
+      post_group_rest_seconds: 0,
+      exercise_details: exerciseDetails, // The details we got from the selector
+      sets: [], // Start with an empty array of sets
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
     
-    const toastId = toast.loading(`Adding "${exerciseDetails.name}"...`);
-    addExerciseMutation(payload, {
-        onSuccess: (newExerciseData) => {
-            // Instead of refetching the whole plan, we can just add the new exercise to the store.
-            // This provides a faster, more optimistic UI update.
-            // The `newExerciseData` is the response from your `add_plan_session_exercise` RPC.
-            addExerciseToStore(weekIndex, dayIndex, sessionIndex, newExerciseData);
-            toast.success(`"${exerciseDetails.name}" added successfully!`, { id: toastId });
-        },
-        onError: (err) => {
-            toast.error(`Failed to add exercise: ${err.message}`, { id: toastId });
-        },
-    });
+    // Call the Zustand store action to optimistically add the exercise
+    addExercise(weekIndex, dayIndex, sessionIndex, newExercise);
+    toast.success(`"${exerciseDetails.name}" added to the session.`);
   };
 
   return (
@@ -93,11 +90,10 @@ export const SessionEditor: React.FC<SessionEditorProps> = ({
             </CardDescription>
           </div>
           
-          {/* Use the ExerciseSelectorDialog component */}
           <ExerciseSelectorDialog onSelectExercise={handleAddExercise}>
-            <Button size="sm" className="shrink-0" disabled={!canEdit || isAddingExercise}>
+            <Button size="sm" className="shrink-0" disabled={!canEdit}>
               <PlusCircle className="mr-2 h-4 w-4" />
-              {isAddingExercise ? 'Adding...' : 'Add Exercise'}
+              Add Exercise
             </Button>
           </ExerciseSelectorDialog>
 
@@ -111,7 +107,7 @@ export const SessionEditor: React.FC<SessionEditorProps> = ({
 
             return (
               <ExerciseGroupEditor
-                key={index}
+                key={firstExerciseInGroup.id} // Use a stable ID for the key
                 exercises={groupExercises}
                 weekIndex={weekIndex}
                 dayIndex={dayIndex}

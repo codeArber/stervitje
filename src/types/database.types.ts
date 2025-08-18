@@ -1655,6 +1655,10 @@ export type Database = {
         Args: { p_changeset: Json }
         Returns: Json
       }
+      save_plan_hierarchy: {
+        Args: { p_hierarchy: Json; p_plan_id: string }
+        Returns: undefined
+      }
       set_current_user_workspace: {
         Args: { p_workspace_id?: string }
         Returns: undefined
