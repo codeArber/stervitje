@@ -26,7 +26,7 @@ export interface PlanEditorState {
   updateSession: (weekIndex: number, dayIndex: number, sessionIndex: number, updatedSession: Partial<PlanSession>) => void;
   deleteSession: (weekIndex: number, dayIndex: number, sessionIndex: number) => void;
   addExercise: (weekIndex: number, dayIndex: number, sessionIndex: number, newExercise: PlanExercise) => void;
-  
+  updateExercise: (weekIndex: number, dayIndex: number, sessionIndex: number, exerciseIndex: number, updatedExercise: Partial<PlanExercise>) => void;
   deleteExercise: (weekIndex: number, dayIndex: number, sessionIndex: number, exerciseIndex: number) => void;
   // --- SET-LEVEL ACTIONS ARE NOW DEFINED HERE ---
   addSet: (weekIndex: number, dayIndex: number, sessionIndex: number, exerciseIndex: number, newSet: PlanSet) => void;
@@ -164,4 +164,12 @@ deleteSet: (weekIndex, dayIndex, sessionIndex, exerciseIndex, setIndex) => set(p
   if (!exercise?.sets) return;
   exercise.sets.splice(setIndex, 1);
 })),
+
+updateExercise: (weekIndex, dayIndex, sessionIndex, exerciseIndex, updatedExercise) => set(produce((state: PlanEditorState) => {
+        const exercise = state.plan?.hierarchy.weeks[weekIndex]?.days[dayIndex]?.sessions[sessionIndex]?.exercises[exerciseIndex];
+        if (exercise) {
+            Object.assign(exercise, updatedExercise);
+        }
+    })),
+
 }));
