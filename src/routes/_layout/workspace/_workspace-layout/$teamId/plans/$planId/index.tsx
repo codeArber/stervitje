@@ -186,29 +186,6 @@ function RequiredEquipmentCard({ equipment }: { equipment: Tag[] | null }) {
   );
 }
 
-// Display component for a Week - now expanded by default
-function WeekDisplayComponent({ week, isPlanStarted }: { week: PlanWeek & { days: PlanDay[] }; isPlanStarted: boolean }) {
-  const allDayIds = (week.days || []).map(day => `day-${day.id}`); // Collect all day IDs for Accordion value
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Week {week.week_number}</CardTitle>
-        {week.description && <CardDescription>{week.description}</CardDescription>}
-      </CardHeader>
-      <CardContent>
-        {/* Changed type to "multiple" and value to allDayIds for full expansion */}
-        {(week.days || []).length === 0 ? (
-          <p className="text-muted-foreground text-sm">No days defined for this week.</p>
-        ) : (
-          <Accordion type="multiple" value={allDayIds} className="w-full">
-            {(week.days || []).map(day => <DayDisplayComponent key={day.id} day={day} isPlanStarted={isPlanStarted} />)}
-          </Accordion>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 // Display component for a Day - now expanded by default
 function DayDisplayComponent({ day, isPlanStarted }: { day: PlanDay & { sessions: PlanSession[] }; isPlanStarted: boolean }) {
   const allSessionIds = (day.sessions || []).map(session => session.id); // Collect all session IDs
