@@ -1,104 +1,200 @@
-// FILE: /src/routes/_layout/teams/index.tsx
+// FILE: src/routes/_layout/dashboard.tsx
 
+import React from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useDashboardSummaryQuery } from '@/api/dashboard';
-import { useSetCurrentUserWorkspaceMutation } from '@/api/user'; // <--- NEW IMPORT
-import type { MyTeam } from '@/types/dashboard';
-import { toast } from 'sonner'; // Import toast for feedback
 
-// shadcn/ui components
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+// --- API & State ---
+import { useDashboardSummaryQuery } from '@/api/dashboard';
+import { useAuthStore } from '@/stores/auth-store';
+import type { FullPlan, PlanSession } from '@/types/plan';
+
+// --- UI Components & Icons ---
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Dumbbell, Users, Mail, Compass, PlayCircle, ArrowRight, Building } from 'lucide-react';
 
-// Icons
-import { Users, ArrowRight, PlusCircle, Home, CheckCircle } from 'lucide-react'; // Import CheckCircle
-
+// --- Main Route Component ---
 export const Route = createFileRoute('/_layout/dashboard/')({
-  component: MyTeamsPage,
+  component: DashboardPage,
 });
 
-function MyTeamsPage() {
- 
+function DashboardPage() {
+  const { profile } = useAuthStore();
+  const { data: summary, isLoading, isError, error } = useDashboardSummaryQuery();
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
+
+  if (isError) {
+    return <div className="p-8 text-destructive">Error loading dashboard: {error.message}</div>;
+  }
+
+  const currentWorkspace = summary?.my_teams?.find(
+    team => team.id === summary.current_workspace_id
+  );
+
   return (
-    <div>
-      Dashboard
+    <div className="container mx-auto py-8">
+      <header className="mb-8">
+        <h1 className="text-4xl font-bold tracking-tight">
+          Welcome back, {profile?.full_name?.split(' ')[0] || profile?.username}!
+        </h1>
+        <p className="text-lg text-muted-foreground">Here's your summary for today.</p>
+      </header>
+
+      <main className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* --- Main Column --- */}
+        <div className="lg:col-span-2 space-y-8">
+          <ActivePlanCard activePlan={summary?.active_plan_details} />
+          {/* You could add other main components here, like a weekly workout overview */}
+        </div>
+
+        {/* --- Side Column --- */}
+        <div className="lg:col-span-1 space-y-6">
+          {currentWorkspace && <CurrentWorkspaceCard team={currentWorkspace} />}
+          {summary?.pending_invitations_count > 0 && (
+            <PendingInvitationsCard count={summary.pending_invitations_count} />
+          )}
+          {summary?.my_teams && <MyTeamsList teams={summary.my_teams} />}
+        </div>
+      </main>
     </div>
   );
 }
 
-// --- Sub-components for the Page ---
 
-function MyTeamCard({ team, currentWorkspaceId }: { team: MyTeam, currentWorkspaceId: string | null | undefined }) {
-  const Icon = team.is_personal_workspace ? Home : Users;
-  const { mutate: setCurrentWorkspace, isPending } = useSetCurrentUserWorkspaceMutation();
+// --- Sub-components for the Dashboard Page ---
 
-  const isCurrent = team.id === currentWorkspaceId;
-
-  const handleSetAsCurrent = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigating to team details when clicking the button
-    e.stopPropagation(); // Stop event propagation
-
-    const toastId = toast.loading('Setting current workspace...');
-    setCurrentWorkspace(team.id, {
-      onSuccess: () => {
-        toast.success(`'${team.name}' set as current workspace!`, { id: toastId });
-      },
-      onError: (error) => {
-        toast.error(`Error setting workspace: ${error.message}`, { id: toastId });
-      }
-    });
-  };
-
-  return (
-    <Link to="/dashboard/$teamId" params={{ teamId: team.id }}>
-      <Card className={`h-full flex flex-col hover:border-primary transition-colors duration-200 ${isCurrent ? 'border-2 border-primary' : ''}`}>
-        <CardHeader>
-          <div className="flex items-center gap-3 text-muted-foreground mb-4">
-            <Icon className="h-5 w-5" />
-            <span className="font-semibold text-sm">
-                {team.is_personal_workspace ? "Personal Workspace" : "Collaborative Team"}
-            </span>
-          </div>
-          <CardTitle>{team.name}</CardTitle>
-          <CardDescription className="line-clamp-2 min-h-[40px]">
-            {team.description || "No description provided."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex-grow" />
-        <CardFooter className="bg-muted/50 p-3 flex justify-between items-center text-sm">
-            <Badge variant="secondary" className="capitalize">{team.role}</Badge>
-            {isCurrent ? (
-                <div className="flex items-center text-primary font-medium">
-                    <CheckCircle className="mr-1 h-4 w-4" />
-                    <span>Current</span>
-                </div>
-            ) : (
-                <Button variant="ghost" size="sm" onClick={handleSetAsCurrent} disabled={isPending}>
-                    <span>Set as Current</span>
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-            )}
-        </CardFooter>
+const ActivePlanCard: React.FC<{ activePlan: FullPlan | null | undefined }> = ({ activePlan }) => {
+  if (!activePlan) {
+    return (
+      <Card className="p-8 text-center">
+        <Compass className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <CardTitle className="mb-2">No Active Plan</CardTitle>
+        <CardDescription>You haven't started a training plan yet. Explore plans to find one that fits your goals.</CardDescription>
+        <Button asChild className="mt-4">
+          <Link to="/explore/plans">Explore Plans</Link>
+        </Button>
       </Card>
-    </Link>
-  );
-}
+    );
+  }
 
-function MyTeamCardSkeleton() {
+  // A simple heuristic to find the "next" workout day (can be improved)
+  const nextWorkoutDay = activePlan.hierarchy.weeks
+    .flatMap(w => w.days)
+    .find(d => !d.is_rest_day && d.sessions && d.sessions.length > 0);
+
   return (
-    <Card className="h-full flex flex-col">
+    <Card>
       <CardHeader>
-        <Skeleton className="h-5 w-32 mb-4" />
-        <Skeleton className="h-6 w-3/4" />
-        <Skeleton className="h-4 w-full mt-2" />
-        <Skeleton className="h-4 w-1/2" />
+        <p className="text-sm font-semibold text-primary mb-1">Your Active Plan</p>
+        <CardTitle className="text-2xl">{activePlan.plan.title}</CardTitle>
+        <CardDescription>{activePlan.plan.description}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow" />
-      <CardFooter className="bg-muted/50 p-3">
-        <Skeleton className="h-5 w-full" />
-      </CardFooter>
+      <CardContent>
+        <h4 className="font-semibold mb-3">Next Workout: {nextWorkoutDay?.title || 'Upcoming Session'}</h4>
+        <div className="space-y-3">
+          {nextWorkoutDay?.sessions.map(session => (
+            <SessionCard key={session.id} session={session} />
+          ))}
+        </div>
+      </CardContent>
     </Card>
   );
-}
+};
+
+const SessionCard: React.FC<{ session: PlanSession }> = ({ session }) => {
+  // This would ideally re-use the component from the plan display page
+  return (
+    <div className="p-4 border rounded-lg flex justify-between items-center">
+      <div>
+        <p className="font-semibold">{session.title}</p>
+        <p className="text-sm text-muted-foreground">{session.exercises?.length || 0} exercises</p>
+      </div>
+      <Button size="sm" asChild>
+        <Link to="/plans/$planId" params={{ planId: session.plan_day_id }}>
+            <PlayCircle className="mr-2 h-4 w-4" /> Start
+        </Link>
+      </Button>
+    </div>
+  );
+};
+
+const CurrentWorkspaceCard: React.FC<{ team: any }> = ({ team }) => (
+    <Card>
+        <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+                <Building className="h-5 w-5" /> Current Workspace
+            </CardTitle>
+        </CardHeader>
+        <CardContent>
+            <p className="font-semibold">{team.name}</p>
+            <p className="text-sm text-muted-foreground capitalize">Your Role: {team.role}</p>
+            <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
+                <Link to="/workspace/$teamId" params={{ teamId: team.id }}>Manage Workspace <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            </Button>
+        </CardContent>
+    </Card>
+);
+
+const PendingInvitationsCard: React.FC<{ count: number }> = ({ count }) => (
+  <Alert>
+    <Mail className="h-4 w-4" />
+    <AlertTitle>You have {count} pending invitation{count > 1 ? 's' : ''}!</AlertTitle>
+    <AlertDescription className="flex justify-between items-center mt-2">
+      Join new teams to collaborate.
+      <Button variant="link" className="p-0 h-auto" asChild>
+        <Link to="/onboarding">View Invites</Link>
+      </Button>
+    </AlertDescription>
+  </Alert>
+);
+
+const MyTeamsList: React.FC<{ teams: any[] }> = ({ teams }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="text-lg flex items-center gap-2">
+        <Users className="h-5 w-5" /> My Teams
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-2">
+      {teams.map(team => (
+        <Link key={team.id} to="/workspace/$teamId" params={{ teamId: team.id }}>
+          <div className="p-2 flex items-center gap-3 rounded-md hover:bg-muted">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback>{team.name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-semibold text-sm">{team.name}</p>
+              <p className="text-xs text-muted-foreground capitalize">{team.role}</p>
+            </div>
+          </div>
+        </Link>
+      ))}
+    </CardContent>
+  </Card>
+);
+
+
+// --- Skeleton Component ---
+const DashboardSkeleton = () => (
+  <div className="container mx-auto py-8 animate-pulse">
+    <header className="mb-8">
+      <Skeleton className="h-10 w-1/2 mb-2" />
+      <Skeleton className="h-5 w-1/3" />
+    </header>
+    <main className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <div className="lg:col-span-2 space-y-8">
+        <Skeleton className="h-80 w-full" />
+      </div>
+      <div className="lg:col-span-1 space-y-6">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    </main>
+  </div>
+);

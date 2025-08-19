@@ -32,6 +32,11 @@ const items = [
     icon: User,
   },
   {
+    title: "Workout",
+    url: "/workout",
+    icon: Dumbbell,
+  },
+  {
     title: "Exercises",
     url: "/exercise",
     icon: Dumbbell,
@@ -103,7 +108,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
-                <SidebarMenuItem key={item.title} className={cn(location.includes(item.url) ? "bg-sidebar-border rounded" : "")}>
+                <SidebarMenuItem key={item.title} className={cn(location.includes(item.url) ? "bg-sidebar-border rounded" : "", item.url === '/workout' && location.includes(item.url) && "bg-red-200", item.url === '/workout' && 'bg-blue-100 rounded')}>
                   {item.items ? (
                     <>
                       <SidebarMenuButton asChild>

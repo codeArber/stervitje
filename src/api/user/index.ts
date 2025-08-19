@@ -17,6 +17,7 @@ import type { Profile } from '@/types/index';
 import type { RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
 import { Tables, TablesInsert } from '@/types/database.types';
 import { toast } from 'sonner';
+import { updateUserProfile, UserProfileUpdatePayload } from '../performance/endpoint';
 
 // --- Query Keys ---
 const userKeys = {
@@ -138,6 +139,30 @@ export const useInsertUserMeasurementMutation = () => {
     },
     onError: (error) => {
       toast.error(`Error adding measurement: ${error.message}`);
+    }
+  });
+};
+
+export const useUpdateUserProfileMutation = () => {
+  const queryClient = useQueryClient();
+  const { setProfile } = useAuthStore.getState(); // Get the action to update the auth store
+
+  return useMutation({
+    mutationFn: (payload: UserProfileUpdatePayload) => updateUserProfile(payload),
+    onSuccess: (updatedProfile) => {
+      toast.success("Profile updated successfully!");
+      
+      // Update the auth store immediately for a snappy UI response
+      setProfile(updatedProfile);
+      
+      // Invalidate queries that depend on user data to refetch in the background
+      queryClient.invalidateQueries({ queryKey: userKeys.currentUser() });
+      queryClient.invalidateQueries({ queryKey: userKeys.profileDetails(updatedProfile.id) });
+    },
+    onError: (error) => {
+      // The zod schema on the form should prevent most errors,
+      // but this will catch things like a non-unique username.
+      toast.error(`Update failed: ${error.message}`);
     }
   });
 };

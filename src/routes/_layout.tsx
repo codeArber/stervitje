@@ -4,6 +4,8 @@ import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { useAuthStore } from '@/stores/auth-store';
 import { AppSidebar } from '@/components/AppSidebar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useWorkoutStore } from '@/stores/workout-store';
+import { useEffect } from 'react';
 
 export const Route = createFileRoute('/_layout')({
   loader: async ({ location }) => {
@@ -47,6 +49,12 @@ export const Route = createFileRoute('/_layout')({
 function AuthenticatedLayout() {
   // We use the hook here because this is a React component
   const isLoading = useAuthStore((state) => state.isLoading);
+  
+  const checkForActiveSession = useWorkoutStore((state) => state.checkForActiveSession);
+
+   useEffect(() => {
+    checkForActiveSession();
+  }, [checkForActiveSession]);
 
   // We show a skeleton while the initial session check in the loader is running.
   // The loader will handle redirects before this component ever truly mounts.

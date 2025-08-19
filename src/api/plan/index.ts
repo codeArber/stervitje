@@ -29,6 +29,7 @@ import {
   deletePlanSessionExerciseSet,
   savePlanChanges,
   savePlanHierarchy,
+  logWorkout,
 } from './endpoint';
 import type {
   AddPlanDayPayload,
@@ -58,6 +59,7 @@ import type {
   UpdatePlanSessionExerciseSetPayload,
   DeletePlanSessionExerciseSetPayload,
   PlanHierarchy,
+  LogWorkoutPayload,
 } from '@/types/plan';
 import type { Tag } from '@/types/exercise';
 import type { Tables } from '@/types/database.types';
@@ -151,6 +153,33 @@ export const useStartWorkoutMutation = () => {
     },
     onError: (error) => {
       console.error("Error starting workout:", error);
+    }
+  });
+};
+
+/**
+ * Hook for the mutation to log a completed workout.
+ * On success, it invalidates dashboard and user queries to reflect the new history.
+ */
+export const useLogWorkoutMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: LogWorkoutPayload) => logWorkout(payload),
+    onSuccess: () => {
+      // After a successful save, we want to refetch data that shows workout history
+      // or reflects user stats. The dashboard is a great catch-all for this.
+      toast.success("Workout saved successfully!");
+      
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['user'] }); // Invalidate any user-specific queries
+      
+      // We don't need to invalidate the specific plan details here unless it shows
+      // completion status, but invalidating the dashboard is generally enough.
+    },
+    onError: (error) => {
+      // The toast is handled in the component, but we can log the error.
+      toast.error(`Failed to save workout: ${error.message}`);
     }
   });
 };

@@ -22,6 +22,14 @@ export type PlanSession = Tables<'plan_sessions'> & {
   is_completed_by_user: boolean;
   exercises: PlanExercise[];
 };
+
+export type PlanSessionStore = Tables<'plan_sessions'> & {
+  is_completed_by_user: boolean; // This might be a computed value
+  exercises: (PlanExercise & {
+    exercise_details: Pick<Tables<'exercises'>, 'id' | 'name' | 'image_url'>; // Use a more specific type for details
+    sets: PlanSet[] | null; // Ensure sets can be null
+  })[] | null; // Ensure exercises array can be null
+};
 export type PlanDay = Tables<'plan_days'> & {
   sessions: PlanSession[];
 };
@@ -54,10 +62,16 @@ export type RichPlanCardData = Plan & {
 };
 
 // --- Mutation Payload Types ---
-export type LoggedSet = Omit<TablesInsert<'set_logs'>, 'id' | 'session_exercise_log_id' | 'created_at'>;
+export type LoggedSet = Omit<TablesInsert<'set_logs'>, 'id' | 'session_exercise_log_id' | 'created_at'>& {
+  _tempId?: string; // Add temporary ID for client-side list keys
+};
+
+
 export type LoggedExercise = {
+  _tempId?: string; // Add temporary ID for client-side list keys
   plan_session_exercise_id: string | null;
   exercise_id: string;
+  exercise_details?: Exercise; // Add exercise details for easier UI rendering
   notes?: string;
   sets: LoggedSet[];
 };

@@ -13,7 +13,8 @@ import type {
   DeletePlanSessionExerciseSetPayload,
   PlanSet,
   UpdatePlanSessionExercisePayload,
-  PlanHierarchy
+  PlanHierarchy,
+  LogWorkoutPayload
 } from "@/types/plan";
 import type { Tag } from "@/types/exercise";
 import type { Tables } from "@/types/database.types";
@@ -98,6 +99,22 @@ export const startWorkout = async (planSessionId: string): Promise<Tables<'sessi
 
   if (error || !data) { throw new Error(error?.message || "Failed to start workout session."); }
   return data as Tables<'session_logs'>;
+};
+
+/**
+ * Saves a completed workout session to the database.
+ * This includes all logged exercises and sets, and updates the session log status.
+ * @param payload The complete record of the performed workout.
+ */
+export const logWorkout = async (payload: LogWorkoutPayload): Promise<void> => {
+  const { error } = await supabase.rpc('log_workout', {
+    p_payload: payload,
+  });
+
+  if (error) {
+    console.error('API Error logWorkout:', error);
+    throw new Error(error.message);
+  }
 };
 
 /**

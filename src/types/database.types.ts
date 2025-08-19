@@ -1425,7 +1425,7 @@ export type Database = {
           title: string | null
           updated_at: string | null
           user_id: string | null
-        }[]
+        }
       }
       get_client_progress_for_coach: {
         Args: { p_client_id: string }
@@ -1504,6 +1504,10 @@ export type Database = {
         Args: { p_plan_id: string }
         Returns: Json
       }
+      get_plan_session_details: {
+        Args: { p_plan_session_id: string }
+        Returns: Json
+      }
       get_plan_user_performance_list: {
         Args: { p_plan_id: string }
         Returns: Json
@@ -1575,9 +1579,19 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: Json
       }
+      get_user_plan_performance_summary_list: {
+        Args: { p_user_id: string }
+        Returns: Json
+      }
       get_user_profile_details: {
         Args: { p_user_id: string }
         Returns: Json
+      }
+      get_user_workout_dates: {
+        Args: { p_user_id: string }
+        Returns: {
+          workout_date: string
+        }[]
       }
       get_workout_details: {
         Args: { p_log_id: string }
@@ -1633,6 +1647,10 @@ export type Database = {
         }
         Returns: Json
       }
+      log_workout: {
+        Args: { p_payload: Json }
+        Returns: undefined
+      }
       log_workout_session: {
         Args: {
           p_duration_minutes: number
@@ -1662,6 +1680,24 @@ export type Database = {
       set_current_user_workspace: {
         Args: { p_workspace_id?: string }
         Returns: undefined
+      }
+      start_adhoc_workout: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string | null
+          date: string
+          duration_minutes: number | null
+          id: string
+          notes: string | null
+          overall_feeling: number | null
+          plan_id: string | null
+          plan_session_id: string | null
+          privacy_level: string | null
+          status: Database["public"]["Enums"]["workout_status_enum"]
+          title: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
       }
       start_and_log_plan_session: {
         Args: { p_plan_session_id: string }
@@ -1699,6 +1735,17 @@ export type Database = {
           user_id: string | null
         }[]
       }
+      start_plan_for_user: {
+        Args: { p_plan_id: string }
+        Returns: {
+          id: string
+          last_activity_at: string
+          plan_id: string
+          started_at: string
+          status: Database["public"]["Enums"]["plan_status"]
+          user_id: string
+        }
+      }
       start_user_plan: {
         Args: { p_plan_id: string }
         Returns: undefined
@@ -1719,7 +1766,7 @@ export type Database = {
           title: string | null
           updated_at: string | null
           user_id: string | null
-        }[]
+        }
       }
       update_plan_day: {
         Args: {

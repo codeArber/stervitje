@@ -89,7 +89,7 @@ function ProfilePage() {
           </CardHeader>
           <CardContent>
             <Button asChild variant="secondary" className="w-full">
-              <Link to="/profile">View Performance</Link>
+              <Link to="/profile/performance">View Performance</Link>
             </Button>
           </CardContent>
         </Card>
@@ -130,7 +130,7 @@ function ProfilePage() {
                   <Badge variant="outline" className="capitalize">{teamMembership.role}</Badge>
                 </div>
                 <Button asChild variant="ghost" size="sm">
-                  <Link to="/teams/$teamId" params={{ teamId: teamMembership.team.id }}>
+                  <Link to="/workspace/$teamId" params={{ teamId: teamMembership.team.id }}>
                     Go to Team
                   </Link>
                 </Button>
