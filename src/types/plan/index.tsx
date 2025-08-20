@@ -7,7 +7,9 @@ import type { PlanAnalyticsSummary } from "../analytics";
 
 // --- Base Types ---
 export type Plan = Tables<'plans'>;
-export type PlanGoal = Tables<'plan_goals'>;
+export type PlanGoal = Tables<'plan_goals'> & {
+  exercise_details?: Pick<Exercise, 'id' | 'name'> | null; // Add this line
+};
 export type UserPlanStatus = Tables<'user_plan_status'>;
 
 // --- Hierarchy Types ---
@@ -191,4 +193,20 @@ export interface UpdatePlanSessionExercisePayload {
   p_execution_group?: number | null;
   p_post_exercise_rest_seconds?: number | null;
   p_post_group_rest_seconds?: number | null;
+}
+
+export interface GoalProgressData {
+    progress_id: string; // This is the ID from the user_plan_goal_progress table
+    start_value: number | null;
+    current_value: number | null;
+    target_value: number | null; // This is the personalized target
+    status: Enums<'goal_status'>;
+    // This object contains the original goal definition from the plan_goals table
+    goal_definition: PlanGoal; 
+}
+
+export interface PlanPerformanceDetails {
+    plan: Plan;
+    goal_progress: GoalProgressData[] | null;
+    // We can add the list of logged workouts here later
 }

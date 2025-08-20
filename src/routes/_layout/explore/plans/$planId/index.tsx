@@ -23,6 +23,7 @@ import { Dumbbell, PlusCircle, Star, Trophy, Users, ShieldCheck, Heart, GitFork,
 import { PlanDisplay } from '@/components/new/plan/plan-display/PlanDisplay';
 import { PlanCalendarView } from '@/components/new/plan/plan-display/PlanCalendarView';
 import { PlanWeeklyNavigator } from '@/components/new/plan/plan-display/PlanWeeklyNavigator';
+import { StartPlanController } from '@/components/new/plan/plan-edit/StartPlanController';
 
 // --- Main Route Component ---
 export const Route = createFileRoute('/_layout/explore/plans/$planId/')({
@@ -34,6 +35,7 @@ function PublicPlanDetailsPage() {
   const { data: planDetails, isLoading, isError, error } = usePlanDetailsQuery(planId);
   const { mutate: startPlan, isPending: isStartingPlan } = useStartPlanForUserMutation();
 
+  console.log(planDetails);
   if (isLoading) {
     return <PlanDetailsSkeleton />;
   }
@@ -78,15 +80,13 @@ function PublicPlanDetailsPage() {
               | <div className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-500" /><span>Level {plan.difficulty_level}/5</span></div>
             </div>
           </div>
-          {user_plan_status ? (
+          
+           {user_plan_status ? (
             <Button size="lg" variant="secondary" asChild>
               <Link to="/dashboard">Go to My Dashboard</Link>
             </Button>
           ) : (
-            <Button size="lg" onClick={handleStartPlan} disabled={isStartingPlan}>
-              <PlusCircle className="mr-2 h-5 w-5" />
-              {isStartingPlan ? 'Starting...' : 'Start This Plan'}
-            </Button>
+            <StartPlanController planId={plan.id} />
           )}
         </div>
         <p className="text-lg text-muted-foreground">{plan.description}</p>

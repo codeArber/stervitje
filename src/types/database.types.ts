@@ -256,30 +256,36 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          direction: Database["public"]["Enums"]["goal_direction"]
           exercise_id: string | null
           id: string
           metric: Database["public"]["Enums"]["goal_metric"]
           plan_id: string
+          target_type: Database["public"]["Enums"]["goal_target_type"]
           target_value: number
           title: string
         }
         Insert: {
           created_at?: string
           description?: string | null
+          direction: Database["public"]["Enums"]["goal_direction"]
           exercise_id?: string | null
           id?: string
           metric: Database["public"]["Enums"]["goal_metric"]
           plan_id: string
+          target_type: Database["public"]["Enums"]["goal_target_type"]
           target_value: number
           title: string
         }
         Update: {
           created_at?: string
           description?: string | null
+          direction?: Database["public"]["Enums"]["goal_direction"]
           exercise_id?: string | null
           id?: string
           metric?: Database["public"]["Enums"]["goal_metric"]
           plan_id?: string
+          target_type?: Database["public"]["Enums"]["goal_target_type"]
           target_value?: number
           title?: string
         }
@@ -1095,8 +1101,10 @@ export type Database = {
           current_value: number | null
           id: string
           plan_goal_id: string
+          plan_id: string | null
           start_value: number | null
           status: Database["public"]["Enums"]["goal_status"]
+          target_value: number | null
           updated_at: string
           user_id: string
         }
@@ -1106,8 +1114,10 @@ export type Database = {
           current_value?: number | null
           id?: string
           plan_goal_id: string
+          plan_id?: string | null
           start_value?: number | null
           status?: Database["public"]["Enums"]["goal_status"]
+          target_value?: number | null
           updated_at?: string
           user_id: string
         }
@@ -1117,8 +1127,10 @@ export type Database = {
           current_value?: number | null
           id?: string
           plan_goal_id?: string
+          plan_id?: string | null
           start_value?: number | null
           status?: Database["public"]["Enums"]["goal_status"]
+          target_value?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -1128,6 +1140,20 @@ export type Database = {
             columns: ["plan_goal_id"]
             isOneToOne: false
             referencedRelation: "plan_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_plan_goal_progress_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plan_analytics_summary"
+            referencedColumns: ["plan_id"]
+          },
+          {
+            foreignKeyName: "user_plan_goal_progress_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
             referencedColumns: ["id"]
           },
           {
@@ -1293,6 +1319,30 @@ export type Database = {
           title: string | null
         }
       }
+      add_plan_goal: {
+        Args: {
+          p_description?: string
+          p_direction: Database["public"]["Enums"]["goal_direction"]
+          p_exercise_id?: string
+          p_metric: Database["public"]["Enums"]["goal_metric"]
+          p_plan_id: string
+          p_target_type: Database["public"]["Enums"]["goal_target_type"]
+          p_target_value: number
+          p_title: string
+        }
+        Returns: {
+          created_at: string
+          description: string | null
+          direction: Database["public"]["Enums"]["goal_direction"]
+          exercise_id: string | null
+          id: string
+          metric: Database["public"]["Enums"]["goal_metric"]
+          plan_id: string
+          target_type: Database["public"]["Enums"]["goal_target_type"]
+          target_value: number
+          title: string
+        }
+      }
       add_plan_session: {
         Args: {
           p_notes?: string
@@ -1395,6 +1445,10 @@ export type Database = {
       }
       delete_plan_day: {
         Args: { p_day_id: string }
+        Returns: undefined
+      }
+      delete_plan_goal: {
+        Args: { p_goal_id: string }
         Returns: undefined
       }
       delete_plan_session: {
@@ -1500,6 +1554,15 @@ export type Database = {
         }
         Returns: Json
       }
+      get_pending_baselines_for_session: {
+        Args: { p_plan_session_id: string }
+        Returns: {
+          exercise_name: string
+          goal_title: string
+          metric: Database["public"]["Enums"]["goal_metric"]
+          progress_id: string
+        }[]
+      }
       get_plan_details_for_user: {
         Args: { p_plan_id: string }
         Returns: Json
@@ -1537,6 +1600,18 @@ export type Database = {
       get_user_dashboard_summary: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      get_user_logbook: {
+        Args: { p_user_id: string }
+        Returns: {
+          duration_minutes: number
+          log_id: string
+          overall_feeling: number
+          plan_id: string
+          plan_title: string
+          session_title: string
+          workout_date: string
+        }[]
       }
       get_user_measurements: {
         Args: { p_user_id: string }
@@ -1577,6 +1652,10 @@ export type Database = {
       }
       get_user_plan_history: {
         Args: { p_user_id: string }
+        Returns: Json
+      }
+      get_user_plan_performance_details: {
+        Args: { p_user_plan_status_id: string }
         Returns: Json
       }
       get_user_plan_performance_summary_list: {
@@ -1681,6 +1760,10 @@ export type Database = {
         Args: { p_workspace_id?: string }
         Returns: undefined
       }
+      set_goal_baseline: {
+        Args: { p_baseline_value: number; p_progress_id: string }
+        Returns: undefined
+      }
       start_adhoc_workout: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1744,7 +1827,32 @@ export type Database = {
           started_at: string
           status: Database["public"]["Enums"]["plan_status"]
           user_id: string
+        }[]
+      }
+      start_plan_with_baselines: {
+        Args: { p_payload: Json }
+        Returns: {
+          id: string
+          last_activity_at: string
+          plan_id: string
+          started_at: string
+          status: Database["public"]["Enums"]["plan_status"]
+          user_id: string
+        }[]
+      }
+      start_plan_with_goals: {
+        Args: {
+          p_baselines: Database["public"]["CompositeTypes"]["user_baseline"][]
+          p_plan_id: string
         }
+        Returns: {
+          id: string
+          last_activity_at: string
+          plan_id: string
+          started_at: string
+          status: Database["public"]["Enums"]["plan_status"]
+          user_id: string
+        }[]
       }
       start_user_plan: {
         Args: { p_plan_id: string }
@@ -1785,6 +1893,28 @@ export type Database = {
           title: string | null
         }
       }
+      update_plan_goal: {
+        Args: {
+          p_description: string
+          p_exercise_id?: string
+          p_goal_id: string
+          p_metric: Database["public"]["Enums"]["goal_metric"]
+          p_target_value: number
+          p_title: string
+        }
+        Returns: {
+          created_at: string
+          description: string | null
+          direction: Database["public"]["Enums"]["goal_direction"]
+          exercise_id: string | null
+          id: string
+          metric: Database["public"]["Enums"]["goal_metric"]
+          plan_id: string
+          target_type: Database["public"]["Enums"]["goal_target_type"]
+          target_value: number
+          title: string
+        }
+      }
       update_plan_session: {
         Args: {
           p_notes?: string
@@ -1814,6 +1944,27 @@ export type Database = {
           plan_id: string
           week_number: number
         }
+      }
+      update_user_profile: {
+        Args: {
+          p_bio: string
+          p_full_name: string
+          p_unit: Database["public"]["Enums"]["measure_unit"]
+          p_username: string
+        }
+        Returns: {
+          bio: string
+          created_at: string
+          current_workspace_id: string
+          email: string
+          full_name: string
+          id: string
+          onboarding_completed: boolean
+          profile_image_url: string
+          unit: Database["public"]["Enums"]["measure_unit"]
+          updated_at: string
+          username: string
+        }[]
       }
     }
     Enums: {
@@ -1852,6 +2003,7 @@ export type Database = {
         | "plyometric"
         | "rotational"
         | "dynamic"
+      goal_direction: "increase" | "decrease"
       goal_metric:
         | "one_rep_max_kg"
         | "max_weight_for_reps_kg"
@@ -1877,7 +2029,12 @@ export type Database = {
         | "sessions_completed_count"
         | "adherence_percent"
         | "total_active_time_minutes"
-      goal_status: "in_progress" | "achieved" | "not_achieved"
+      goal_status:
+        | "in_progress"
+        | "achieved"
+        | "not_achieved"
+        | "pending_baseline"
+      goal_target_type: "absolute_value" | "percent_change" | "absolute_change"
       invitation_status: "pending" | "accepted" | "declined"
       measure_unit: "metric" | "imperial"
       muscle_group_enum:
@@ -1921,7 +2078,10 @@ export type Database = {
       workout_status_enum: "in_progress" | "completed" | "abandoned"
     }
     CompositeTypes: {
-      [_ in never]: never
+      user_baseline: {
+        goal_id: string | null
+        baseline_value: number | null
+      }
     }
   }
 }
@@ -2085,6 +2245,7 @@ export const Constants = {
         "rotational",
         "dynamic",
       ],
+      goal_direction: ["increase", "decrease"],
       goal_metric: [
         "one_rep_max_kg",
         "max_weight_for_reps_kg",
@@ -2111,7 +2272,13 @@ export const Constants = {
         "adherence_percent",
         "total_active_time_minutes",
       ],
-      goal_status: ["in_progress", "achieved", "not_achieved"],
+      goal_status: [
+        "in_progress",
+        "achieved",
+        "not_achieved",
+        "pending_baseline",
+      ],
+      goal_target_type: ["absolute_value", "percent_change", "absolute_change"],
       invitation_status: ["pending", "accepted", "declined"],
       measure_unit: ["metric", "imperial"],
       muscle_group_enum: [

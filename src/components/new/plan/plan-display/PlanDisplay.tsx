@@ -34,7 +34,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planDetails }) => {
       {hierarchy.weeks
         .sort((a, b) => a.week_number - b.week_number)
         .map(week => (
-          <WeekDisplay key={week.id} week={week} isPlanStarted={isPlanStarted} />
+          <WeekDisplay key={week.id} week={week} isPlanStarted={isPlanStarted} planId={planDetails.plan.id} />
         ))}
     </div>
   );
@@ -43,7 +43,7 @@ export const PlanDisplay: React.FC<PlanDisplayProps> = ({ planDetails }) => {
 
 // --- Sub-components for organizing the display ---
 
-const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean }> = ({ week, isPlanStarted }) => {
+const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean, planId: string }> = ({ week, isPlanStarted, planId }) => {
   return (
     <Card className="rounded-md shadow-sm border-l-4 border-primary/50">
       <CardHeader className="pb-3 pt-4 px-4">
@@ -56,7 +56,7 @@ const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean }> = ({ wee
         {week.days && week.days.length > 0 ? (
           week.days.sort((a,b) => a.day_number - b.day_number).map((day, index) => (
             <React.Fragment key={day.id}>
-              <DayDisplay day={day} isPlanStarted={isPlanStarted} />
+              <DayDisplay day={day} isPlanStarted={isPlanStarted} planId={planId} />
               {index < week.days.length - 1 && (
                 <div className="border-t border-border mx-4 my-2" />
               )}
@@ -72,7 +72,7 @@ const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean }> = ({ wee
   );
 };
 
-export  const DayDisplay: React.FC<{ day: PlanDay, isPlanStarted: boolean }> = ({ day, isPlanStarted }) => {
+export const DayDisplay: React.FC<{ day: PlanDay, isPlanStarted: boolean, planId: string }> = ({ day, isPlanStarted, planId }) => {
   return (
     <div className="px-4 py-3">
       <div className="flex items-center gap-2 text-base font-semibold text-foreground">
@@ -92,6 +92,7 @@ export  const DayDisplay: React.FC<{ day: PlanDay, isPlanStarted: boolean }> = (
               .map(session => (
                 <SessionDisplay
                   key={session.id}
+                  planId={planId}
                   session={session}
                   isPlanStarted={isPlanStarted}
                 />

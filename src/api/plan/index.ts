@@ -30,6 +30,17 @@ import {
   savePlanChanges,
   savePlanHierarchy,
   logWorkout,
+  PlanGoalPayload,
+  addPlanGoal,
+  updatePlanGoal,
+  deletePlanGoal,
+  fetchPendingBaselinesForSession,
+  PendingBaselineGoal,
+  PlanGoalWithExercise,
+  fetchPlanGoals,
+  UserBaseline,
+  startPlanWithBaselines,
+  PlanGoalWithExerciseDetails,
 } from './endpoint';
 import type {
   AddPlanDayPayload,
@@ -82,7 +93,10 @@ const planKeys = {
   planSessions: (dayId: string) => [...planKeys.all, 'day', dayId, 'sessions'] as const,
   // New keys for plan session exercises and sets
   planSessionExercises: (sessionId: string) => [...planKeys.all, 'session', sessionId, 'exercises'] as const,
-  planSessionExerciseSets: (exerciseId: string) => [...planKeys.all, 'exercise', exerciseId, 'sets'] as const,};
+  planSessionExerciseSets: (exerciseId: string) => [...planKeys.all, 'exercise', exerciseId, 'sets'] as const,
+  pendingBaselines: (sessionId: string) => [...planKeys.all, 'pending-baselines', sessionId] as const,
+  goals: (planId: string) => [...planKeys.all, 'goals', planId] as const,
+};
 
 const tagKeys = {
   all: ['tags'] as const,
@@ -511,4 +525,75 @@ export const useSavePlanHierarchyMutation = () => {
       console.error("Save plan hierarchy mutation error:", error);
     }
   });
+};
+
+// --- ADD THESE THREE NEW MUTATION HOOKS ---
+
+export const useAddPlanGoalMutation = (planId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    // --- THIS LINE IS THE FIX ---
+    // The `payload` is now correctly typed as our new, complete PlanGoalPayload
+    mutationFn: (payload: PlanGoalPayload) => addPlanGoal(planId, payload),
+    onSuccess: () => {
+      toast.success("Goal added!");
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(planId) });
+    },
+    onError: (err) => toast.error(`Failed to add goal: ${err.message}`),
+  });
+};
+
+export const useUpdatePlanGoalMutation = (planId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (variables: { goalId: string, payload: PlanGoalPayload }) => updatePlanGoal(variables.goalId, variables.payload),
+    onSuccess: () => {
+      toast.success("Goal updated!");
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(planId) });
+    },
+    onError: (err) => toast.error(`Failed to update goal: ${err.message}`),
+  });
+};
+
+export const useDeletePlanGoalMutation = (planId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (goalId: string) => deletePlanGoal(goalId),
+    onSuccess: () => {
+      toast.success("Goal deleted!");
+      queryClient.invalidateQueries({ queryKey: planKeys.detail(planId) });
+    },
+    onError: (err) => toast.error(`Failed to delete goal: ${err.message}`),
+  });
+};
+
+
+// --- ADD NEW HOOK ---
+export const usePendingBaselinesQuery = (planSessionId: string | undefined, options: { enabled: boolean }) => {
+    return useQuery<PendingBaselineGoal[], Error>({
+        queryKey: planKeys.pendingBaselines(planSessionId!),
+        queryFn: () => fetchPendingBaselinesForSession(planSessionId!),
+        enabled: !!planSessionId && options.enabled,
+    });
+};
+
+
+// --- THIS HOOK NOW USES THE CORRECT TYPE ---
+export const usePlanGoalsQuery = (planId: string | undefined, options?: { enabled?: boolean }) => {
+    return useQuery<PlanGoalWithExerciseDetails[], Error>({
+        queryKey: planKeys.goals(planId!),
+        queryFn: () => fetchPlanGoals(planId!),
+        enabled: !!planId && (options?.enabled ?? true),
+    });
+};
+
+export const useStartPlanWithBaselinesMutation = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (variables: { planId: string; baselines: UserBaseline[] }) => 
+            startPlanWithBaselines(variables.planId, variables.baselines),
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: planKeys.detail(variables.planId) });
+        },
+    });
 };

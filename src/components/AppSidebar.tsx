@@ -23,7 +23,7 @@ import { useAuthStore } from "@/stores/auth-store";
 const items = [
   {
     title: "Today",
-    url: "/",
+    url: "/dashboard",
     icon: Home,
   },
   {

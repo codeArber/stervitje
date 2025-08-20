@@ -9,7 +9,7 @@ import { Accordion } from '@/components/ui/accordion';
 import { DayDisplay } from './PlanDisplay'; // Make sure DayDisplay is exported
 
 // This WeekDisplay can be refactored into its own file later for better organization.
-const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean }> = ({ week, isPlanStarted }) => {
+const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean, planId: string }> = ({ week, isPlanStarted, planId }) => {
   // Find the first day to default the accordion to open, if days exist
   const firstDayId = (week.days ?? []).slice().sort((a,b) => a.day_number - b.day_number)[0]?.id;
 
@@ -27,7 +27,7 @@ const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean }> = ({ wee
             {week.days
               .slice().sort((a, b) => a.day_number - b.day_number)
               .map(day => (
-                <DayDisplay key={day.id} day={day} isPlanStarted={isPlanStarted} />
+                <DayDisplay key={day.id} day={day} isPlanStarted={isPlanStarted} planId={planId} />
               ))}
           </Accordion>
         ) : (
@@ -75,6 +75,7 @@ export const PlanWeeklyNavigator: React.FC<PlanWeeklyNavigatorProps> = ({ planDe
           <WeekDisplay
             week={activeWeek}
             isPlanStarted={isPlanStarted}
+            planId={planDetails.plan.id}
           />
         )}
       </div>

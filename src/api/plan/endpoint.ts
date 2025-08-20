@@ -14,10 +14,11 @@ import type {
   PlanSet,
   UpdatePlanSessionExercisePayload,
   PlanHierarchy,
-  LogWorkoutPayload
+  LogWorkoutPayload,
+  PlanGoal
 } from "@/types/plan";
 import type { Tag } from "@/types/exercise";
-import type { Tables } from "@/types/database.types";
+import type { Enums, Tables } from "@/types/database.types";
 import { Update } from "vite/types/hmrPayload.js";
 import { PlanChangeset } from "@/utils/plan-diff";
 
@@ -353,4 +354,91 @@ export const savePlanHierarchy = async (payload: { planId: string; hierarchy: Pl
     console.error('API Error savePlanHierarchy:', error);
     throw new Error(error.message);
   }
+};
+
+// --- ADD THIS NEW PAYLOAD TYPE ---
+export interface PlanGoalPayload {
+  title: string;
+  description: string | null;
+  metric: Enums<'goal_metric'>;
+  direction: Enums<'goal_direction'>; // <-- ADDED
+  target_type: Enums<'goal_target_type'>; // <-- ADDED
+  target_value: number;
+  exercise_id?: string | null;
+}
+// --- ADD THESE THREE NEW FUNCTIONS ---
+export const addPlanGoal = async (planId: string, payload: PlanGoalPayload): Promise<PlanGoal> => {
+  // We need to map our payload keys to the RPC's expected parameter names (p_...)
+  const rpcPayload = {
+    p_plan_id: planId,
+    p_title: payload.title,
+    p_description: payload.description,
+    p_metric: payload.metric,
+    p_direction: payload.direction,
+    p_target_type: payload.target_type,
+    p_target_value: payload.target_value,
+    p_exercise_id: payload.exercise_id
+  };
+  const { data, error } = await supabase.rpc('add_plan_goal', rpcPayload);
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+export const updatePlanGoal = async (goalId: string, payload: PlanGoalPayload): Promise<PlanGoal> => {
+  const { data, error } = await supabase.rpc('update_plan_goal', { p_goal_id: goalId, ...payload });
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+export const deletePlanGoal = async (goalId: string): Promise<void> => {
+  const { error } = await supabase.rpc('delete_plan_goal', { p_goal_id: goalId });
+  if (error) throw new Error(error.message);
+};
+
+
+export interface PendingBaselineGoal {
+    progress_id: string;
+    goal_title: string;
+    metric: Enums<'goal_metric'>;
+    exercise_name: string | null;
+}
+
+export const fetchPendingBaselinesForSession = async (planSessionId: string): Promise<PendingBaselineGoal[]> => {
+    const { data, error } = await supabase.rpc('get_pending_baselines_for_session', {
+        p_plan_session_id: planSessionId
+    });
+    if (error) throw new Error(error.message);
+    return data || [];
+};
+
+export interface PlanGoalWithExercise extends PlanGoal {
+    exercise_details: { id: string; name: string } | null;
+}
+
+
+
+export type PlanGoalWithExerciseDetails = PlanGoal & {
+  exercises: { id: string; name: string } | null;
+};
+
+export interface UserBaseline {
+    goal_id: string;
+    baseline_value: number;
+}
+
+export const fetchPlanGoals = async (planId: string): Promise<PlanGoalWithExerciseDetails[]> => {
+    const { data, error } = await supabase
+        .from('plan_goals')
+        .select(`*, exercises (id, name)`)
+        .eq('plan_id', planId);
+    if (error) throw new Error(error.message);
+    return data || [];
+};
+
+export const startPlanWithBaselines = async (planId: string, baselines: UserBaseline[]): Promise<UserPlanStatus> => {
+  const { data, error } = await supabase.rpc('start_plan_with_baselines', {
+    p_payload: { plan_id: planId, baselines: baselines }
+  }).single();
+  if (error) throw new Error(error.message);
+  return data as UserPlanStatus;
 };

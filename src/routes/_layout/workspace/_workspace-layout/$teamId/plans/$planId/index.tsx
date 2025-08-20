@@ -30,6 +30,8 @@ import { PlanDisplay } from '@/components/new/plan/plan-display/PlanDisplay';
 import { PlanWeeklyNavigator } from '@/components/new/plan/plan-display/PlanWeeklyNavigator';
 import { PlanCalendarView } from '@/components/new/plan/plan-display/PlanCalendarView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PlanGoalsEditor } from '@/components/new/plan/PlanGoalsEditor';
+import { StartPlanController } from '@/components/new/plan/plan-edit/StartPlanController';
 
 export const Route = createFileRoute('/_layout/workspace/_workspace-layout/$teamId/plans/$planId/')({
   component: WorkspacePlanDetailsPage,
@@ -86,11 +88,14 @@ function WorkspacePlanDetailsPage() {
           </div>
           {/* Action Buttons: Start Plan / Edit Plan */}
           <div className="flex flex-col sm:flex-row gap-2">
-            {!isPlanStarted && (
-              <Button size="lg" onClick={handleStartPlan} disabled={isStartingPlan}>
-                <PlusCircle className="mr-2 h-5 w-5" /> Start This Plan
+            {user_plan_status ? (
+              <Button size="lg" variant="secondary" asChild>
+                <Link to="/dashboard">Go to My Dashboard</Link>
               </Button>
+            ) : (
+              <StartPlanController planId={plan.id} />
             )}
+
             {can_edit && (
               <Button asChild variant="outline" size="lg">
                 <Link to="/workspace/$teamId/plans/$planId/edit" params={{ teamId: teamId, planId: plan.id }}>
@@ -107,7 +112,12 @@ function WorkspacePlanDetailsPage() {
 
       {/* Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <PlanGoalsCard goals={goals} />
+        <PlanGoalsEditor
+          planId={plan.id}
+          goals={goals}
+          canEdit={can_edit}
+        />
+        {/* <PlanGoalsCard goals={goals} /> */}
         <RequiredEquipmentCard equipment={required_equipment} />
       </div>
 

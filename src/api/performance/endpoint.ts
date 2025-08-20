@@ -1,7 +1,7 @@
 // FILE: src/api/performance/endpoint.ts
 
 import { supabase } from '@/lib/supabase/supabaseClient';
-import type { Plan } from '@/types/plan';
+import type { Plan, PlanGoal } from '@/types/plan';
 import type { Enums } from '@/types/database.types';
 import { Profile } from '@/types';
 
@@ -11,7 +11,7 @@ import { Profile } from '@/types';
 export interface PlanPerformanceSummary {
   total_sessions_in_plan: number;
   logged_sessions_count: number;
-  total_volume_kg: number;
+  total_volume_kg: number | null;
   first_workout_date: string | null;
   last_workout_date: string | null;
 }
@@ -120,4 +120,44 @@ export const updateUserProfile = async (payload: UserProfileUpdatePayload): Prom
   }
 
   return data as Profile;
+};
+
+/**
+ * Sets the initial baseline value for a user's goal progress record.
+ * @param progressId The UUID of the user_plan_goal_progress record.
+ * @param baselineValue The user-submitted starting value.
+ */
+export const setGoalBaseline = async (payload: { progressId: string; baselineValue: number }): Promise<void> => {
+  const { error } = await supabase.rpc('set_goal_baseline', {
+    p_progress_id: payload.progressId,
+    p_baseline_value: payload.baselineValue,
+  });
+
+  if (error) {
+    console.error('API Error setGoalBaseline:', error);
+    throw new Error(error.message);
+  }
+};
+
+export interface GoalProgressData {
+    progress_id: string;
+    start_value: number | null;
+    current_value: number | null;
+    target_value: number | null;
+    status: Enums<'goal_status'>;
+    achieved_at: string | null;
+    goal_definition: PlanGoal;
+}
+export interface PlanPerformanceDetails {
+    plan: Plan;
+    goal_progress: GoalProgressData[] | null;
+}
+
+export const fetchPlanPerformanceDetails = async (userPlanStatusId: string): Promise<PlanPerformanceDetails | null> => {
+  if (!userPlanStatusId) return null;
+  const { data, error } = await supabase.rpc('get_user_plan_performance_details', {
+    p_user_plan_status_id: userPlanStatusId
+  });
+  if (error) throw new Error(error.message);
+  return data;
 };
