@@ -11,26 +11,31 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbP
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Icons
-import { 
-  Youtube, 
-  Dumbbell, 
-  Zap, 
-  BrainCircuit, 
-  Atom, 
-  Heart, 
-  Activity, 
-  Target, 
+import {
+  Youtube,
+  Dumbbell,
+  Zap,
+  BrainCircuit,
+  Atom,
+  Heart,
+  Activity,
+  Target,
   ArrowLeft,
   Star,
   Trophy,
   Sparkles,
   Play,
-  User
+  User,
+  Search
 } from 'lucide-react';
+import { Breadcrumb as TopNavigation } from '@/components/new/TopNavigation';
 
 // Body Highlighter
 import Model from 'react-body-highlighter';
 import { getExerciseImageUrl } from '@/types/storage';
+import { Label } from '@/components/ui/label';
+import ExerciseMuscleDiagramDetailed from '@/components/new/exercise/ExerciseMuscleDiagramDetailed';
+import { InstructionsFormatterCompact } from '@/components/new/exercise/ExerciseInstructions';
 
 export const Route = createFileRoute('/_layout/exercise/$exerciseId/')({
   component: ExerciseDetailPage,
@@ -47,15 +52,15 @@ function ExerciseDetailPage() {
 
   if (isError || !exerciseData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
+      <div className="min-h-screen container items-center flex w-full">
         <div className="container max-w-4xl py-16">
-          <Card className="border-red-200 bg-red-50/80 backdrop-blur-sm shadow-xl">
+          <Card className="border-red-200 bg-blue-50/80 backdrop-blur-sm shadow-xl">
             <CardContent className="p-12 text-center">
-              <div className="w-20 h-20 mx-auto mb-6 bg-red-100 rounded-full flex items-center justify-center">
-                <Zap className="w-10 h-10 text-red-600" />
+              <div className="w-20 h-20 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
+                <Zap className="w-10 h-10 text-blue-600" />
               </div>
-              <h1 className="text-3xl font-bold mb-4 text-red-800">Exercise Not Found</h1>
-              <p className="text-red-600 text-lg">{error?.message || "The requested exercise could not be loaded."}</p>
+              <h1 className="text-3xl font-bold mb-4 text-blue-800">Exercise Not Found</h1>
+              <p className="text-blue-600 text-lg">{error?.message || "The requested exercise could not be loaded."}</p>
             </CardContent>
           </Card>
         </div>
@@ -95,43 +100,20 @@ function ExerciseDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="container p-6 w-full" >
-        {/* Enhanced Breadcrumb Navigation */} 
-        <Card className="mb-8 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <Breadcrumb>
-              <BreadcrumbList className="text-lg">
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link to="/dashboard" className="flex items-center gap-2 text-slate-600 hover:text-blue-600 transition-colors">
-                      <ArrowLeft className="w-4 h-4" />
-                      Home
-                    </Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild>
-                    <Link to="/exercise" className="text-slate-600 hover:text-blue-600 transition-colors">
-                      Exercises
-                    </Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage className="font-semibold text-slate-800">{exercise.name}</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </CardContent>
-        </Card>
+    <div className="min-h-screen ">
+      <TopNavigation
+        items={[
+          { label: "Exercises", href: "/exercise", icon: Search },
+          { label: exercise?.name } // Last item has no href (current page)
+        ]}
+      />
 
+      <div className="w-full" >
         <main className="space-y-8">
           {/* Hero Section */}
-          <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden">
-            <CardContent className="p-0">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+          <Card className="border-0 shadow-xl bg-muted backdrop-blur-sm overflow-hidden">
+            <CardContent className="p-0 ">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 ">
                 {/* Image Section */}
                 <div className="relative h-80 lg:h-96 bg-gradient-to-br from-slate-100 to-slate-200">
                   <img
@@ -149,46 +131,28 @@ function ExerciseDetailPage() {
                 </div>
 
                 {/* Content Section */}
-                <div className="p-8 lg:p-12 space-y-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="bg-emerald-100 text-emerald-700 border-emerald-200">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        Premium Exercise
-                      </Badge>
+                <div className="py-4 pl-4 pr-1 lg:py-8 lg:pl-8 lg:pr-2 space-y-4 h-full ">
+                  <div className="flex flex-row justify-between gap-2 h-full">
+                    <div className="flex flex-col ">
+
+                      <div className="space-y-4 pb-4">
+                        <Label variant={'exerciseTitleBig'}>{exercise.name}</Label>
+                        <div>
+                          {exercise.description && (
+                            <Label variant={'exerciseTitle'} className='font-normal text-md'>
+                              {exercise.description}
+                            </Label>
+                          )}
+                        </div>
+
+                      </div>
+                      <InstructionsFormatterCompact instructions={exercise.instructions} />
+
                     </div>
-                    
-                    <h1 className="text-4xl lg:text-5xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-                      {exercise.name}
-                    </h1>
 
-                    {exercise.description && (
-                      <p className="text-lg text-slate-600 leading-relaxed">
-                        {exercise.description}
-                      </p>
+                    {muscles && muscles.length > 0 && (
+                      <ExerciseMuscleDiagramDetailed muscles={muscles} />
                     )}
-                  </div>
-
-                  {/* Quick Tags */}
-                  <div className="flex flex-wrap gap-3">
-                    {movementTags.slice(0, 2).map(tag => (
-                      <Badge key={tag.id} className="bg-emerald-100 text-emerald-700 border-emerald-200 px-3 py-1">
-                        <Target className="w-3 h-3 mr-1" />
-                        {tag.name}
-                      </Badge>
-                    ))}
-                    {equipmentTags.slice(0, 2).map(tag => (
-                      <Badge key={tag.id} className="bg-blue-100 text-blue-700 border-blue-200 px-3 py-1">
-                        <Dumbbell className="w-3 h-3 mr-1" />
-                        {tag.name}
-                      </Badge>
-                    ))}
-                    {mentalTags.slice(0, 1).map(tag => (
-                      <Badge key={tag.id} className="bg-purple-100 text-purple-700 border-purple-200 px-3 py-1">
-                        <BrainCircuit className="w-3 h-3 mr-1" />
-                        {tag.name}
-                      </Badge>
-                    ))}
                   </div>
                 </div>
               </div>
@@ -197,96 +161,81 @@ function ExerciseDetailPage() {
 
           {/* Instructions Card */}
           {exercise.instructions && (
-            <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
-              <CardHeader className="pb-6">
-                <CardTitle className="text-2xl flex items-center gap-3">
-                  <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl">
-                    <Star className="h-6 w-6 text-white" />
-                  </div>
-                  Exercise Instructions
-                </CardTitle>
+            <Card className="border-0 shadow-xl bg-muted backdrop-blur-sm">
+              <CardHeader className='pt-1.5'>
+
               </CardHeader>
-              <CardContent>
-                <div className="prose prose-lg dark:prose-invert max-w-none whitespace-pre-line text-slate-700 leading-relaxed">
-                  {exercise.instructions}
+              <CardContent className='grid grid-cols-2 gap-4'>
+                <div>
+
+                  {/* Quick Tags */}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-1">
+                      <Label variant={'exerciseTitle'}>Movement Pattern</Label>
+                      <div className="flex flex-row gap-2 items-center">
+                        {movementTags.slice(0, 2).map(tag => (
+                          <Badge key={tag.id} className="bg-emerald-100 w-fit text-emerald-700 border-emerald-200 px-3 py-1">
+                            <Target className="w-3 h-3 mr-1" />
+                            {tag.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <Label variant={'exerciseTitle'}>Equipment</Label>
+                      <div className="flex flex-row gap-2 items-center">
+                        {equipmentTags.slice(0, 2).map(tag => (
+                          <Badge key={tag.id} className="bg-blue-100 text-blue-700 border-blue-200 px-3 py-1">
+                            <Dumbbell className="w-3 h-3 mr-1" />
+                            {tag.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <Label variant={'exerciseTitle'}>Mental Tags</Label>
+                      <div className="flex flex-row gap-2 items-center">
+                        {mentalTags.slice(0, 1).map(tag => (
+                          <Badge key={tag.id} className="bg-purple-100 text-purple-700 border-purple-200 px-3 py-1">
+                            <BrainCircuit className="w-3 h-3 mr-1" />
+                            {tag.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Data Cards Grid */}
-          <div className="space-y-8">
-            {muscles && muscles.length > 0 && <EnhancedMusclesCard muscles={muscles} />}
-            
-            {/* Other Tags Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {equipmentTags.length > 0 && (
-                <EnhancedTagsCard 
-                  title="Equipment" 
-                  tags={equipmentTags} 
-                  icon={<Dumbbell className="h-6 w-6 text-white" />}
-                  gradient="from-blue-500 to-cyan-500"
-                  badgeStyle="bg-blue-100 text-blue-700 border-blue-200"
-                />
-              )}
-              {movementTags.length > 0 && (
-                <EnhancedTagsCard 
-                  title="Movement Pattern" 
-                  tags={movementTags} 
-                  icon={<Zap className="h-6 w-6 text-white" />}
-                  gradient="from-emerald-500 to-teal-500"
-                  badgeStyle="bg-emerald-100 text-emerald-700 border-emerald-200"
-                />
-              )}
-              {mentalTags.length > 0 && (
-                <EnhancedTagsCard 
-                  title="Mental Focus" 
-                  tags={mentalTags} 
-                  icon={<BrainCircuit className="h-6 w-6 text-white" />}
-                  gradient="from-purple-500 to-violet-500"
-                  badgeStyle="bg-purple-100 text-purple-700 border-purple-200"
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Video References */}
-          {references && references.length > 0 && (
-            <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
-              <CardHeader className="pb-6">
-                <CardTitle className="text-2xl flex items-center gap-3">
-                  <div className="p-2 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl">
-                    <Play className="h-6 w-6 text-white" />
-                  </div>
-                  Video References
-                  <Badge variant="outline" className="bg-red-100 text-red-700 border-red-200">
-                    {references.length} video{references.length !== 1 ? 's' : ''}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {references.map((ref) => (
-                    <a 
-                      key={ref.id} 
-                      href={ref.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="group flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 bg-white hover:border-red-300 hover:bg-red-50 transition-all duration-300 hover:shadow-lg"
-                    >
-                      <div className="p-3 bg-red-100 group-hover:bg-red-200 rounded-xl transition-colors">
-                        <Youtube className="h-8 w-8 text-red-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-base font-semibold text-slate-800 group-hover:text-red-700 transition-colors truncate">
-                          {ref.title || 'Watch on YouTube'}
-                        </p>
-                        <p className="text-sm text-slate-500 group-hover:text-red-600 transition-colors">
-                          Click to watch tutorial
-                        </p>
-                      </div>
-                    </a>
-                  ))}
+                <div className='flex flex-col gap-1'>
+                  <Label variant={'sectionTitle'} className='text-md'>
+                    Video References
+                  </Label>
+                  {references && references.length > 0 && (
+                    <div className="space-y-2">
+                      {references.map((ref) => (
+                        <a
+                          key={ref.id}
+                          href={ref.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex w-fit items-center gap-4 p-4 rounded-xl border border-slate-200/50 bg-transparent backdrop-blur-sm transition-all duration-300 hover:shadow-md hover:border-slate-300/50"
+                        >
+                          <div className="p-2 rounded-lg transition-colors">
+                            <Youtube className="h-6 w-6 text-red-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <Label>
+                              {ref.title || 'Watch on YouTube'}
+                            </Label>
+                            <p className="text-xs text-slate-600 group-hover:text-slate-700 transition-colors">
+                              Click to watch tutorial
+                            </p>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -305,7 +254,7 @@ function mapMuscleToHighlighter(muscleName: string): string | null {
     // Head/Neck
     'head': 'head',
     'neck': 'neck',
-    
+
     // Upper Body
     'chest': 'chest',
     'upper-back': 'upper-back',
@@ -316,11 +265,11 @@ function mapMuscleToHighlighter(muscleName: string): string | null {
     'biceps': 'biceps',
     'triceps': 'triceps',
     'forearm': 'forearm',
-    
+
     // Core
     'abs': 'abs',
     'obliques': 'obliques',
-    
+
     // Lower Body
     'gluteal': 'gluteal',
     'adductor': 'adductor',
@@ -329,7 +278,7 @@ function mapMuscleToHighlighter(muscleName: string): string | null {
     'abductors': 'abductors',
     'calves': 'calves'
   };
-  
+
   return muscleMap[muscleName] || null;
 }
 
@@ -341,7 +290,7 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
   // Create muscle data for the body highlighter
   const createMuscleData = () => {
     const muscles: string[] = [];
-    
+
     // Add all muscles to the muscles array
     [...primary, ...secondary, ...stabilizers].forEach(muscle => {
       const mappedMuscle = mapMuscleToHighlighter(muscle.muscle);
@@ -349,7 +298,7 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
         muscles.push(mappedMuscle);
       }
     });
-    
+
     // Return the data structure expected by react-body-highlighter
     return {
       muscles,
@@ -361,7 +310,7 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
   // Create custom styles for different muscle types
   const createCustomStyles = () => {
     const styles: Record<string, React.CSSProperties> = {};
-    
+
     primary.forEach(muscle => {
       const mappedMuscle = mapMuscleToHighlighter(muscle.muscle);
       if (mappedMuscle) {
@@ -372,7 +321,7 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
         };
       }
     });
-    
+
     secondary.forEach(muscle => {
       const mappedMuscle = mapMuscleToHighlighter(muscle.muscle);
       if (mappedMuscle) {
@@ -383,7 +332,7 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
         };
       }
     });
-    
+
     stabilizers.forEach(muscle => {
       const mappedMuscle = mapMuscleToHighlighter(muscle.muscle);
       if (mappedMuscle) {
@@ -394,7 +343,7 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
         };
       }
     });
-    
+
     return styles;
   };
 
@@ -425,9 +374,9 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
                       width: "300px",
                       height: "400px"
                     }}
-                    
+
                   />
-                    <Model
+                  <Model
                     data={muscleData}
                     style={{
                       width: "300px",
@@ -445,39 +394,39 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
                       stroke-width: 3px !important;
                     }
                     ${primary.map(muscle => {
-                      const mappedMuscle = mapMuscleToHighlighter(muscle.muscle);
-                      return mappedMuscle ? `
+                    const mappedMuscle = mapMuscleToHighlighter(muscle.muscle);
+                    return mappedMuscle ? `
                         .muscle-diagram-container svg [data-name="${mappedMuscle}"] {
                           fill: #ef4444 !important;
                           stroke: #dc2626 !important;
                           stroke-width: 2px !important;
                         }
                       ` : '';
-                    }).join('')}
+                  }).join('')}
                     ${secondary.map(muscle => {
-                      const mappedMuscle = mapMuscleToHighlighter(muscle.muscle);
-                      return mappedMuscle ? `
+                    const mappedMuscle = mapMuscleToHighlighter(muscle.muscle);
+                    return mappedMuscle ? `
                         .muscle-diagram-container svg [data-name="${mappedMuscle}"] {
                           fill: #f97316 !important;
                           stroke: #ea580c !important;
                           stroke-width: 1.5px !important;
                         }
                       ` : '';
-                    }).join('')}
+                  }).join('')}
                     ${stabilizers.map(muscle => {
-                      const mappedMuscle = mapMuscleToHighlighter(muscle.muscle);
-                      return mappedMuscle ? `
+                    const mappedMuscle = mapMuscleToHighlighter(muscle.muscle);
+                    return mappedMuscle ? `
                         .muscle-diagram-container svg [data-name="${mappedMuscle}"] {
                           fill: #6b7280 !important;
                           stroke: #4b5563 !important;
                           stroke-width: 1px !important;
                         }
                       ` : '';
-                    }).join('')}
+                  }).join('')}
                   `}</style>
                 </div>
               </div>
-              
+
               {/* Legend */}
               <div className="flex-1 space-y-4 min-w-0">
                 <h4 className="text-lg font-bold text-slate-800 mb-4">Color Legend</h4>
@@ -500,7 +449,7 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
                       </div>
                     </div>
                   )}
-                  
+
                   {secondary.length > 0 && (
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 bg-orange-500 rounded-full border-2 border-orange-600"></div>
@@ -519,7 +468,7 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
                       </div>
                     </div>
                   )}
-                  
+
                   {stabilizers.length > 0 && (
                     <div className="flex items-center gap-3">
                       <div className="w-6 h-6 bg-gray-500 rounded-full border-2 border-gray-600"></div>
@@ -539,10 +488,10 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
                     </div>
                   )}
                 </div>
-                
+
                 <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
                   <p className="text-sm text-blue-800">
-                    <strong>Tip:</strong> The diagram shows which muscles are activated during this exercise. 
+                    <strong>Tip:</strong> The diagram shows which muscles are activated during this exercise.
                     Red indicates primary muscles, orange shows secondary muscles, and gray represents stabilizers.
                   </p>
                 </div>
@@ -581,7 +530,7 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
               </div>
             </div>
           )}
-          
+
           {secondary.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -597,7 +546,7 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
               </div>
             </div>
           )}
-          
+
           {stabilizers.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -613,22 +562,22 @@ function EnhancedMusclesCard({ muscles }: { muscles: ExerciseMuscleWithEngagemen
               </div>
             </div>
           )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
     </div>
   );
 }
 
-function EnhancedTagsCard({ 
-  title, 
-  tags, 
-  icon, 
-  gradient, 
-  badgeStyle 
-}: { 
-  title: string; 
-  tags: Tag[]; 
-  icon: React.ReactNode; 
+function EnhancedTagsCard({
+  title,
+  tags,
+  icon,
+  gradient,
+  badgeStyle
+}: {
+  title: string;
+  tags: Tag[];
+  icon: React.ReactNode;
   gradient: string;
   badgeStyle: string;
 }) {
@@ -648,8 +597,8 @@ function EnhancedTagsCard({
       <CardContent>
         <div className="flex flex-wrap gap-3">
           {tags.map(tag => (
-            <Badge 
-              key={tag.id} 
+            <Badge
+              key={tag.id}
               className={`${badgeStyle} px-4 py-2 text-base font-semibold capitalize border-2 hover:shadow-md transition-all duration-200`}
             >
               {tag.name}
@@ -663,10 +612,10 @@ function EnhancedTagsCard({
 
 // --- Enhanced Skeleton Component ---
 const ExerciseDetailSkeleton = () => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+  <div className="min-h-screen">
     <div className="container max-w-6xl p-6">
       {/* Breadcrumb Skeleton */}
-      <Card className="mb-8 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+      <Card className="mb-8 border-0 shadow-lg bg-muted/80 backdrop-blur-sm">
         <CardContent className="p-6">
           <Skeleton className="h-6 w-1/2" />
         </CardContent>
@@ -674,7 +623,7 @@ const ExerciseDetailSkeleton = () => (
 
       <main className="space-y-8">
         {/* Hero Skeleton */}
-        <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm overflow-hidden">
+        <Card className="border-0 shadow-xl bg-muted/90 backdrop-blur-sm overflow-hidden">
           <CardContent className="p-0">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
               <Skeleton className="h-80 lg:h-96 w-full" />
@@ -696,7 +645,7 @@ const ExerciseDetailSkeleton = () => (
         </Card>
 
         {/* Instructions Skeleton */}
-        <Card className="border-0 shadow-xl bg-white/90 backdrop-blur-sm">
+        <Card className="border-0 shadow-xl bg-muted/90 backdrop-blur-sm">
           <CardHeader className="pb-6">
             <Skeleton className="h-8 w-64" />
           </CardHeader>
@@ -706,14 +655,6 @@ const ExerciseDetailSkeleton = () => (
             <Skeleton className="h-4 w-3/4" />
           </CardContent>
         </Card>
-
-        {/* Cards Grid Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64" />
-          <Skeleton className="h-64" />
-        </div>
       </main>
     </div>
   </div>

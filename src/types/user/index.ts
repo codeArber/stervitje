@@ -28,3 +28,17 @@ export type UserPlanHistoryItem = Plan & {
   first_logged_date: string;
   last_logged_date: string;
 };
+export type DiscoverableUser = Profile & {
+  roles: TeamMemberRole[] | null; // An array of roles (e.g., ['admin', 'member'])
+};
+
+/**
+ * Defines the filters (arguments) for the `get_discoverable_users` RPC.
+ */
+export type DiscoverableUserFilters = {
+  searchTerm?: string | null;       // Corresponds to p_search_term
+  roleFilter?: string | null;       // Corresponds to p_role_filter
+  excludeTeamId?: string | null;    // Corresponds to p_exclude_team_id
+  pageLimit?: number;               // Corresponds to p_page_limit
+  pageOffset?: number;              // Corresponds to p_page_offset
+};

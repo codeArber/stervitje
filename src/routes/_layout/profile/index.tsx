@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge'; // Make sure Badge is imported if
 // Icons
 import { User, Activity, Ruler, Edit } from 'lucide-react';
 import { MiniMeasurementGraph } from '@/components/new/measurements/MiniMeasurementGraph';
+import { Breadcrumb } from '@/components/new/TopNavigation';
 
 
 export const Route = createFileRoute('/_layout/profile/')({
@@ -54,7 +55,8 @@ function ProfilePage() {
   const { teams } = userDetails;
 
   return (
-    <div className="container mx-auto max-w-3xl py-8 space-y-8">
+    <div className="">
+      <Breadcrumb currentPath={location.pathname} />
       {/* Profile Header */}
       <header className="space-y-4">
         <div className="flex items-center gap-6">

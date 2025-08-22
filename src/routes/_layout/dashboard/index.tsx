@@ -15,6 +15,9 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dumbbell, Users, Mail, Compass, PlayCircle, ArrowRight, Building } from 'lucide-react';
+import { usePendingInvitationsQuery } from '@/api/team';
+import { InvitationCard } from '@/components/new/team/InvitationCard';
+import { Breadcrumb } from '@/components/new/TopNavigation';
 
 // --- Main Route Component ---
 export const Route = createFileRoute('/_layout/dashboard/')({
@@ -25,6 +28,7 @@ function DashboardPage() {
   const { profile } = useAuthStore();
   const { data: summary, isLoading, isError, error } = useDashboardSummaryQuery();
 
+  const { data: pendingInvitations, isLoading: isLoadingInvitations, isError: isErrorInvitations, error: invitationsError } = usePendingInvitationsQuery();
   if (isLoading) {
     return <DashboardSkeleton />;
   }
@@ -36,9 +40,13 @@ function DashboardPage() {
   const currentWorkspace = summary?.my_teams?.find(
     team => team.id === summary.current_workspace_id
   );
+  console.log(pendingInvitations);
+
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container mx-auto">
+      <Breadcrumb currentPath={location.pathname} />
+
       <header className="mb-8">
         <h1 className="text-4xl font-bold tracking-tight">
           Welcome back, {profile?.full_name?.split(' ')[0] || profile?.username}!
@@ -54,13 +62,44 @@ function DashboardPage() {
         </div>
 
         {/* --- Side Column --- */}
-        <div className="lg:col-span-1 space-y-6">
-          {currentWorkspace && <CurrentWorkspaceCard team={currentWorkspace} />}
-          {summary?.pending_invitations_count > 0 && (
-            <PendingInvitationsCard count={summary.pending_invitations_count} />
-          )}
-          {summary?.my_teams && <MyTeamsList teams={summary.my_teams} />}
-        </div>
+        {isLoadingInvitations ? (
+          <section className="space-y-4 mt-8">
+            <h2 className="text-2xl font-bold tracking-tight text-center flex items-center justify-center gap-2">
+              <Mail className="h-6 w-6" /> Pending Invitations
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+              {Array.from({ length: 2 }).map((_, i) => (
+                <Card key={i} className="w-full">
+                  <CardContent className="flex items-center p-4 space-x-4">
+                    <Skeleton className="h-12 w-12 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                    <Skeleton className="h-9 w-20" />
+                    <Skeleton className="h-9 w-20" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        ) : isErrorInvitations ? (
+          <section className="space-y-4 mt-8 text-center text-destructive">
+            Error loading invitations: {invitationsError?.message}
+          </section>
+        ) : pendingInvitations && pendingInvitations.length > 0 ? (
+          <section className="space-y-4 mt-8">
+            <h2 className="text-2xl font-bold tracking-tight text-center flex items-center justify-center gap-2">
+              <Mail className="h-6 w-6" /> Pending Invitations
+            </h2>
+            <div className="grid grid-cols-1 gap-4">
+              {pendingInvitations.map((invite) => (
+                <InvitationCard key={invite.id} invitation={invite} />
+              ))}
+            </div>
+          </section>
+        ) : null /* Don't render section if no invites */
+        }
       </main>
     </div>
   );
@@ -117,7 +156,7 @@ const SessionCard: React.FC<{ session: PlanSession }> = ({ session }) => {
       </div>
       <Button size="sm" asChild>
         <Link to="/plans/$planId" params={{ planId: session.plan_day_id }}>
-            <PlayCircle className="mr-2 h-4 w-4" /> Start
+          <PlayCircle className="mr-2 h-4 w-4" /> Start
         </Link>
       </Button>
     </div>
@@ -125,20 +164,20 @@ const SessionCard: React.FC<{ session: PlanSession }> = ({ session }) => {
 };
 
 const CurrentWorkspaceCard: React.FC<{ team: any }> = ({ team }) => (
-    <Card>
-        <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-                <Building className="h-5 w-5" /> Current Workspace
-            </CardTitle>
-        </CardHeader>
-        <CardContent>
-            <p className="font-semibold">{team.name}</p>
-            <p className="text-sm text-muted-foreground capitalize">Your Role: {team.role}</p>
-            <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
-                <Link to="/workspace/$teamId" params={{ teamId: team.id }}>Manage Workspace <ArrowRight className="ml-2 h-4 w-4" /></Link>
-            </Button>
-        </CardContent>
-    </Card>
+  <Card>
+    <CardHeader>
+      <CardTitle className="text-lg flex items-center gap-2">
+        <Building className="h-5 w-5" /> Current Workspace
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <p className="font-semibold">{team.name}</p>
+      <p className="text-sm text-muted-foreground capitalize">Your Role: {team.role}</p>
+      <Button variant="outline" size="sm" className="mt-3 w-full" asChild>
+        <Link to="/workspace/$teamId" params={{ teamId: team.id }}>Manage Workspace <ArrowRight className="ml-2 h-4 w-4" /></Link>
+      </Button>
+    </CardContent>
+  </Card>
 );
 
 const PendingInvitationsCard: React.FC<{ count: number }> = ({ count }) => (

@@ -16,6 +16,7 @@ import { Building, PlusCircle } from 'lucide-react';
 // You might still need these components if you list teams on the fallback page
 import { useDashboardSummaryQuery } from '@/api/dashboard'; // Used only if the component renders
 import { WorkspaceCard, WorkspaceCardSkeleton } from '@/components/new/workspace/WorkspaceCard';
+import { CreateTeamDialog } from '@/components/new/team/CreateTeamDialog';
 
 export const Route = createFileRoute('/_layout/workspace/')({
   beforeLoad: async ({ context }) => {
@@ -67,11 +68,7 @@ function WorkspaceSelectionPage() {
 
       {/* Action buttons for selection/creation */}
       <div className="text-center my-8">
-        <Button asChild className="mr-2">
-            <Link to="/workspace/create">
-              <PlusCircle className="mr-2 h-4 w-4" /> Create New Workspace
-            </Link>
-          </Button>
+        <CreateTeamDialog />
       </div>
 
       <Separator />

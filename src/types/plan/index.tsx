@@ -1,7 +1,7 @@
 // FILE: /src/types/plan/index.ts
 
 import type { Enums, Tables, TablesInsert } from "../database.types";
-import type { Exercise, Tag } from "../exercise";
+import type { Exercise, ExerciseMuscleWithEngagement, Tag } from "../exercise";
 import type { Profile } from "../user";
 import type { PlanAnalyticsSummary } from "../analytics";
 
@@ -52,6 +52,7 @@ export type FullPlan = {
   required_equipment: Tag[] | null;
   user_plan_status: UserPlanStatus | null;
   hierarchy: PlanHierarchy;
+  muscle_activation_summary: ExerciseMuscleWithEngagement[];
 };
 export type UserPlanPerformance = Tables<'user_plan_performance_summary'>;
 export type PlanPerformanceEntry = {
@@ -62,6 +63,20 @@ export type RichPlanCardData = Plan & {
   analytics: PlanAnalyticsSummary | null;
   creator: Profile;
 };
+
+export interface FilteredPlanRich extends Tables<'plans'> {
+  analytics: {
+    plan_id: string;
+    fork_count: number | null;
+    like_count: number | null;
+    active_users_count: number | null;
+    avg_goal_success_rate: number | null;
+  } | null;
+  creator: Tables<'profiles'>;
+  total_exercises_count: number;
+  muscle_activation_summary: ExerciseMuscleWithEngagement[];
+  goals: PlanGoal[]; // CHANGED: Now contains the array of goals
+}
 
 // --- Mutation Payload Types ---
 export type LoggedSet = Omit<TablesInsert<'set_logs'>, 'id' | 'session_exercise_log_id' | 'created_at'>& {
@@ -210,3 +225,19 @@ export interface PlanPerformanceDetails {
     goal_progress: GoalProgressData[] | null;
     // We can add the list of logged workouts here later
 }
+
+export interface FilteredPlanRich extends Tables<'plans'> {
+  analytics: {
+    plan_id: string; // Add if analytics always has this
+    fork_count: number | null; // Analytics can override top-level, or be null
+    like_count: number | null;
+    active_users_count: number | null;
+    avg_goal_success_rate: number | null; // Added based on your analytics schema
+  } | null;
+  creator: Tables<'profiles'>;
+  // NEW: Fields from plan_content_summary
+  total_exercises_count: number;
+  muscle_activation_summary: ExerciseMuscleWithEngagement[]; // Assuming this maps to your existing type
+  total_goals_count: number;
+}
+export type GetFilteredPlansRichResponse = FilteredPlanRich[];

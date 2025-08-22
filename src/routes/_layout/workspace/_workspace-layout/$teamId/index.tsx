@@ -24,6 +24,7 @@ import type { TeamDetails, TeamMemberRole } from '@/types/team';
 import type { Plan } from '@/types/plan';
 import type { Profile } from '@/types'; // Assuming Profile is also used here
 import { CreatePlanDialog } from '@/components/new/plan/CreatePlanDialog';
+import { InviteMemberDialog } from '@/components/new/InviteMemberDialog';
 
 export const Route = createFileRoute('/_layout/workspace/_workspace-layout/$teamId/')({
   component: SpecificWorkspaceManagementPage, // Renamed for clarity: this is the management hub
@@ -63,11 +64,7 @@ function SpecificWorkspaceManagementPage() {
           {/* Action Buttons for this specific team */}
           <div className="flex flex-col sm:flex-row gap-2">
             {canManageTeam && (
-              <Button asChild>
-                <Link to="/workspace/$teamId/invite" params={{ teamId: team.id }}> {/* Link to invite page */}
-                  <UserPlus className="mr-2 h-4 w-4" /> Invite Member
-                </Link>
-              </Button>
+              <InviteMemberDialog teamId={team.id} teamName={team.name} />
             )}
             {canManageTeam && (
               <CreatePlanDialog teamId={team.id} />

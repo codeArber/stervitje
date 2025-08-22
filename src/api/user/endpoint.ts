@@ -3,7 +3,7 @@
 import { supabase } from '@/lib/supabase/supabaseClient';
 import { Tables, TablesInsert } from '@/types/database.types';
 import type { Profile } from '@/types/index';
-import type { RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
+import type { DiscoverableUser, DiscoverableUserFilters, RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
 
 export interface UserFilters {
   searchTerm?: string;
@@ -146,4 +146,34 @@ export const insertUserMeasurement = async (measurementData: TablesInsert<'user_
     throw new Error(error?.message || 'Failed to insert measurement.');
   }
   return data as Tables<'user_measurements'>;
+};
+
+/**
+ * Calls the `get_discoverable_users` RPC function to fetch a list of users
+ * based on provided filters.
+ *
+ * @param filters - An object containing optional filters like searchTerm, roleFilter,
+ *                    excludeTeamId, pageLimit, and pageOffset.
+ * @returns A promise that resolves to an array of DiscoverableUser objects.
+ * @throws {Error} If the RPC call returns an error.
+ */
+export const fetchDiscoverableUsers = async (filters: DiscoverableUserFilters): Promise<DiscoverableUser[]> => {
+  const { searchTerm, roleFilter, excludeTeamId, pageLimit, pageOffset } = filters;
+
+  const { data, error } = await supabase.rpc('get_discoverable_users', {
+    p_search_term: searchTerm || null, // Ensure null for optional empty strings
+    p_role_filter: roleFilter || null, // Ensure null for optional empty strings
+    p_exclude_team_id: excludeTeamId || null,
+    p_page_limit: pageLimit,
+    p_page_offset: pageOffset,
+  });
+
+  if (error) {
+    console.error('API Error fetchDiscoverableUsers:', error);
+    throw new Error(error.message);
+  }
+
+  // The RPC returns jsonb_agg, which means data will be an array of JSON objects.
+  // We cast it to our DiscoverableUser array type.
+  return (data as DiscoverableUser[]) || [];
 };

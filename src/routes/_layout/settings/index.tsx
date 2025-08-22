@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Save } from 'lucide-react';
+import { Breadcrumb } from '@/components/new/TopNavigation';
 
 // --- Main Route Component ---
 export const Route = createFileRoute('/_layout/settings/')({
@@ -56,14 +57,16 @@ function SettingsPage() {
 
   if (isLoadingProfile || !profile) {
     return (
-        <div className="container mx-auto max-w-2xl py-8">
-            <Skeleton className="h-96 w-full" />
-        </div>
+      <div className="container mx-auto max-w-2xl py-8">
+        <Skeleton className="h-96 w-full" />
+      </div>
     );
   }
 
   return (
-    <div className="container mx-auto max-w-2xl py-8">
+    <div className="mx-auto">
+      <Breadcrumb currentPath={location.pathname} />
+
       <header className="mb-8">
         <h1 className="text-4xl font-bold tracking-tight">Settings</h1>
         <p className="text-lg text-muted-foreground">Manage your account and profile details.</p>

@@ -11,6 +11,9 @@ const labelVariants = cva(
       variant: {
         default: "",
         select: "text-[#898989]",
+        sectionTitle: "text-lg font-semibold text-gray-400",
+        exerciseTitle: "text-xs font-normal text-gray-300",
+        exerciseTitleBig: "text-2xl font-bold text-gray-300",
       },
     },
     defaultVariants: {

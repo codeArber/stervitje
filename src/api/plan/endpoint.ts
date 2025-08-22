@@ -15,12 +15,14 @@ import type {
   UpdatePlanSessionExercisePayload,
   PlanHierarchy,
   LogWorkoutPayload,
-  PlanGoal
+  PlanGoal,
+  FilteredPlanRich
 } from "@/types/plan";
 import type { Tag } from "@/types/exercise";
 import type { Enums, Tables } from "@/types/database.types";
 import { Update } from "vite/types/hmrPayload.js";
 import { PlanChangeset } from "@/utils/plan-diff";
+import { SessionLog } from "@/types/workout";
 
 export interface PlanFilters {
   searchTerm?: string;
@@ -54,8 +56,7 @@ export const savePlanChanges = async (changeset: PlanChangeset): Promise<any> =>
 
 /**
  * Fetches the rich, analytical data for plan cards on the explore page.
- */
-export const fetchRichPlanCards = async (filters: PlanFilters): Promise<RichPlanCardData[]> => {
+ */export const fetchRichPlanCards = async (filters: PlanFilters): Promise<FilteredPlanRich[]> => {
     const { data, error } = await supabase
       .rpc('get_filtered_plans_rich', {
         p_search_term: filters.searchTerm,
@@ -65,8 +66,15 @@ export const fetchRichPlanCards = async (filters: PlanFilters): Promise<RichPlan
         p_page_offset: filters.pageOffset
       });
 
-    if (error) { throw new Error(error.message); }
-    return (data as RichPlanCardData[]) || [];
+    if (error) {
+      console.error('API Error fetchRichPlanCards:', error);
+      throw new Error(error.message);
+    }
+    // The data returned by the RPC is already `jsonb` which corresponds to `FilteredPlanRich[]`
+    // No need for a cast here if using the Supabase client with generated types:
+    // `supabase.rpc` in a typed client would return `Awaited<ReturnType<Database['public']['Functions']['get_filtered_plans_rich']['Returns']>>`
+    // which should correctly map to `FilteredPlanRich[]` if your database.types.ts is up-to-date.
+    return (data as FilteredPlanRich[]) || [];
 };
 
 /**
@@ -101,6 +109,26 @@ export const startWorkout = async (planSessionId: string): Promise<Tables<'sessi
   if (error || !data) { throw new Error(error?.message || "Failed to start workout session."); }
   return data as Tables<'session_logs'>;
 };
+
+
+/**
+ * Calls the secure RPC to mark a workout session as 'completed'.
+ * @param sessionLogId The ID of the session_log to finish.
+ * @returns The updated session_log record.
+ */
+export const finishWorkoutSession = async (sessionLogId: string): Promise<SessionLog> => {
+  const { data, error } = await supabase
+    .rpc('finish_workout_session', { p_session_log_id: sessionLogId })
+    .single(); // .single() is correct here, as the RPC will error if it fails.
+
+  if (error) {
+    console.error('API Error finishWorkoutSession:', error);
+    throw new Error(error.message);
+  }
+  return data as SessionLog;
+};
+
+
 
 /**
  * Saves a completed workout session to the database.
@@ -427,11 +455,19 @@ export interface UserBaseline {
 }
 
 export const fetchPlanGoals = async (planId: string): Promise<PlanGoalWithExerciseDetails[]> => {
+    if (!planId) return [];
+
+    // THIS IS THE FIX:
+    // We now call the dedicated RPC 'get_goals_for_plan' instead of accessing the table directly.
     const { data, error } = await supabase
-        .from('plan_goals')
-        .select(`*, exercises (id, name)`)
-        .eq('plan_id', planId);
-    if (error) throw new Error(error.message);
+        .rpc('get_goals_for_plan', { p_plan_id: planId });
+
+    if (error) {
+        console.error('API Error fetchPlanGoals:', error);
+        throw new Error(error.message);
+    }
+
+    // The RPC returns a single JSONB array. If it's null (no goals found), we return an empty array.
     return data || [];
 };
 

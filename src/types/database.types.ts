@@ -1464,22 +1464,11 @@ export type Database = {
         Returns: string
       }
       get_active_session_for_user: {
-        Args: Record<PropertyKey, never>
+        Args: { p_user_id: string }
         Returns: {
-          created_at: string | null
-          date: string
-          duration_minutes: number | null
-          id: string
-          notes: string | null
-          overall_feeling: number | null
-          plan_id: string | null
-          plan_session_id: string | null
-          privacy_level: string | null
-          status: Database["public"]["Enums"]["workout_status_enum"]
-          title: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
+          has_permission: boolean
+          session_data: Json
+        }[]
       }
       get_client_progress_for_coach: {
         Args: { p_client_id: string }
@@ -1554,6 +1543,26 @@ export type Database = {
         }
         Returns: Json
       }
+      get_goals_for_plan: {
+        Args: { p_plan_id: string }
+        Returns: Json
+      }
+      get_my_logbook: {
+        Args: Record<PropertyKey, never>
+        Returns: Record<string, unknown>[]
+      }
+      get_my_pending_invitations: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_my_plan_history: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      get_my_plan_performance_summary_list: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_pending_baselines_for_session: {
         Args: { p_plan_session_id: string }
         Returns: {
@@ -1603,15 +1612,7 @@ export type Database = {
       }
       get_user_logbook: {
         Args: { p_user_id: string }
-        Returns: {
-          duration_minutes: number
-          log_id: string
-          overall_feeling: number
-          plan_id: string
-          plan_title: string
-          session_title: string
-          workout_date: string
-        }[]
+        Returns: Record<string, unknown>
       }
       get_user_measurements: {
         Args: { p_user_id: string }
@@ -1668,9 +1669,7 @@ export type Database = {
       }
       get_user_workout_dates: {
         Args: { p_user_id: string }
-        Returns: {
-          workout_date: string
-        }[]
+        Returns: string
       }
       get_workout_details: {
         Args: { p_log_id: string }
@@ -1965,6 +1964,10 @@ export type Database = {
           updated_at: string
           username: string
         }[]
+      }
+      user_can_edit_plan: {
+        Args: { p_plan_id: string }
+        Returns: boolean
       }
     }
     Enums: {

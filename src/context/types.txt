@@ -1,0 +1,460 @@
+// src/types/dashboard/index.ts
+
+import type { Plan, Team } from '@/types/index';
+import type { FullPlan } from '@/types/plan';
+import type { TeamMemberRole } from '@/types/team';
+
+// Type for a single team in the "My Teams" list
+export type MyTeam = Team & {
+  role: TeamMemberRole;
+};
+
+// This is the main type for the entire JSON object returned by the refactored RPC function.
+export type DashboardSummary = {
+  active_plan_details: FullPlan | null;
+  my_teams: MyTeam[] | null;
+  my_created_plans: Plan[] | null;
+  pending_invitations_count: number;
+  current_workspace_id: string | null; // <--- NEW FIELD
+};
+// FILE: /src/types/exercise/index.ts
+
+import type { Tables, Enums } from "../database.types";
+
+export type Exercise = Tables<'exercises'>;
+export type Tag = Tables<'tags'>;
+export type ExerciseReference = Tables<'exercise_reference_global'>;
+export type MuscleGroup = Enums<'muscle_group_enum'>;
+export type EngagementLevel = Enums<'engagement_level'>;
+
+export type ExerciseMuscleWithEngagement = {
+  muscle: MuscleGroup;
+  engagement: EngagementLevel;
+};
+
+// This is the type for a single item in the list from our new RPC
+export type ExerciseWithMuscles = Exercise & {
+  muscles: ExerciseMuscleWithEngagement[] | null;
+  tags: Tag[] | null; // <-- ADD THIS LINE
+};
+
+// This is the rich type for the Exercise Details page
+export type ExerciseWithDetails = Exercise & {
+  muscles: ExerciseMuscleWithEngagement[] | null;
+  tags: Tag[] | null;
+  references: ExerciseReference[] | null;
+};
+// src/types/analytics/index.ts
+
+import type { Tables } from "../database.types";
+
+// These types directly correspond to the structure of our Materialized Views.
+
+export type PlanAnalyticsSummary = Tables<'plan_analytics_summary'>;
+
+export type CoachAnalyticsSummary = Tables<'coach_analytics_summary'>;
+
+import type { PlanAnalyticsSummary, CoachAnalyticsSummary } from "../analytics";
+import type { Plan, Profile, Team } from "../index"; // Ensure Profile is imported from correct path
+
+// This is the data structure for one plan card on the Explore Plans page
+export type RichPlanCardData = Plan & {
+  analytics: PlanAnalyticsSummary | null;
+  creator: Profile;
+};
+
+// This is the data structure for one team card on the Explore Teams page
+// (For now, we can build it from existing types, but can add analytics later)
+export type RichTeamCardData = Team & {
+  members_count: number;
+  plans_count: number;
+  // We can add team-level analytics here in the future
+};
+
+// This is the data structure for one user/coach card on the Explore Users page
+// REMOVED: specializations as it's not returned by get_filtered_users_rich RPC
+export type RichUserCardData = Profile & {
+  analytics: CoachAnalyticsSummary | null;
+  // specializations: string[] | null; // REMOVED
+};
+
+
+// FILE: /src/types/plan/index.ts
+
+import type { Enums, Tables, TablesInsert } from "../database.types";
+import type { Exercise, Tag } from "../exercise";
+import type { Profile } from "../user";
+import type { PlanAnalyticsSummary } from "../analytics";
+
+// --- Base Types ---
+export type Plan = Tables<'plans'>;
+export type PlanGoal = Tables<'plan_goals'> & {
+  exercise_details?: Pick<Exercise, 'id' | 'name'> | null; // Add this line
+};
+export type UserPlanStatus = Tables<'user_plan_status'>;
+
+// --- Hierarchy Types ---
+export type PlanSet = Tables<'plan_session_exercise_sets'> & {
+    intent: Enums<'exercise_physical_intent'> | null;
+};
+export type PlanExercise = Tables<'plan_session_exercises'> & {
+  exercise_details: Exercise;
+  sets: PlanSet[];
+};
+export type PlanSession = Tables<'plan_sessions'> & {
+  is_completed_by_user: boolean;
+  exercises: PlanExercise[];
+};
+
+export type PlanSessionStore = Tables<'plan_sessions'> & {
+  is_completed_by_user: boolean; // This might be a computed value
+  exercises: (PlanExercise & {
+    exercise_details: Pick<Tables<'exercises'>, 'id' | 'name' | 'image_url'>; // Use a more specific type for details
+    sets: PlanSet[] | null; // Ensure sets can be null
+  })[] | null; // Ensure exercises array can be null
+};
+export type PlanDay = Tables<'plan_days'> & {
+  sessions: PlanSession[];
+};
+export type PlanWeek = Tables<'plan_weeks'> & {
+  days: PlanDay[];
+};
+export type PlanHierarchy = {
+  weeks: PlanWeek[];
+};
+
+// --- RPC Response Types ---
+export type FullPlan = {
+  plan: Plan;
+  creator: Profile;
+  team: Tables<'teams'> | null;
+  goals: PlanGoal[] | null;
+  can_edit: boolean;
+  required_equipment: Tag[] | null;
+  user_plan_status: UserPlanStatus | null;
+  hierarchy: PlanHierarchy;
+};
+export type UserPlanPerformance = Tables<'user_plan_performance_summary'>;
+export type PlanPerformanceEntry = {
+    profile: Profile;
+    performance: UserPlanPerformance;
+};
+export type RichPlanCardData = Plan & {
+  analytics: PlanAnalyticsSummary | null;
+  creator: Profile;
+};
+
+// --- Mutation Payload Types ---
+export type LoggedSet = Omit<TablesInsert<'set_logs'>, 'id' | 'session_exercise_log_id' | 'created_at'>& {
+  _tempId?: string; // Add temporary ID for client-side list keys
+};
+
+
+export type LoggedExercise = {
+  _tempId?: string; // Add temporary ID for client-side list keys
+  plan_session_exercise_id: string | null;
+  exercise_id: string;
+  exercise_details?: Exercise; // Add exercise details for easier UI rendering
+  notes?: string;
+  sets: LoggedSet[];
+};
+export type LogWorkoutPayload = {
+  session_log_id: string;
+  performed_exercises: LoggedExercise[];
+  duration_minutes: number;
+  overall_feeling: number;
+  notes: string;
+};
+
+export interface AddPlanWeekPayload {
+  p_plan_id: string;
+  p_week_number: number;
+  p_description?: string | null;
+}
+
+export interface UpdatePlanWeekPayload {
+  p_week_id: string;
+  p_week_number: number;
+  p_description?: string | null;
+}
+
+export interface DeletePlanWeekPayload {
+  p_week_id: string;
+}
+
+export interface AddPlanDayPayload {
+  p_plan_week_id: string;
+  p_day_number: number;
+  p_title?: string | null;
+  p_description?: string | null;
+  p_is_rest_day?: boolean | null;
+}
+export interface AddPlanSessionPayload {
+  p_plan_day_id: string;
+  p_order_index: number;
+  p_title?: string | null;
+  p_notes?: string | null;
+}
+
+export interface UpdatePlanSessionPayload { // <--- NEW
+  p_session_id: string;
+  p_order_index: number;
+  p_title?: string | null;
+  p_notes?: string | null;
+}
+
+export interface DeletePlanSessionPayload { // <--- NEW
+  p_session_id: string;
+}
+
+export interface UpdatePlanDayPayload { // <--- ADD THIS
+  p_day_id: string;
+  p_day_number: number;
+  p_title?: string | null;
+  p_description?: string | null;
+  p_is_rest_day?: boolean | null;
+}
+
+export interface DeletePlanDayPayload { // <--- ADD THIS
+  p_day_id: string;
+}
+
+
+export interface AddPlanSessionExercisePayload {
+  p_plan_session_id: string;
+  p_exercise_id: string;
+  p_order_within_session: number;
+  p_notes?: string | null;
+  p_execution_group?: number | null;
+  p_post_exercise_rest_seconds?: number | null;
+  p_post_group_rest_seconds?: number | null;
+}
+
+export interface DeletePlanSessionExercisePayload {
+  p_plan_session_exercise_id: string;
+}
+
+// --- NEW: Plan Session Exercise Set Mutation Payloads ---
+export interface AddPlanSessionExerciseSetPayload {
+  p_plan_session_exercise_id: string;
+  p_set_number: number;
+  p_target_reps?: number | null;
+  p_target_weight?: number | null;
+  p_target_duration_seconds?: number | null;
+  p_target_distance_meters?: number | null;
+  p_target_rest_seconds?: number | null;
+  p_notes?: string | null;
+  p_set_type?: Tables<'plan_session_exercise_sets'>['set_type']; // Use DB type for enum
+  p_metadata?: object | null; // jsonb
+}
+
+export interface UpdatePlanSessionExerciseSetPayload {
+  p_set_id: string;
+  p_set_number: number;
+  p_target_reps?: number | null;
+  p_target_weight?: number | null;
+  p_target_duration_seconds?: number | null;
+  p_target_distance_meters?: number | null;
+  p_target_rest_seconds?: number | null;
+  p_notes?: string | null;
+  p_set_type?: Tables<'plan_session_exercise_sets'>['set_type'];
+  p_metadata?: object | null;
+}
+
+
+export interface DeletePlanSessionExerciseSetPayload {
+  p_set_id: string;
+}
+
+export interface UpdatePlanSessionExercisePayload {
+  p_plan_session_exercise_id: string;
+  p_exercise_id: string; // Allow changing exercise, or make non-editable based on UI
+  p_order_within_session: number;
+  p_notes?: string | null;
+  p_execution_group?: number | null;
+  p_post_exercise_rest_seconds?: number | null;
+  p_post_group_rest_seconds?: number | null;
+}
+
+export interface GoalProgressData {
+    progress_id: string; // This is the ID from the user_plan_goal_progress table
+    start_value: number | null;
+    current_value: number | null;
+    target_value: number | null; // This is the personalized target
+    status: Enums<'goal_status'>;
+    // This object contains the original goal definition from the plan_goals table
+    goal_definition: PlanGoal; 
+}
+
+export interface PlanPerformanceDetails {
+    plan: Plan;
+    goal_progress: GoalProgressData[] | null;
+    // We can add the list of logged workouts here later
+}
+
+// FILE: /src/lib/supabase/storage.ts
+
+import { supabase } from '@/lib/supabase/supabaseClient'; // Assuming this import exists
+
+/**
+ * Constructs the public URL for an exercise image from its filename.
+ * @param fileName - The name of the file stored in the 'exercises' bucket (e.g., 'barbell-squat.webp').
+ * @returns The full public URL to the image, or a placeholder if no name is provided.
+ */
+export const getExerciseImageUrl = (fileName: string | null | undefined): string => {
+  if (!fileName) {
+    // Return a generic placeholder or an empty string if no image is specified
+    return 'https://placehold.co/200x200?text=No+Image';
+  }
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  if (!supabaseUrl) {
+    console.error("Supabase URL is not defined in environment variables.");
+    return ''; // Fallback
+  }
+  
+  // Construct the URL directly from the filename
+  return `${supabaseUrl}/storage/v1/object/public/exercises/${fileName}`;
+};
+
+/**
+ * Uploads an image to the 'measurements' Supabase bucket and returns its public URL.
+ * Organizes images by user ID and measurement date.
+ * @param file - The File object to upload.
+ * @param userId - The ID of the authenticated user.
+ * @param measurementDate - The date of the measurement (YYYY-MM-DD format).
+ * @param fieldName - The specific measurement field this image is for (e.g., 'biceps_right_photo').
+ * @returns The public URL of the uploaded image.
+ */
+import { v4 as uuidv4 } from 'uuid'; // Import uuid
+
+export const uploadMeasurementImage = async (
+  file: File,
+  userId: string,
+  measurementDate: string, // YYYY-MM-DD
+  fieldName: string // e.g., 'biceps_right_photo_url'
+): Promise<string> => {
+  const bucketName = 'measurements';
+  const fileExtension = file.name.split('.').pop();
+  // Ensure unique filename to prevent overwrites, use fieldName and a UUID/timestamp
+  const fileName = `${fieldName}_${uuidv4()}.${fileExtension}`;
+  const filePath = `${userId}/${measurementDate}/${fileName}`;
+
+  const { data, error } = await supabase.storage
+    .from(bucketName)
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false, // Set to true if you want to overwrite existing files at the same path
+    });
+
+  if (error) {
+    console.error(`Error uploading image for ${fieldName}:`, error);
+    throw new Error(`Failed to upload image: ${error.message}`);
+  }
+
+  // Get the public URL for the uploaded file
+  const { data: publicUrlData } = supabase.storage
+    .from(bucketName)
+    .getPublicUrl(filePath);
+
+  if (!publicUrlData || !publicUrlData.publicUrl) {
+    throw new Error('Failed to get public URL for uploaded image.');
+  }
+
+  return publicUrlData.publicUrl;
+};
+
+/**
+ * Constructs the public URL for a measurement image from its full storage path.
+ * This is useful if you store the full path (userId/date/filename) in the DB.
+ * Or you can store the full public URL directly. Assuming full public URL is stored.
+ * @param fullPublicUrl - The full public URL stored in the database.
+ * @returns The full public URL.
+ */
+export const getMeasurementImageUrl = (fullPublicUrl: string | null | undefined): string => {
+  if (!fullPublicUrl) {
+    return 'https://placehold.co/100x100?text=No+Image'; // Placeholder for missing images
+  }
+  return fullPublicUrl;
+};
+
+// src/types/team/index.ts
+
+import type { Plan } from "..";
+import type { Enums, Tables, TablesInsert } from "../database.types";
+
+export type Team = Tables<'teams'>;
+export type Profile = Tables<'profiles'>;
+export type TeamMemberRole = Enums<'team_member_role'>;
+export type TeamInvitation = Tables<'team_invitations'>;
+export type NewTeam = TablesInsert<'teams'>;
+
+export type TeamInvitationWithRelations = TeamInvitation & {
+  teams: Team;
+  profiles: Profile;
+};
+
+export type TeamMemberWithProfile = {
+  profile: Profile;
+  role: TeamMemberRole;
+};
+
+
+// NEW: For the Explore page team cards
+export type RichTeamCardData = Team & {
+    members_count: number;
+    plans_count: number;
+};
+
+export type TeamDetails = {
+  team: Tables<'teams'>;
+  members: TeamMemberWithProfile[] | null;
+  plans: Plan[] | null;
+  current_user_role: TeamMemberRole | null; // <-- ADD THIS LINE
+};
+
+import type { Enums, Tables } from "../database.types";
+import type { FullPlan } from "../plan";
+import type { CoachAnalyticsSummary } from "../analytics";
+
+export type Plan = Tables<'plans'>;
+export type Team = Tables<'teams'>;
+export type TeamMemberRole = Enums<'team_member_role'>;
+export type Profile = Tables<'profiles'>;
+
+export type UserTeamWithRelations = {
+  team: Team;
+  role: TeamMemberRole;
+};
+
+export type UserProfileDetails = {
+  profile: Profile;
+  teams: UserTeamWithRelations[] | null;
+  active_plan_details: FullPlan | null;
+};
+
+// NEW: For the Explore page user/coach cards
+export type RichUserCardData = Profile & {
+    analytics: CoachAnalyticsSummary | null;
+    // specializations: string[] | null; // REMOVED
+};
+
+export type UserPlanHistoryItem = Plan & {
+  first_logged_date: string;
+  last_logged_date: string;
+};
+export type DiscoverableUser = Profile & {
+  roles: TeamMemberRole[] | null; // An array of roles (e.g., ['admin', 'member'])
+};
+
+/**
+ * Defines the filters (arguments) for the `get_discoverable_users` RPC.
+ */
+export type DiscoverableUserFilters = {
+  searchTerm?: string | null;       // Corresponds to p_search_term
+  roleFilter?: string | null;       // Corresponds to p_role_filter
+  excludeTeamId?: string | null;    // Corresponds to p_exclude_team_id
+  pageLimit?: number;               // Corresponds to p_page_limit
+  pageOffset?: number;              // Corresponds to p_page_offset
+};
+

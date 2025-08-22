@@ -10,11 +10,12 @@ import {
   fetchUserMeasurements,
   type UserFilters,
   setCurrentUserWorkspace,
-  insertUserMeasurement
+  insertUserMeasurement,
+  fetchDiscoverableUsers
 } from './endpoint';
 import { useAuthStore } from '@/stores/auth-store';
 import type { Profile } from '@/types/index';
-import type { RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
+import type { DiscoverableUser, DiscoverableUserFilters, RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
 import { Tables, TablesInsert } from '@/types/database.types';
 import { toast } from 'sonner';
 import { updateUserProfile, UserProfileUpdatePayload } from '../performance/endpoint';
@@ -26,11 +27,13 @@ const userKeys = {
   profileDetails: (userId: string) => [...userKeys.all, 'details', userId] as const,
   // Key for the new rich user card lists
   richLists: () => [...userKeys.all, 'rich', 'list'] as const,
+  
+  lists: () => [...userKeys.all, 'list'] as const,
   richList: (filters: UserFilters) => [...userKeys.richLists(), filters] as const,
   planHistory: (userId: string) => [...userKeys.all, 'planHistory', userId] as const, 
    measurements: () => [...userKeys.all, 'measurements'] as const, // Base key for all measurements
   userMeasurements: (userId: string) => [...userKeys.measurements(), userId] as const, // Specific user's measurements
-
+  discoverableList: (filters: DiscoverableUserFilters) => [...userKeys.lists(), 'discoverable', filters] as const,
 };
 
 // --- Hooks ---
@@ -164,5 +167,15 @@ export const useUpdateUserProfileMutation = () => {
       // but this will catch things like a non-unique username.
       toast.error(`Update failed: ${error.message}`);
     }
+  });
+};
+
+export const useDiscoverableUsersQuery = (filters: DiscoverableUserFilters) => {
+  return useQuery<DiscoverableUser[], Error>({
+    queryKey: userKeys.discoverableList(filters),
+    queryFn: () => fetchDiscoverableUsers(filters),
+    // You might want to enable/disable based on search term or dialog open state
+    // For the InviteMemberDialog, it's generally enabled to fetch initially or with debounced search
+    enabled: true, // or some specific condition if filtering should only occur on user input
   });
 };

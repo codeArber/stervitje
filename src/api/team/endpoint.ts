@@ -39,28 +39,21 @@ export const createTeam = async (newTeamData: Omit<NewTeam, 'id' | 'created_by' 
 
 
 export const fetchPendingInvitations = async (): Promise<TeamInvitationWithRelations[]> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    // No need to get the user here, the RPC handles it securely.
 
-    // The 'select' string has been corrected to remove the trailing comma.
+    // THIS IS THE FIX:
+    // We now call the dedicated RPC instead of the table.
     const { data, error } = await supabase
-        .from('team_invitations')
-        .select(`
-            *,
-            teams(*),
-            profiles:invited_by(*)
-        `) // <--- The comma is now removed from the end of this line
-        .eq('status', 'pending')
-        .eq('invited_user_id', user.id);
-    
+      .rpc('get_my_pending_invitations');
+
     if (error) {
         console.error('API Error fetchPendingInvitations:', error);
         throw new Error(error.message);
     }
+
+    // The RPC returns a single JSONB array. If it's null (no invites), return an empty array.
     return data || [];
 };
-
-
 
 const sendInvitationEmail = async (invitationId: string) => {
   // The 'invoke' helper is simple. The second argument is the body object.

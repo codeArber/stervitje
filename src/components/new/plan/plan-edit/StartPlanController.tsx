@@ -41,7 +41,7 @@ export const StartPlanController: React.FC<StartPlanControllerProps> = ({ planId
 
   return (
     <>
-      <Button size="lg" onClick={handleStartClick} disabled={isLoading}>
+      <Button onClick={handleStartClick} disabled={isLoading}>
         <PlusCircle className="mr-2 h-5 w-5" />
         {isLoading ? 'Checking...' : 'Start This Plan'}
       </Button>

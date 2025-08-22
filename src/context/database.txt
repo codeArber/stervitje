@@ -29,16 +29,16 @@ CREATE TABLE public.exercise_saved_references (
   user_id uuid NOT NULL DEFAULT auth.uid(),
   exercise_id uuid NOT NULL,
   CONSTRAINT exercise_saved_references_pkey PRIMARY KEY (id),
+  CONSTRAINT exercise_saved_references_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
   CONSTRAINT exercise_saved_references_exercise_id_fkey FOREIGN KEY (exercise_id) REFERENCES public.exercises(id),
-  CONSTRAINT exercise_saved_references_global_reference_fkey FOREIGN KEY (global_reference) REFERENCES public.exercise_reference_global(id),
-  CONSTRAINT exercise_saved_references_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
+  CONSTRAINT exercise_saved_references_global_reference_fkey FOREIGN KEY (global_reference) REFERENCES public.exercise_reference_global(id)
 );
 CREATE TABLE public.exercise_tags (
   exercise_id uuid NOT NULL,
   tag_id integer NOT NULL,
   CONSTRAINT exercise_tags_pkey PRIMARY KEY (exercise_id, tag_id),
-  CONSTRAINT exercise_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id),
-  CONSTRAINT exercise_tags_exercise_id_fkey FOREIGN KEY (exercise_id) REFERENCES public.exercises(id)
+  CONSTRAINT exercise_tags_exercise_id_fkey FOREIGN KEY (exercise_id) REFERENCES public.exercises(id),
+  CONSTRAINT exercise_tags_tag_id_fkey FOREIGN KEY (tag_id) REFERENCES public.tags(id)
 );
 CREATE TABLE public.exercises (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -50,7 +50,6 @@ CREATE TABLE public.exercises (
   created_by uuid,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
-  primary_physical_intent USER-DEFINED,
   CONSTRAINT exercises_pkey PRIMARY KEY (id),
   CONSTRAINT exercises_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
 );
@@ -73,9 +72,11 @@ CREATE TABLE public.plan_goals (
   target_value numeric NOT NULL,
   exercise_id uuid,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  target_type USER-DEFINED NOT NULL,
+  direction USER-DEFINED NOT NULL,
   CONSTRAINT plan_goals_pkey PRIMARY KEY (id),
-  CONSTRAINT plan_goals_exercise_id_fkey FOREIGN KEY (exercise_id) REFERENCES public.exercises(id),
-  CONSTRAINT plan_goals_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plans(id)
+  CONSTRAINT plan_goals_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plans(id),
+  CONSTRAINT plan_goals_exercise_id_fkey FOREIGN KEY (exercise_id) REFERENCES public.exercises(id)
 );
 CREATE TABLE public.plan_session_exercise_sets (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -92,6 +93,7 @@ CREATE TABLE public.plan_session_exercise_sets (
   target_weight_unit USER-DEFINED,
   set_type USER-DEFINED NOT NULL DEFAULT 'normal'::set_type,
   metadata jsonb,
+  intent USER-DEFINED,
   CONSTRAINT plan_session_exercise_sets_pkey PRIMARY KEY (id),
   CONSTRAINT plan_session_exercise_sets_plan_session_exercise_id_fkey FOREIGN KEY (plan_session_exercise_id) REFERENCES public.plan_session_exercises(id)
 );
@@ -144,10 +146,10 @@ CREATE TABLE public.plans (
   updated_at timestamp with time zone DEFAULT now(),
   private boolean NOT NULL DEFAULT false,
   CONSTRAINT plans_pkey PRIMARY KEY (id),
-  CONSTRAINT plans_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id),
-  CONSTRAINT plans_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id),
   CONSTRAINT plans_created_by_fkey1 FOREIGN KEY (created_by) REFERENCES public.profiles(id),
-  CONSTRAINT plans_forked_from_fkey FOREIGN KEY (forked_from) REFERENCES public.plans(id)
+  CONSTRAINT plans_forked_from_fkey FOREIGN KEY (forked_from) REFERENCES public.plans(id),
+  CONSTRAINT plans_team_id_fkey FOREIGN KEY (team_id) REFERENCES public.teams(id),
+  CONSTRAINT plans_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
 );
 CREATE TABLE public.profiles (
   id uuid NOT NULL,
@@ -160,7 +162,9 @@ CREATE TABLE public.profiles (
   unit USER-DEFINED NOT NULL DEFAULT 'metric'::measure_unit,
   email text,
   onboarding_completed boolean NOT NULL DEFAULT false,
-  CONSTRAINT profiles_pkey PRIMARY KEY (id)
+  current_workspace_id uuid,
+  CONSTRAINT profiles_pkey PRIMARY KEY (id),
+  CONSTRAINT profiles_current_workspace_id_fkey FOREIGN KEY (current_workspace_id) REFERENCES public.teams(id)
 );
 CREATE TABLE public.session_exercise_logs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -170,9 +174,9 @@ CREATE TABLE public.session_exercise_logs (
   notes text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT session_exercise_logs_pkey PRIMARY KEY (id),
-  CONSTRAINT session_exercise_logs_exercise_id_fkey FOREIGN KEY (exercise_id) REFERENCES public.exercises(id),
   CONSTRAINT session_exercise_logs_plan_session_exercise_id_fkey FOREIGN KEY (plan_session_exercise_id) REFERENCES public.plan_session_exercises(id),
-  CONSTRAINT session_exercise_logs_session_log_id_fkey FOREIGN KEY (session_log_id) REFERENCES public.session_logs(id)
+  CONSTRAINT session_exercise_logs_session_log_id_fkey FOREIGN KEY (session_log_id) REFERENCES public.session_logs(id),
+  CONSTRAINT session_exercise_logs_exercise_id_fkey FOREIGN KEY (exercise_id) REFERENCES public.exercises(id)
 );
 CREATE TABLE public.session_logs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -189,9 +193,9 @@ CREATE TABLE public.session_logs (
   status USER-DEFINED NOT NULL DEFAULT 'in_progress'::workout_status_enum,
   plan_id uuid,
   CONSTRAINT session_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT workout_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
   CONSTRAINT workout_logs_session_id_fkey FOREIGN KEY (plan_session_id) REFERENCES public.plan_sessions(id),
-  CONSTRAINT session_logs_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plans(id),
-  CONSTRAINT workout_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+  CONSTRAINT session_logs_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plans(id)
 );
 CREATE TABLE public.set_logs (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -298,9 +302,12 @@ CREATE TABLE public.user_plan_goal_progress (
   achieved_at timestamp with time zone,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  target_value numeric,
+  plan_id uuid,
   CONSTRAINT user_plan_goal_progress_pkey PRIMARY KEY (id),
-  CONSTRAINT user_plan_goal_progress_plan_goal_id_fkey FOREIGN KEY (plan_goal_id) REFERENCES public.plan_goals(id),
-  CONSTRAINT user_plan_goal_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
+  CONSTRAINT user_plan_goal_progress_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plans(id),
+  CONSTRAINT user_plan_goal_progress_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
+  CONSTRAINT user_plan_goal_progress_plan_goal_id_fkey FOREIGN KEY (plan_goal_id) REFERENCES public.plan_goals(id)
 );
 CREATE TABLE public.user_plan_status (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -310,6 +317,6 @@ CREATE TABLE public.user_plan_status (
   started_at timestamp with time zone NOT NULL DEFAULT now(),
   last_activity_at timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT user_plan_status_pkey PRIMARY KEY (id),
-  CONSTRAINT user_plan_status_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
-  CONSTRAINT user_plan_status_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plans(id)
+  CONSTRAINT user_plan_status_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.plans(id),
+  CONSTRAINT user_plan_status_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id)
 );

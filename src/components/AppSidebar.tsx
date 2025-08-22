@@ -1,4 +1,5 @@
-import { Calendar, Dumbbell, History, Home, Inbox, LogOut, Search, Settings, Swords, User, Users } from "lucide-react"
+import { Calendar, Dumbbell, History, Home, Inbox, LogOut, Search, Settings, Swords, User, Users, ChevronDown, ChevronRight } from "lucide-react"
+import { useState } from "react"
 
 import {
   Sidebar,
@@ -15,11 +16,10 @@ import {
   SidebarMenuSubButton,
 } from "@/components/ui/sidebar"
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { title } from "process";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 
-// Menu items.
+// Menu items with improved icons
 const items = [
   {
     title: "Today",
@@ -39,7 +39,7 @@ const items = [
   {
     title: "Exercises",
     url: "/exercise",
-    icon: Dumbbell,
+    icon: Swords, // Changed from Dumbbell to differentiate
   },
   {
     title: "Explore",
@@ -48,15 +48,18 @@ const items = [
     items: [
       {
         title: "Teams",
-        url: "/explore/teams"
+        url: "/explore/teams",
+        icon: Users
       },
       {
         title: "Plans",
-        url: "/explore/plans"
+        url: "/explore/plans",
+        icon: Calendar
       },
       {
         title: "People",
-        url: "/explore/users"
+        url: "/explore/users",
+        icon: User
       }
     ]
   },
@@ -67,11 +70,13 @@ const items = [
     items: [
       {
         title: "Measurements",
-        url: "/profile/measurements"
+        url: "/profile/measurements",
+        icon: History
       },
       {
         title: "Performance",
-        url: "/profile/performance"
+        url: "/profile/performance",
+        icon: Inbox
       },
     ]
   },
@@ -82,73 +87,133 @@ const items = [
   },
 ]
 
-
 export function AppSidebar() {
   const location = useLocation().pathname
-  const { signOut } = useAuthStore(); // Get the signOut action from your store
+  const { signOut } = useAuthStore();
   const navigate = useNavigate();
+  
+  // State to manage which items are expanded
+  const [expandedItems, setExpandedItems] = useState<string[]>(() => {
+    // Auto-expand items that contain the current route
+    return items
+      .filter(item => item.items && item.items.some(subItem => location.includes(subItem.url)))
+      .map(item => item.title);
+  });
+
+  const toggleExpanded = (itemTitle: string) => {
+    setExpandedItems(prev => 
+      prev.includes(itemTitle)
+        ? prev.filter(title => title !== itemTitle)
+        : [...prev, itemTitle]
+    );
+  };
+
+  const isExpanded = (itemTitle: string) => expandedItems.includes(itemTitle);
 
   const handleSignOut = async () => {
     try {
-      await signOut(); // Call the signOut function from your Zustand store
-      navigate({ to: '/login' }); // Navigate to the login page after signing out
+      await signOut();
+      navigate({ to: '/login' });
     } catch (error) {
       console.error("Error signing out:", error);
-      // Optionally, show a toast notification for sign-out errors
     }
   };
+
   return (
     <Sidebar>
-      <SidebarContent >
+      <SidebarContent>
         <SidebarGroup>
-          <div>
-            {/* <UserDropdown /> */}
-          </div>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-2 py-1.5 text-xs font-semibold text-sidebar-foreground/70">
+            Application
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title} className={cn(location.includes(item.url) ? "bg-sidebar-border rounded" : "", item.url === '/workout' && location.includes(item.url) && "bg-red-200", item.url === '/workout' && 'bg-blue-100 rounded')}>
-                  {item.items ? (
-                    <>
-                      <SidebarMenuButton asChild>
-                        <Link to={item.url}>
-                          <item.icon />
+            <SidebarMenu className="gap-0.5">
+              {items.map((item) => {
+                const isActive = location.includes(item.url);
+                const hasSubItems = item.items && item.items.length > 0;
+                const isItemExpanded = isExpanded(item.title);
+                
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    {hasSubItems ? (
+                      <div className="flex items-center justify-between w-full">
+                        <SidebarMenuButton 
+                          asChild
+                          className={cn(
+                            "px-2 py-1.5 h-8 text-sm font-medium transition-colors flex-1",
+                            isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
+                          )}
+                        >
+                          <Link to={item.url} className="flex items-center gap-2">
+                            <item.icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                        <button
+                          onClick={() => toggleExpanded(item.title)}
+                          className="p-1 hover:bg-sidebar-accent/50 rounded transition-colors"
+                        >
+                          {isItemExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      <SidebarMenuButton 
+                        asChild
+                        className={cn(
+                          "px-2 py-1.5 h-8 text-sm font-medium transition-colors",
+                          isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
+                        )}
+                      >
+                        <Link to={item.url} className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4" />
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
-                      <SidebarMenuSub>
-                        {item.items.map((subItem) => (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton asChild>
-                              <Link to={subItem.url}>
-                                <span>{subItem.title}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
+                    )}
+                    
+                    {hasSubItems && isItemExpanded && (
+                      <SidebarMenuSub className="ml-3 mt-0.5 border-l border-sidebar-border pl-3">
+                        {item.items?.map((subItem) => {
+                          const isSubActive = location.includes(subItem.url);
+                          return (
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton 
+                                asChild
+                                className={cn(
+                                  "px-2 py-1 h-7 text-sm transition-colors",
+                                  isSubActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                                )}
+                              >
+                                <Link to={subItem.url} className="flex items-center gap-2">
+                                  {subItem.icon && <subItem.icon className="h-3.5 w-3.5" />}
+                                  <span>{subItem.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        })}
                       </SidebarMenuSub>
-                    </>
-                  ) : (
-                    <SidebarMenuButton asChild>
-                      <Link to={item.url}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  )}
-                </SidebarMenuItem>
-              ))}
+                    )}
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        {/* Sign Out Button */}
-        <SidebarMenu className="w-full"> {/* Wrap in SidebarMenu for consistent styling */}
+      
+      <SidebarFooter className="p-1">
+        <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleSignOut}> {/* Use onClick directly for the button */}
-              <LogOut className="h-5 w-5" />
+            <SidebarMenuButton 
+              onClick={handleSignOut}
+              className="px-2 py-1.5 h-8 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
               <span>Sign Out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>

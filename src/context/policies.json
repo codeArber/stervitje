@@ -1,0 +1,452 @@
+[
+  {
+    "schemaname": "public",
+    "tablename": "exercise_muscle",
+    "policyname": "exercise_muscle_restrict_write",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "using_clause": "false",
+    "with_check_clause": "false"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "exercise_muscle",
+    "policyname": "exercise_muscle_select_all",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "true",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "exercise_reference_global",
+    "policyname": "exercise_reference_global_delete_creator",
+    "cmd": "DELETE",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "using_clause": "(created_by = auth.uid())",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "exercise_reference_global",
+    "policyname": "exercise_reference_global_insert_creator",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "using_clause": null,
+    "with_check_clause": "(created_by = auth.uid())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "exercise_reference_global",
+    "policyname": "exercise_reference_global_select_all",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "true",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "exercise_reference_global",
+    "policyname": "exercise_reference_global_update_creator",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "using_clause": "(created_by = auth.uid())",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "exercise_saved_references",
+    "policyname": "exercise_saved_references_self_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "using_clause": "(user_id = auth.uid())",
+    "with_check_clause": "(user_id = auth.uid())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "exercise_tags",
+    "policyname": "exercise_tags_restrict_write",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "using_clause": "false",
+    "with_check_clause": "false"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "exercise_tags",
+    "policyname": "exercise_tags_select_all",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "true",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "exercises",
+    "policyname": "exercises_restrict_delete",
+    "cmd": "DELETE",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "false",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "exercises",
+    "policyname": "exercises_restrict_insert",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": null,
+    "with_check_clause": "false"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "exercises",
+    "policyname": "exercises_restrict_update",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "false",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "exercises",
+    "policyname": "exercises_select_all",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "using_clause": "true",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "plan_days",
+    "policyname": "plan_days_all_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "user_can_edit_plan(( SELECT plan_weeks.plan_id\n   FROM plan_weeks\n  WHERE (plan_weeks.id = plan_days.plan_week_id)))",
+    "with_check_clause": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "plan_goals",
+    "policyname": "plan_goals_all_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "user_can_edit_plan(plan_id)",
+    "with_check_clause": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "plan_session_exercise_sets",
+    "policyname": "plan_session_exercise_sets_all_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "user_can_edit_plan(( SELECT plan_weeks.plan_id\n   FROM plan_weeks\n  WHERE (plan_weeks.id = ( SELECT plan_days.plan_week_id\n           FROM plan_days\n          WHERE (plan_days.id = ( SELECT plan_sessions.plan_day_id\n                   FROM plan_sessions\n                  WHERE (plan_sessions.id = ( SELECT plan_session_exercises.plan_session_id\n                           FROM plan_session_exercises\n                          WHERE (plan_session_exercises.id = plan_session_exercise_sets.plan_session_exercise_id)))))))))",
+    "with_check_clause": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "plan_session_exercises",
+    "policyname": "plan_session_exercises_all_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "user_can_edit_plan(( SELECT plan_weeks.plan_id\n   FROM plan_weeks\n  WHERE (plan_weeks.id = ( SELECT plan_days.plan_week_id\n           FROM plan_days\n          WHERE (plan_days.id = ( SELECT plan_sessions.plan_day_id\n                   FROM plan_sessions\n                  WHERE (plan_sessions.id = plan_session_exercises.plan_session_id)))))))",
+    "with_check_clause": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "plan_sessions",
+    "policyname": "plan_sessions_all_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "user_can_edit_plan(( SELECT plan_weeks.plan_id\n   FROM plan_weeks\n  WHERE (plan_weeks.id = ( SELECT plan_days.plan_week_id\n           FROM plan_days\n          WHERE (plan_days.id = plan_sessions.plan_day_id)))))",
+    "with_check_clause": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "plan_weeks",
+    "policyname": "plan_weeks_all_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "user_can_edit_plan(plan_id)",
+    "with_check_clause": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "plans",
+    "policyname": "plans_delete_policy",
+    "cmd": "DELETE",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "((created_by = auth.uid()) OR ((team_id IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM team_members tm\n  WHERE ((tm.team_id = plans.id) AND (tm.user_id = auth.uid()) AND (tm.role = ANY (ARRAY['admin'::team_member_role, 'coach'::team_member_role])))))))",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "plans",
+    "policyname": "plans_insert_policy",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": null,
+    "with_check_clause": "(created_by = auth.uid())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "plans",
+    "policyname": "plans_select_policy",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "((created_by = auth.uid()) OR (private = false) OR ((team_id IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM team_members tm\n  WHERE ((tm.team_id = plans.team_id) AND (tm.user_id = auth.uid()))))) OR (EXISTS ( SELECT 1\n   FROM user_plan_status ups\n  WHERE ((ups.plan_id = plans.id) AND (ups.user_id = auth.uid()) AND (ups.status = ANY (ARRAY['active'::plan_status, 'completed'::plan_status]))))))",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "plans",
+    "policyname": "plans_update_policy",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "((created_by = auth.uid()) OR ((team_id IS NOT NULL) AND (EXISTS ( SELECT 1\n   FROM team_members tm\n  WHERE ((tm.team_id = plans.team_id) AND (tm.user_id = auth.uid()) AND (tm.role = ANY (ARRAY['admin'::team_member_role, 'coach'::team_member_role])))))))",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "profiles",
+    "policyname": "Enable insert for authenticated users only",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "using_clause": null,
+    "with_check_clause": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "profiles",
+    "policyname": "profiles_delete_nobody",
+    "cmd": "DELETE",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "false",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "profiles",
+    "policyname": "profiles_insert_by_auth_trigger",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": null,
+    "with_check_clause": "(id = auth.uid())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "profiles",
+    "policyname": "profiles_select_all_authenticated",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "using_clause": "true",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "profiles",
+    "policyname": "profiles_update_self",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "(id = auth.uid())",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "session_exercise_logs",
+    "policyname": "session_exercise_logs_self_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "(EXISTS ( SELECT 1\n   FROM session_logs sl\n  WHERE ((sl.id = session_exercise_logs.session_log_id) AND (sl.user_id = auth.uid()))))",
+    "with_check_clause": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "session_logs",
+    "policyname": "session_logs_self_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "(user_id = auth.uid())",
+    "with_check_clause": "(user_id = auth.uid())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "set_logs",
+    "policyname": "set_logs_self_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "(EXISTS ( SELECT 1\n   FROM (session_logs sl\n     JOIN session_exercise_logs sel ON ((sl.id = sel.session_log_id)))\n  WHERE ((sel.id = set_logs.session_exercise_log_id) AND (sl.user_id = auth.uid()))))",
+    "with_check_clause": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "tags",
+    "policyname": "tags_restrict_write",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{authenticated}",
+    "using_clause": "false",
+    "with_check_clause": "false"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "tags",
+    "policyname": "tags_select_all",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "true",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "team_invitations",
+    "policyname": "team_invitations_delete_policy",
+    "cmd": "DELETE",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "((invited_by = auth.uid()) OR (EXISTS ( SELECT 1\n   FROM team_members tm\n  WHERE ((tm.team_id = team_invitations.team_id) AND (tm.user_id = auth.uid()) AND (tm.role = ANY (ARRAY['admin'::team_member_role, 'coach'::team_member_role]))))))",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "team_invitations",
+    "policyname": "team_invitations_insert_policy",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": null,
+    "with_check_clause": "((invited_by = auth.uid()) AND (EXISTS ( SELECT 1\n   FROM team_members tm\n  WHERE ((tm.team_id = team_invitations.team_id) AND (tm.user_id = auth.uid()) AND (tm.role = ANY (ARRAY['admin'::team_member_role, 'coach'::team_member_role]))))))"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "team_invitations",
+    "policyname": "team_invitations_select_policy",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "((invited_user_id = auth.uid()) OR (invited_email = auth.email()) OR (invited_by = auth.uid()) OR (EXISTS ( SELECT 1\n   FROM team_members tm\n  WHERE ((tm.team_id = team_invitations.team_id) AND (tm.user_id = auth.uid())))))",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "team_invitations",
+    "policyname": "team_invitations_update_policy",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "((invited_user_id = auth.uid()) OR (invited_email = auth.email()) OR (invited_by = auth.uid()) OR (EXISTS ( SELECT 1\n   FROM team_members tm\n  WHERE ((tm.team_id = team_invitations.team_id) AND (tm.user_id = auth.uid()) AND (tm.role = ANY (ARRAY['admin'::team_member_role, 'coach'::team_member_role]))))))",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "team_members",
+    "policyname": "team_members_access_policy",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "(EXISTS ( SELECT 1\n   FROM team_members tm_self\n  WHERE ((tm_self.user_id = auth.uid()) AND (tm_self.team_id = team_members.team_id))))",
+    "with_check_clause": "true"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "teams",
+    "policyname": "teams_delete_by_admin",
+    "cmd": "DELETE",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "(EXISTS ( SELECT 1\n   FROM team_members\n  WHERE ((team_members.team_id = teams.id) AND (team_members.user_id = auth.uid()) AND (team_members.role = 'admin'::team_member_role))))",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "teams",
+    "policyname": "teams_insert_by_creator",
+    "cmd": "INSERT",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": null,
+    "with_check_clause": "(created_by = auth.uid())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "teams",
+    "policyname": "teams_select_public_or_member",
+    "cmd": "SELECT",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "((is_private = false) OR (EXISTS ( SELECT 1\n   FROM team_members\n  WHERE ((team_members.team_id = teams.id) AND (team_members.user_id = auth.uid())))) OR (EXISTS ( SELECT 1\n   FROM team_invitations ti\n  WHERE ((ti.team_id = teams.id) AND (ti.status = 'pending'::invitation_status) AND ((ti.invited_user_id = auth.uid()) OR (ti.invited_email = auth.email()))))))",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "teams",
+    "policyname": "teams_update_by_admin",
+    "cmd": "UPDATE",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "(EXISTS ( SELECT 1\n   FROM team_members\n  WHERE ((team_members.team_id = teams.id) AND (team_members.user_id = auth.uid()) AND (team_members.role = 'admin'::team_member_role))))",
+    "with_check_clause": null
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_measurements",
+    "policyname": "user_measurements_self_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "(user_id = auth.uid())",
+    "with_check_clause": "(user_id = auth.uid())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_plan_goal_progress",
+    "policyname": "user_plan_goal_progress_self_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "(user_id = auth.uid())",
+    "with_check_clause": "(user_id = auth.uid())"
+  },
+  {
+    "schemaname": "public",
+    "tablename": "user_plan_status",
+    "policyname": "user_plan_status_self_access",
+    "cmd": "ALL",
+    "permissive": "PERMISSIVE",
+    "roles": "{public}",
+    "using_clause": "(user_id = auth.uid())",
+    "with_check_clause": "(user_id = auth.uid())"
+  }
+]
