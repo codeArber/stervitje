@@ -18,38 +18,36 @@ import { useWorkoutStore } from '@/stores/workout-store';
 import { usePendingBaselinesQuery, useStartWorkoutMutation } from '@/api/plan';
 import { toast } from 'sonner';
 import { SetBaselinesDialog } from '../SetBaselinesDialog';
+import { WorkoutFlowDiagram } from '../../workout/WorkoutFlowDiagram';
+
 
 interface SessionDisplayProps {
   session: PlanSession;
   isPlanStarted: boolean;
+  planId: string; // Ensure planId is passed if needed by WorkoutFlowDiagram or sub-components
 }
 
-export const SessionDisplay: React.FC<{ session: PlanSession, isPlanStarted: boolean, planId: string }> = ({ session, isPlanStarted, planId }) => {
+export const SessionDisplay: React.FC<SessionDisplayProps> = ({ session, isPlanStarted, planId }) => {
   const navigate = useNavigate();
   const startWorkoutInStore = useWorkoutStore((state) => state.startWorkout);
   const { mutate: startWorkoutMutation, isPending } = useStartWorkoutMutation();
-  
-  // State to manage the baseline dialog
+
   const [isBaselineDialogOpen, setIsBaselineDialogOpen] = useState(false);
-  
-  // This query will only run when the user clicks the start button
+
   const { data: pendingBaselines, refetch } = usePendingBaselinesQuery(planId, { enabled: false });
-  console.log(pendingBaselines);
+  // console.log("Pending Baselines for SessionDisplay:", pendingBaselines); // Debugging
 
   const proceedToWorkout = (newSessionLog: any) => {
-      startWorkoutInStore(newSessionLog, session);
-      navigate({ to: '/workout' });
+    startWorkoutInStore(newSessionLog, session);
+    navigate({ to: '/workout' });
   };
 
   const handleStartWorkout = async () => {
-    // Step 1: Check for pending baselines
     const { data: baselines } = await refetch();
-    
+
     if (baselines && baselines.length > 0) {
-      // Step 2: If baselines exist, open the dialog
       setIsBaselineDialogOpen(true);
     } else {
-      // Step 3: If no baselines, start the workout directly
       const toastId = toast.loading("Starting your session...");
       startWorkoutMutation(session.id, {
         onSuccess: (newSessionLog) => {
@@ -60,21 +58,19 @@ export const SessionDisplay: React.FC<{ session: PlanSession, isPlanStarted: boo
       });
     }
   };
-  
+
   const onBaselinesSet = () => {
-      // After baselines are set, we can now start the workout session
-      setIsBaselineDialogOpen(false);
-      const toastId = toast.loading("Starting your session...");
-      startWorkoutMutation(session.id, {
-        onSuccess: (newSessionLog) => {
-          toast.success("Workout started!", { id: toastId });
-          proceedToWorkout(newSessionLog);
-        },
-        onError: (err) => toast.error(`Failed to start: ${err.message}`, { id: toastId }),
-      });
+    setIsBaselineDialogOpen(false);
+    const toastId = toast.loading("Starting your session...");
+    startWorkoutMutation(session.id, {
+      onSuccess: (newSessionLog) => {
+        toast.success("Workout started!", { id: toastId });
+        proceedToWorkout(newSessionLog);
+      },
+      onError: (err) => toast.error(`Failed to start: ${err.message}`, { id: toastId }),
+    });
   };
 
-  
   const exerciseGroups = React.useMemo(() => {
     if (!session?.exercises) return [];
     const groups = session.exercises.reduce((acc, exercise) => {
@@ -83,72 +79,58 @@ export const SessionDisplay: React.FC<{ session: PlanSession, isPlanStarted: boo
       acc[groupKey].push(exercise);
       return acc;
     }, {} as Record<number, PlanExercise[]>);
-    return Object.values(groups).slice().sort((a, b) => a[0].order_within_session - b[0].order_within_session);
+    // Sort groups by the order_within_session of their first exercise
+    return Object.values(groups).sort((a, b) => a[0].order_within_session - b[0].order_within_session);
   }, [session]);
 
   return (
-    <>
-      {/* The Dialog is here but only opens when needed */}
+    <div className='w-full'>
       {pendingBaselines && (
         <SetBaselinesDialog
-            isOpen={isBaselineDialogOpen}
-            onClose={() => setIsBaselineDialogOpen(false)}
-            onBaselinesSet={onBaselinesSet}
-            goals={pendingBaselines}
+          isOpen={isBaselineDialogOpen}
+          onClose={() => setIsBaselineDialogOpen(false)}
+          onBaselinesSet={onBaselinesSet}
+          goals={pendingBaselines}
         />
       )}
-      
-      {/* The actual session card UI */}
-      <Card className="border-l-4 border-primary/50 bg-background/50 relative">
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div><CardTitle>{session.title || 'Workout Session'}</CardTitle></div>
-            {isPlanStarted && (
-              <Button size="sm" className="shrink-0" onClick={handleStartWorkout} disabled={isPending}>
-                <PlayCircle className="mr-2 h-4 w-4" />
-                {isPending ? 'Starting...' : 'Start'}
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        {/* ... rest of the card content ... */}
-      </Card>
-       {/* The actual session card UI */}
-      <Card className="border-l-4 border-primary/50 bg-background/50 relative">
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div><CardTitle>{session.title || 'Workout Session'}</CardTitle></div>
-            {isPlanStarted && (
-              <Button size="sm" className="shrink-0" onClick={handleStartWorkout} disabled={isPending}>
-                <PlayCircle className="mr-2 h-4 w-4" />
-                {isPending ? 'Starting...' : 'Start'}
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        {/* ... rest of the card content ... */}
-          <CardContent className="space-y-4">
-        {exerciseGroups.length > 0 ? (
-          exerciseGroups.map((groupExercises, index) => {
-            const isSuperset = groupExercises.length > 1;
-            const postGroupRest = groupExercises[groupExercises.length - 1]?.post_group_rest_seconds;
+      {/* {exerciseGroups.length > 0 ? (
+            // Render individual ExerciseGroupDisplay components
+            exerciseGroups.map((groupExercises, index) => {
+              const isSuperset = groupExercises.length > 1;
+              const postGroupRest = groupExercises[groupExercises.length - 1]?.post_group_rest_seconds;
 
-            return (
-              <ExerciseGroupDisplay
-                key={index}
-                exercises={groupExercises}
-                isSuperset={isSuperset}
-                postGroupRest={postGroupRest}
-              />
-            );
-          })
-        ) : (
-          <p className="text-sm text-center text-muted-foreground py-4">
-            No exercises have been added to this session.
-          </p>
-        )}
-      </CardContent>
-      </Card>
-    </>
+              return (
+                <ExerciseGroupDisplay
+                  key={index} // Use index or a unique ID for the key
+                  exercises={groupExercises}
+                  isSuperset={isSuperset}
+                  postGroupRest={postGroupRest}
+                />
+              );
+            })
+          ) : (
+            <p className="text-sm text-center text-muted-foreground py-4">
+              No exercises have been added to this session.
+            </p>
+          )} */}
+    <div className="relative w-full ">
+        {isPlanStarted  && (
+        <Button size="sm" className="shrink-0 absolute right-2 top-2" onClick={handleStartWorkout} disabled={isPending}>
+          <PlayCircle className="mr-2 h-4 w-4" />
+          {isPending ? 'Starting...' : 'Start'}
+        </Button>
+      )}
+    </div>
+      {/* NEW: Render WorkoutFlowDiagram ONCE after all groups */}
+      {exerciseGroups.length > 0 && (
+        <div className="mt-2 w-full">
+          <WorkoutFlowDiagram
+            exerciseGroups={exerciseGroups} // Pass all groups to the diagram
+            containerWidth={800} // You can make this responsive if needed
+          />
+        </div>
+      )}
+
+    </div>
   );
 };

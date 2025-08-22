@@ -127,7 +127,7 @@ function WorkspacePlanDetailsPage() {
       <section>
         <div className="space-y-4">
           <section>
-            <Tabs defaultValue="overall" className="w-full">
+            <Tabs defaultValue="compact" className="w-full">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-3xl font-bold tracking-tight">Workout Schedule</h2>
                 <TabsList>

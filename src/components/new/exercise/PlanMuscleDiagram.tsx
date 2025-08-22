@@ -123,13 +123,13 @@ const PlanMuscleDiagram: React.FC<ExerciseMuscleDiagramProps> = ({ muscles }) =>
   const customStyles = createCustomStyles();
 
   return (
-    <div className="group relative flex-shrink-0 flex flex-row gap-2 " >
+    <div className="group relative flex-shrink-0 flex flex-row gap-2 w-full justify-between flex-row" >
       {/* Front view - always visible */}
         <Model
           data={muscleData}
           styles={customStyles}
           key="anterior-model"
-          style={{ width: "80px", height: "100px" }} // Same size as back
+          style={{ width: "110px", height: "150px" }} // Same size as back
         />
       
       {/* Back view - visible on hover */}
@@ -138,7 +138,7 @@ const PlanMuscleDiagram: React.FC<ExerciseMuscleDiagramProps> = ({ muscles }) =>
           styles={customStyles}
           type='posterior'
           key="posterior-model"
-          style={{ width: "80px", height: "100px" }} // Same size as front
+          style={{ width: "110px", height: "150px" }} // Same size as front
         />
     </div>
   );

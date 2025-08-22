@@ -74,17 +74,12 @@ const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean, planId: st
 
 export const DayDisplay: React.FC<{ day: PlanDay, isPlanStarted: boolean, planId: string }> = ({ day, isPlanStarted, planId }) => {
   return (
-    <div className="px-4 py-3">
-      <div className="flex items-center gap-2 text-base font-semibold text-foreground">
-        <Calendar className="h-4 w-4 text-muted-foreground" />
-        <span>Day {day.day_number}: {day.title || 'Workout'}</span>
-        {day.is_rest_day && (
-          <span className="text-xs font-normal text-muted-foreground ml-1">(Rest Day)</span>
-        )}
-      </div>
-      <div className="pl-6 mt-2 space-y-3">
+    <div className="w-full">
+      <div className="py-0.5 space-y-3 ">
         {day.is_rest_day ? (
-          <p className="text-sm text-muted-foreground italic">This is a scheduled rest day. Time to recover!</p>
+          <div className="rounded px-2 py-1 bg-muted my-2">
+            <p className="text-sm text-muted-foreground italic">This is a scheduled rest day. Time to recover!</p>
+          </div>
         ) : (
           (day.sessions && day.sessions.length > 0) ? (
             day.sessions

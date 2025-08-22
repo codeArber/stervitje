@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { Dumbbell, PlusCircle, Star, Trophy, Users, ShieldCheck, Heart, GitFork, AlertTriangle, ArrowLeft, Home, Search, Calendar } from 'lucide-react';
+import { Dumbbell, PlusCircle, Star, Trophy, Users, ShieldCheck, Heart, GitFork, AlertTriangle, ArrowLeft, Home, Search, Calendar, Activity, KanbanSquareDashed } from 'lucide-react';
 import { PlanDisplay } from '@/components/new/plan/plan-display/PlanDisplay';
 import { PlanCalendarView } from '@/components/new/plan/plan-display/PlanCalendarView';
 import { PlanWeeklyNavigator } from '@/components/new/plan/plan-display/PlanWeeklyNavigator';
@@ -26,6 +26,8 @@ import { StartPlanController } from '@/components/new/plan/plan-edit/StartPlanCo
 import { Breadcrumb } from '@/components/new/TopNavigation';
 import { Label } from '@/components/ui/label';
 import PlanMuscleDiagram from '@/components/new/exercise/PlanMuscleDiagram';
+import { PlanGoalsDisplay } from '@/components/new/plan/plan-display/PlanGoalDisplay';
+import { EquipmentBadge } from '@/components/new/plan/plan-display/Equipments';
 
 // --- Main Route Component ---
 export const Route = createFileRoute('/_layout/explore/plans/$planId/')({
@@ -59,9 +61,9 @@ function PublicPlanDetailsPage() {
   };
 
   return (
-    <div className="">
+    <div className="flex flex-col gap-2">
       {/* --- Header (No changes here) --- */}
-      <header className="space-y-4">
+      <header className="space-y-4 flex flex-col ">
         <Breadcrumb
           items={[
             { label: "Home", href: "/", icon: Home },
@@ -70,68 +72,91 @@ function PublicPlanDetailsPage() {
             { label: plan.title } // Last item has no href (current page)
           ]}
         />
-        <Card className="border-0 shadow-xl bg-muted backdrop-blur-sm overflow-hidden">
-          <CardContent className="p-0 ">
-            <div className="flex justify-between items-start p-4">
-              <div className='flex flex-row justify-between w-full'>
-                <div className="flex flex-col gap-1">
-                  <div className="flex flex-row gap-2 items-center">
-                    <Label variant={'exerciseTitleBig'}>{plan.title}</Label>
-                    | <div className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-500" /><span>Level {plan.difficulty_level}/5</span></div>
+        <div className='flex flex-row justify-between w-full h-fit gap-4'>
+          <div className="border-0 shadow-xl bg-muted backdrop-blur-sm overflow-hidden rounded-2xl">
+            <div className="p-0 flex flex-col gap-0">
+              <div className="flex justify-between items-start p-4 pb-2">
+                <div className='flex flex-row justify-between w-full'>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex flex-row gap-2 items-center">
+                      <Label variant={'exerciseTitleBig'}>{plan.title}</Label>
+                      | <div className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-500" /><span>Level {plan.difficulty_level}/5</span></div>
 
+                    </div>
+                    <span className='text-muted-foreground text-xs flex flex-row gap-1'>By <Link to={'/explore/users/$userId'} params={{ userId: creator.id }} className="flex items-center gap-2 hover:underline">{creator.full_name || creator.username}</Link></span>
                   </div>
-                  <span className='text-muted-foreground text-xs flex flex-row gap-1'>By <Link to={'/explore/users/$userId'} params={{ userId: creator.id }} className="flex items-center gap-2 hover:underline">{creator.full_name || creator.username}</Link></span>
-                </div>
-                <div className='flex flex-row gap-4 items-center'>
-                  <div className="flex flex-row gap-2 items-center">
-                    <div className="flex items-center gap-1.5" title="Forks"><span>{plan.fork_count || 0}</span></div>
-
-                    <Button variant={'outline'}>
-                      <GitFork />
-                      <span>Fork</span>
-                    </Button>
-                  </div>
-                  <div className="flex flex-row gap-2 items-center">
-                    {user_plan_status ? (
-                      <Button size="lg" variant="secondary" asChild>
-                        <Link to="/dashboard">Go to My Dashboard</Link>
-                      </Button>
-                    ) : (
-                      <StartPlanController planId={plan.id} />
-                    )}
+                  <div className='flex flex-row gap-4 items-center'>
+                    <div className="flex flex-row gap-2 items-center">
+                      {!user_plan_status && (
+                        <StartPlanController planId={plan.id} />
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InfoCard title="Training Goals" icon={<KanbanSquareDashed className="h-5 w-5" />}>
+                  <PlanGoalsDisplay goals={goals || []} maxPreviewGoals={3} />
+                </InfoCard>
+
+                <InfoCard title="Required Equipment" icon={<Dumbbell className="h-5 w-5" />}>
+                  <EquipmentList equipment={required_equipment || []} />
+                </InfoCard>
+              </div>
+              <p className="text-md text-muted-foreground px-4 py-3">{plan.description}</p>
             </div>
-            <div className="flex items-center gap-1.5 px-4" title="Likes"><Heart className="h-4 w-4" /><span>{plan.like_count || 0}</span></div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              {/* ... */}
-              <InfoCard title="Plan Goals" icon={<Trophy className="h-5 w-5 text-green-500" />}>
-                {goals && goals.length > 0 ? (
-                  <ul className="space-y-3">{goals.map(goal => <li key={goal.id} className="flex items-start gap-3"><ShieldCheck className="h-4 w-4 mt-1 text-green-500 shrink-0" /><div><p className="font-semibold">{goal.title}</p><p className="text-sm text-muted-foreground">{goal.description}</p></div></li>)}</ul>
-                ) : <p className="text-sm text-muted-foreground">No specific goals listed.</p>}
-              </InfoCard>
-              <InfoCard title="Required Equipment" icon={<Dumbbell className="h-5 w-5 text-blue-500" />}>
-                {required_equipment && required_equipment.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">{required_equipment.map(item => <Badge key={item.id} variant="secondary">{item.name}</Badge>)}</div>
-                ) : <p className="text-sm text-muted-foreground">No specific equipment required.</p>}
-              </InfoCard>
-              <div className='flex flex-row justify-between w-full'>
+          </div>
+          <div className="flex items-center justify-center">
+            {/* Glassmorphism card */}
+            <Card className="relative w-full max-w-md bg-background/80 dark:bg-background/20 backdrop-blur-lg border border-border/50 shadow-2xl overflow-hidden">
+              {/* Animated gradient background inside card - subtle and theme-aware */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/15 to-accent/20 animate-pulse"></div>
+              <div className="absolute inset-0 bg-gradient-to-tr from-muted/30 via-primary/10 to-secondary/20 opacity-60 animate-pulse" style={{ animationDelay: '1s' }}></div>
+              <div className="absolute inset-0 bg-gradient-to-bl from-accent/15 via-muted/20 to-primary/15 opacity-40 animate-pulse" style={{ animationDelay: '2s' }}></div>
+
+              {/* Moving gradient orbs inside card - very subtle */}
+              <div className="absolute -top-12 -left-12 w-32 h-32 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full mix-blend-overlay filter blur-xl opacity-30 animate-bounce"></div>
+              <div className="absolute top-8 -right-8 w-24 h-24 bg-gradient-to-r from-accent/20 to-muted/20 rounded-full mix-blend-overlay filter blur-xl opacity-30 animate-bounce" style={{ animationDelay: '2s' }}></div>
+              <div className="absolute -bottom-8 left-8 w-28 h-28 bg-gradient-to-r from-secondary/20 to-primary/20 rounded-full mix-blend-overlay filter blur-xl opacity-30 animate-bounce" style={{ animationDelay: '4s' }}></div>
+              <CardHeader className="relative z-10 text-center">
+              </CardHeader>
+              <CardContent className="relative z-10 space-y-4">
                 <PlanMuscleDiagram muscles={muscle_activation_summary} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <p className="text-lg text-muted-foreground">{plan.description}</p>
-      </header>
+                <div className="flex flex-row justify-between w-full px-4">
+                  {/* Like Count */}
+                  <div className="flex items-center space-x-2">
+                    <Heart className="w-4 h-4 text-red-500" />
+                    <span className="text-sm text-muted-foreground">{plan.like_count}</span>
+                  </div>
 
-      <Separator />
+                  {/* Fork Count with Button */}
+                  <div className="flex items-center space-x-2">
+                    <button className="flex items-center space-x-1 bg-primary/20 hover:bg-primary/30 transition-all duration-200 px-2 py-1 rounded-md">
+                      <GitFork className="w-4 h-4 text-foreground" />
+                      <span className="text-sm text-foreground">{plan.fork_count}</span>
+                    </button>
+                  </div>
+
+                  {/* Active Count */}
+                  <div className="flex items-center space-x-2">
+                    <Activity className="w-4 h-4 text-green-500" />
+                    <span className="text-sm text-muted-foreground">0</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+      </header>
 
       {/* --- Plan Display Section (UPDATED with Tabs) --- */}
       <section>
-        <Tabs defaultValue="compact" className="w-full">
+        <Tabs defaultValue="compact" className="w-full mt-2">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-3xl font-bold tracking-tight">Workout Schedule</h2>
+            <div>
+
+            </div>
             <TabsList>
               <TabsTrigger value="overall">Overall</TabsTrigger>
               <TabsTrigger value="compact">Compact</TabsTrigger>
@@ -161,15 +186,31 @@ function PublicPlanDetailsPage() {
 // --- Reusable Sub-components for this page ---
 
 const InfoCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
-  <div className='p-4 flex flex-col gap-2'>
-    <div className='flex flex-row gap-2 items-center'>
-      {icon}<span>{title}</span>
+  <div className='p-4 border rounded-lg'>
+    <div className='flex items-center gap-2 mb-3'>
+      {icon}
+      <span className='font-medium text-sm'>{title}</span>
     </div>
     <div>
       {children}
     </div>
   </div>
 );
+const EquipmentList: React.FC<{ equipment: any[] }> = ({ equipment }) => {
+
+  if (!equipment || equipment.length === 0) {
+    return <p className="text-sm text-muted-foreground">No specific equipment required.</p>;
+  }
+
+  return (
+    <div className="flex flex-row items-center gap-2">
+      {equipment.map((item, index) => (
+
+        <EquipmentBadge key={item.id || index} equipmentName={item.name} />
+      ))}
+    </div>
+  );
+};
 
 const ErrorScreen = ({ message }: { message: string }) => (
   <div className="container py-16 text-center">

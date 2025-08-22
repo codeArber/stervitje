@@ -7,11 +7,41 @@ import type { FullPlan, PlanWeek } from '@/types/plan';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion } from '@/components/ui/accordion';
 import { DayDisplay } from './PlanDisplay'; // Make sure DayDisplay is exported
+import WeekIndicator from './WeekIndicator';
+import DayLevelWeekIndicator from './WeekIndicator';
 
 // This WeekDisplay can be refactored into its own file later for better organization.
-const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean, planId: string }> = ({ week, isPlanStarted, planId }) => {
+const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean, planId: string, planDetails: FullPlan }> = ({ week, isPlanStarted, planId, planDetails }) => {
   // Find the first day to default the accordion to open, if days exist
-  const firstDayId = (week.days ?? []).slice().sort((a,b) => a.day_number - b.day_number)[0]?.id;
+  const firstDayId = (week.days ?? []).slice().sort((a, b) => a.day_number - b.day_number)[0]?.id;
+  const { hierarchy, user_plan_status } = planDetails;
+  const weeks = hierarchy?.weeks ?? [];
+  const [activeWeekIndex, setActiveWeekIndex] = useState(0);
+
+  // Memoize activeWeek to prevent re-calculating on every render
+  const activeWeek = React.useMemo(() => weeks[activeWeekIndex], [weeks, activeWeekIndex]);
+  // Calculate week day data for the indicator
+  const { currentDay, weekDayData } = React.useMemo(() => {
+    if (!activeWeek) {
+      return { currentDay: 1, weekDayData: [] };
+    }
+
+    // Transform the week's days into the format needed by the indicator
+    const weekDayData = activeWeek.days.map(day => ({
+      day_number: day.day_number,
+      is_rest_day: day.is_rest_day,
+      has_sessions: day.sessions && day.sessions.length > 0
+    }));
+
+    // For now, just show day 1 as current (you can modify this logic)
+    // You could calculate this based on plan start date, current date, etc.
+    const currentDay = 1;
+
+    return {
+      currentDay,
+      weekDayData
+    };
+  }, [activeWeek]);
 
   return (
     <Card>
@@ -21,13 +51,26 @@ const WeekDisplay: React.FC<{ week: PlanWeek, isPlanStarted: boolean, planId: st
           <CardDescription>{week.description}</CardDescription>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className='gap-0'>
+
         {(week.days && week.days.length > 0) ? (
-          <Accordion type="single" collapsible className="w-full" defaultValue={firstDayId ? `day-${firstDayId}` : undefined}>
+          <Accordion  type="single" collapsible className="w-full" defaultValue={firstDayId ? `day-${firstDayId}` : undefined}>
             {week.days
               .slice().sort((a, b) => a.day_number - b.day_number)
               .map(day => (
-                <DayDisplay key={day.id} day={day} isPlanStarted={isPlanStarted} planId={planId} />
+                <div className='flex flex-col items-start justify-start py-3.5'>
+                  <div className="flex">
+                    <DayLevelWeekIndicator
+                      currentDay={day.day_number}
+                      weekDays={weekDayData}
+                      weekNumber={activeWeek.week_number}
+                      size="sm"
+                      showLabels={false}
+                      className="w-full"
+                    />
+                  </div>
+                  <DayDisplay key={day.id} day={day} isPlanStarted={isPlanStarted} planId={planId} />
+                </div>
               ))}
           </Accordion>
         ) : (
@@ -45,7 +88,7 @@ interface PlanWeeklyNavigatorProps {
 
 export const PlanWeeklyNavigator: React.FC<PlanWeeklyNavigatorProps> = ({ planDetails }) => {
   const [activeWeekIndex, setActiveWeekIndex] = useState(0);
-
+  console.log(planDetails)
   const { hierarchy, user_plan_status } = planDetails;
   const weeks = hierarchy?.weeks ?? [];
   const isPlanStarted = !!user_plan_status;
@@ -63,19 +106,45 @@ export const PlanWeeklyNavigator: React.FC<PlanWeeklyNavigatorProps> = ({ planDe
     );
   }
 
+  // Calculate week day data for the indicator
+  const { currentDay, weekDayData } = React.useMemo(() => {
+    if (!activeWeek) {
+      return { currentDay: 1, weekDayData: [] };
+    }
+
+    // Transform the week's days into the format needed by the indicator
+    const weekDayData = activeWeek.days.map(day => ({
+      day_number: day.day_number,
+      is_rest_day: day.is_rest_day,
+      has_sessions: day.sessions && day.sessions.length > 0
+    }));
+
+    // For now, just show day 1 as current (you can modify this logic)
+    // You could calculate this based on plan start date, current date, etc.
+    const currentDay = 1;
+
+    return {
+      currentDay,
+      weekDayData
+    };
+  }, [activeWeek]);
+
   return (
     // The main container is now just for the scrolling content.
     <div className="space-y-4">
-      
+
       {/* --- The Active Week Display --- */}
       {/* We add a key to the outer div to ensure React's diffing algorithm correctly
           re-renders the component and its children (like the Accordion) when the week changes. */}
+
+
       <div key={activeWeek?.id} className="animate-in fade-in duration-300">
         {activeWeek && (
           <WeekDisplay
             week={activeWeek}
             isPlanStarted={isPlanStarted}
             planId={planDetails.plan.id}
+            planDetails={planDetails}
           />
         )}
       </div>
@@ -102,7 +171,7 @@ export const PlanWeeklyNavigator: React.FC<PlanWeeklyNavigatorProps> = ({ planDe
             >
               W{week.week_number}
             </button>
-        ))}
+          ))}
       </div>
     </div>
   );
