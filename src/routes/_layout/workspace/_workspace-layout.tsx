@@ -15,7 +15,7 @@ function WorkspaceLayout() {
     <div className="flex flex-col min-h-screen">
       {/* Workspace specific header/selector */}
       <header className="border-b py-4 px-6 flex justify-between items-center bg-background z-10">
-        <h2 className="text-2xl font-bold">Workspace</h2>
+        <div></div>
         <WorkspaceSelector /> {/* <--- The selector is here */}
       </header>
 

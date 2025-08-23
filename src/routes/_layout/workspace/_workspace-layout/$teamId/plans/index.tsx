@@ -12,13 +12,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 // Icons
-import { FileText, PlusCircle, Trophy, Calendar, Lock, Unlock, ArrowRight } from 'lucide-react';
+import { FileText, PlusCircle, Trophy, Calendar, Lock, Unlock, ArrowRight, Home, BuildingIcon, Settings } from 'lucide-react';
 
 // Types
 import type { Plan } from '@/types/plan';
 import type { TeamMemberRole } from '@/types/team';
 import dayjs from 'dayjs';
 import { CreatePlanDialog } from '@/components/new/plan/CreatePlanDialog';
+import { Breadcrumb } from '@/components/new/TopNavigation';
 
 // Import the new CreatePlanDialog component
 
@@ -44,8 +45,15 @@ function WorkspacePlansPage() {
   const canCreatePlans = current_user_role === 'admin' || current_user_role === 'coach';
 
   return (
-    <div className="container mx-auto max-w-6xl py-8 space-y-8">
-      <header className="space-y-2">
+    <div className="pb-6 relative">
+      <Breadcrumb items={[
+        { label: 'Home', href: '/', icon: Home },
+        { label: 'Workspace', href: `/workspace/${team.id}`, icon: BuildingIcon },
+        { label: team.name, icon: Settings, href: `/workspace/${team.id}` },
+        { label: 'Plans', icon: FileText }
+      ]} className=' absolute -top-[68.5px]'/>
+
+      <header className="space-y-2 pt-8">
         <div className="flex justify-between items-center">
           <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
             <FileText className="h-9 w-9" /> Plans for "{team.name}"
@@ -72,13 +80,13 @@ function WorkspacePlansPage() {
               <FileText className="h-12 w-12 mx-auto" />
               <h3 className="text-lg font-semibold">No plans found for this workspace.</h3>
               <p>
-                {canCreatePlans 
+                {canCreatePlans
                   ? 'Start by creating your first workout plan!'
                   : 'Plans will appear here once created by an admin or coach.'
                 }
               </p>
               {canCreatePlans && (
-                <CreatePlanDialog teamId={team.id} /> 
+                <CreatePlanDialog teamId={team.id} />
               )}
             </div>
           </Card>
@@ -97,7 +105,7 @@ function WorkspacePlanCard({ plan, teamId }: { plan: Plan; teamId: string }) {
           <div className="flex items-center gap-3 text-muted-foreground mb-2">
             {plan.private ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
             <span className="font-semibold text-sm">
-                {plan.private ? "Private Plan" : "Public Plan"}
+              {plan.private ? "Private Plan" : "Public Plan"}
             </span>
           </div>
           <CardTitle>{plan.title}</CardTitle>
@@ -112,12 +120,12 @@ function WorkspacePlanCard({ plan, teamId }: { plan: Plan; teamId: string }) {
           </div>
         </CardContent>
         <CardFooter className="bg-muted/50 p-3 flex justify-between items-center text-sm">
-            <span>Created: {dayjs(plan.created_at).format('MMM D, YYYY')}</span>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/workspace/$teamId/plans/$planId" params={{ teamId: teamId, planId: plan.id }}>
-                View Plan <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
+          <span>Created: {dayjs(plan.created_at).format('MMM D, YYYY')}</span>
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/workspace/$teamId/plans/$planId" params={{ teamId: teamId, planId: plan.id }}>
+              View Plan <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
         </CardFooter>
       </Card>
     </Link>

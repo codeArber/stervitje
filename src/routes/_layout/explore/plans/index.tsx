@@ -23,7 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Search, Star, GitFork, Heart, Users } from 'lucide-react';
 import { PlanFilters } from '@/api/plan/endpoint';
 import { Breadcrumb } from '@/components/new/TopNavigation';
-import { PlanCard } from '..';
+import { PlanCardExplore } from '..';
 
 // Main Route Component
 export const Route = createFileRoute('/_layout/explore/plans/')({
@@ -148,7 +148,7 @@ function PlanResultsGrid({ filters }: { filters: PlanFilters }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-      {plans.map(plan => <PlanCard key={plan.id} planData={plan} />)}
+      {plans.map(plan => <PlanCardExplore key={plan.id} planData={plan} />)}
     </div>
   );
 }

@@ -33,7 +33,7 @@ export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({ team, currentWorks
     setCurrentWorkspace(team.id, {
       onSuccess: () => {
         toast.success(`'${team.name}' set as current workspace!`, { id: toastId });
-        navigate({ to: '/workspace/$teamId/plans', params: { teamId: team.id } });
+        navigate({ to: '/workspace/$teamId', params: { teamId: team.id } });
       },
       onError: (error) => {
         toast.error(`Error setting workspace: ${error.message}`, { id: toastId });

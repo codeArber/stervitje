@@ -16,7 +16,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 // Icons
 import {
   Users, Calendar, Trophy, Lock, Unlock, UserPlus, FileText,
-  Building as BuildingIcon, Settings, PlusCircle, LayoutDashboard
+  Building as BuildingIcon, Settings, PlusCircle, LayoutDashboard,
+  Home
 } from 'lucide-react'; // Added LayoutDashboard icon
 
 // Types
@@ -25,6 +26,7 @@ import type { Plan } from '@/types/plan';
 import type { Profile } from '@/types'; // Assuming Profile is also used here
 import { CreatePlanDialog } from '@/components/new/plan/CreatePlanDialog';
 import { InviteMemberDialog } from '@/components/new/InviteMemberDialog';
+import { Breadcrumb } from '@/components/new/TopNavigation';
 
 export const Route = createFileRoute('/_layout/workspace/_workspace-layout/$teamId/')({
   component: SpecificWorkspaceManagementPage, // Renamed for clarity: this is the management hub
@@ -48,9 +50,15 @@ function SpecificWorkspaceManagementPage() {
   const canManageTeam = current_user_role === 'admin' || current_user_role === 'coach';
 
   return (
-    <div className="container mx-auto max-w-6xl py-8 space-y-8">
+    <div className="pb-6 relative">
+      <Breadcrumb items={[
+        { label: 'Home', href: '/', icon: Home },
+        { label: 'Workspace', href: `/workspace/${team.id}`, icon: BuildingIcon },
+        { label: team.name, icon: Settings }
+      ]} className=' absolute -top-[68.5px]' />
+
       {/* Workspace Details Header */}
-      <header className="space-y-4">
+      <header className="space-y-4 pt-8">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-4xl font-bold tracking-tighter flex items-center gap-3">

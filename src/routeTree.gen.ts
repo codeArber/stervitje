@@ -35,6 +35,7 @@ import { Route as LayoutExplorePlansIndexImport } from './routes/_layout/explore
 import { Route as LayoutExerciseExerciseIdIndexImport } from './routes/_layout/exercise/$exerciseId/index'
 import { Route as LayoutExploreTeamsTeamIdImport } from './routes/_layout/explore/teams/$teamId'
 import { Route as LayoutWorkspaceWorkspaceLayoutTeamIdIndexImport } from './routes/_layout/workspace/_workspace-layout/$teamId/index'
+import { Route as LayoutProfileMeasurementsDetailsIndexImport } from './routes/_layout/profile/measurements/details/index'
 import { Route as LayoutProfileMeasurementsAddIndexImport } from './routes/_layout/profile/measurements/add/index'
 import { Route as LayoutExploreUsersUserIdIndexImport } from './routes/_layout/explore/users/$userId/index'
 import { Route as LayoutExplorePlansPlanIdIndexImport } from './routes/_layout/explore/plans/$planId/index'
@@ -192,6 +193,13 @@ const LayoutWorkspaceWorkspaceLayoutTeamIdIndexRoute =
     id: '/$teamId/',
     path: '/$teamId/',
     getParentRoute: () => LayoutWorkspaceWorkspaceLayoutRoute,
+  } as any)
+
+const LayoutProfileMeasurementsDetailsIndexRoute =
+  LayoutProfileMeasurementsDetailsIndexImport.update({
+    id: '/profile/measurements/details/',
+    path: '/profile/measurements/details/',
+    getParentRoute: () => LayoutRoute,
   } as any)
 
 const LayoutProfileMeasurementsAddIndexRoute =
@@ -436,6 +444,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutProfileMeasurementsAddIndexImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/profile/measurements/details/': {
+      id: '/_layout/profile/measurements/details/'
+      path: '/profile/measurements/details'
+      fullPath: '/profile/measurements/details'
+      preLoaderRoute: typeof LayoutProfileMeasurementsDetailsIndexImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/workspace/_workspace-layout/$teamId/': {
       id: '/_layout/workspace/_workspace-layout/$teamId/'
       path: '/$teamId'
@@ -560,6 +575,7 @@ interface LayoutRouteChildren {
   LayoutExplorePlansPlanIdIndexRoute: typeof LayoutExplorePlansPlanIdIndexRoute
   LayoutExploreUsersUserIdIndexRoute: typeof LayoutExploreUsersUserIdIndexRoute
   LayoutProfileMeasurementsAddIndexRoute: typeof LayoutProfileMeasurementsAddIndexRoute
+  LayoutProfileMeasurementsDetailsIndexRoute: typeof LayoutProfileMeasurementsDetailsIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
@@ -583,6 +599,8 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutExploreUsersUserIdIndexRoute: LayoutExploreUsersUserIdIndexRoute,
   LayoutProfileMeasurementsAddIndexRoute:
     LayoutProfileMeasurementsAddIndexRoute,
+  LayoutProfileMeasurementsDetailsIndexRoute:
+    LayoutProfileMeasurementsDetailsIndexRoute,
 }
 
 const LayoutRouteWithChildren =
@@ -613,6 +631,7 @@ export interface FileRoutesByFullPath {
   '/explore/plans/$planId': typeof LayoutExplorePlansPlanIdIndexRoute
   '/explore/users/$userId': typeof LayoutExploreUsersUserIdIndexRoute
   '/profile/measurements/add': typeof LayoutProfileMeasurementsAddIndexRoute
+  '/profile/measurements/details': typeof LayoutProfileMeasurementsDetailsIndexRoute
   '/workspace/$teamId': typeof LayoutWorkspaceWorkspaceLayoutTeamIdIndexRoute
   '/workspace/$teamId/plans/new': typeof LayoutWorkspaceWorkspaceLayoutTeamIdPlansNewRoute
   '/workspace/$teamId/invite': typeof LayoutWorkspaceWorkspaceLayoutTeamIdInviteIndexRoute
@@ -645,6 +664,7 @@ export interface FileRoutesByTo {
   '/explore/plans/$planId': typeof LayoutExplorePlansPlanIdIndexRoute
   '/explore/users/$userId': typeof LayoutExploreUsersUserIdIndexRoute
   '/profile/measurements/add': typeof LayoutProfileMeasurementsAddIndexRoute
+  '/profile/measurements/details': typeof LayoutProfileMeasurementsDetailsIndexRoute
   '/workspace/$teamId': typeof LayoutWorkspaceWorkspaceLayoutTeamIdIndexRoute
   '/workspace/$teamId/plans/new': typeof LayoutWorkspaceWorkspaceLayoutTeamIdPlansNewRoute
   '/workspace/$teamId/invite': typeof LayoutWorkspaceWorkspaceLayoutTeamIdInviteIndexRoute
@@ -681,6 +701,7 @@ export interface FileRoutesById {
   '/_layout/explore/plans/$planId/': typeof LayoutExplorePlansPlanIdIndexRoute
   '/_layout/explore/users/$userId/': typeof LayoutExploreUsersUserIdIndexRoute
   '/_layout/profile/measurements/add/': typeof LayoutProfileMeasurementsAddIndexRoute
+  '/_layout/profile/measurements/details/': typeof LayoutProfileMeasurementsDetailsIndexRoute
   '/_layout/workspace/_workspace-layout/$teamId/': typeof LayoutWorkspaceWorkspaceLayoutTeamIdIndexRoute
   '/_layout/workspace/_workspace-layout/$teamId/plans/new': typeof LayoutWorkspaceWorkspaceLayoutTeamIdPlansNewRoute
   '/_layout/workspace/_workspace-layout/$teamId/invite/': typeof LayoutWorkspaceWorkspaceLayoutTeamIdInviteIndexRoute
@@ -717,6 +738,7 @@ export interface FileRouteTypes {
     | '/explore/plans/$planId'
     | '/explore/users/$userId'
     | '/profile/measurements/add'
+    | '/profile/measurements/details'
     | '/workspace/$teamId'
     | '/workspace/$teamId/plans/new'
     | '/workspace/$teamId/invite'
@@ -748,6 +770,7 @@ export interface FileRouteTypes {
     | '/explore/plans/$planId'
     | '/explore/users/$userId'
     | '/profile/measurements/add'
+    | '/profile/measurements/details'
     | '/workspace/$teamId'
     | '/workspace/$teamId/plans/new'
     | '/workspace/$teamId/invite'
@@ -782,6 +805,7 @@ export interface FileRouteTypes {
     | '/_layout/explore/plans/$planId/'
     | '/_layout/explore/users/$userId/'
     | '/_layout/profile/measurements/add/'
+    | '/_layout/profile/measurements/details/'
     | '/_layout/workspace/_workspace-layout/$teamId/'
     | '/_layout/workspace/_workspace-layout/$teamId/plans/new'
     | '/_layout/workspace/_workspace-layout/$teamId/invite/'
@@ -840,7 +864,8 @@ export const routeTree = rootRoute
         "/_layout/profile/performance/",
         "/_layout/explore/plans/$planId/",
         "/_layout/explore/users/$userId/",
-        "/_layout/profile/measurements/add/"
+        "/_layout/profile/measurements/add/",
+        "/_layout/profile/measurements/details/"
       ]
     },
     "/_layout/": {
@@ -949,6 +974,10 @@ export const routeTree = rootRoute
     },
     "/_layout/profile/measurements/add/": {
       "filePath": "_layout/profile/measurements/add/index.tsx",
+      "parent": "/_layout"
+    },
+    "/_layout/profile/measurements/details/": {
+      "filePath": "_layout/profile/measurements/details/index.tsx",
       "parent": "/_layout"
     },
     "/_layout/workspace/_workspace-layout/$teamId/": {

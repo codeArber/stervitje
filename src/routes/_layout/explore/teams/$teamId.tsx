@@ -14,7 +14,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Icons
-import { Users, Dumbbell, UserPlus, ArrowRight } from 'lucide-react';
+import { Users, Dumbbell, UserPlus, ArrowRight, Home, Compass, BuildingIcon } from 'lucide-react';
+import { PlanCardExplore } from '..';
+import { Breadcrumb } from '@/components/new/TopNavigation';
 
 export const Route = createFileRoute('/_layout/explore/teams/$teamId')({
   component: PublicTeamProfilePage,
@@ -23,7 +25,7 @@ export const Route = createFileRoute('/_layout/explore/teams/$teamId')({
 function PublicTeamProfilePage() {
   const { teamId } = Route.useParams();
   const { data: details, isLoading, isError, error } = useTeamDetailsQuery(teamId);
-
+console.log('Team Details:', details);
   if (isLoading) {
     return <TeamDetailsSkeleton />;
   }
@@ -43,7 +45,13 @@ function PublicTeamProfilePage() {
   const publicMembers = members?.filter(m => m.role === 'admin' || m.role === 'coach');
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="pb-6">
+      <Breadcrumb items={[
+        { label: 'Home', href: '/', icon: Home },
+        { label: 'Explore', href: `/explore`, icon: Compass },
+        { label: 'Teams', href: `/explore/teams`, icon: BuildingIcon },
+        { label: team.name, icon: BuildingIcon },
+      ]} />
       {/* Header */}
       <header className="mb-8 flex flex-col md:flex-row gap-6 items-start">
         <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center shrink-0">
@@ -91,6 +99,7 @@ function PublicTeamProfilePage() {
 function PlansTab({ plans }: { plans: Plan[] | null }) {
   // On a public page, we should only show public plans
   const publicPlans = plans?.filter(p => !p.private);
+  console.log('Public Plans:', publicPlans);
 
   return (
     <Card>
@@ -101,15 +110,7 @@ function PlansTab({ plans }: { plans: Plan[] | null }) {
       <CardContent className="space-y-3">
         {publicPlans && publicPlans.length > 0 ? (
           publicPlans.map(plan => (
-            <Link key={plan.id} to="/plans/$planId" params={{ planId: plan.id }}>
-              <div className="p-3 rounded-md hover:bg-muted transition-colors flex justify-between items-center">
-                <div>
-                  <p className="font-semibold">{plan.title}</p>
-                  <p className="text-sm text-muted-foreground">{plan.description}</p>
-                </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </Link>
+           <PlanCardExplore planData={plan} />
           ))
         ) : (
           <p className="text-center text-muted-foreground py-6">This team has not published any public plans yet.</p>

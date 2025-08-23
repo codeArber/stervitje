@@ -8,56 +8,68 @@ import {
   LinearScale,
   PointElement,
   LineElement,
-  Tooltip, // Only Tooltip, no Legend or Title needed for mini graph
+  Tooltip,
+  Filler, // Import Filler for the background color
 } from 'chart.js';
 import dayjs from 'dayjs';
+import type { Tables } from '@/types/database.types';
 
-import type { Tables } from '@/types/database.types'; // Your database types
-
-// Register only the necessary Chart.js components for a mini graph
+// Register the necessary Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
-  Tooltip
+  Tooltip,
+  Filler
 );
 
 interface MiniMeasurementGraphProps {
   measurements: Tables<'user_measurements'>[];
+  // NEW: Props to make the graph dynamic
+  metricKey: keyof Tables<'user_measurements'>; // The key in your database table (e.g., 'waist_cm')
+  metricLabel: string; // The display name (e.g., 'Waist')
+  metricUnit: string;  // The unit (e.g., 'cm' or 'kg')
 }
 
-export const MiniMeasurementGraph: React.FC<MiniMeasurementGraphProps> = ({ measurements }) => {
+export const MiniMeasurementGraph: React.FC<MiniMeasurementGraphProps> = ({ 
+  measurements, 
+  metricKey, 
+  metricLabel,
+  metricUnit
+}) => {
   const validMeasurements = measurements || [];
 
-  // Filter for only 'weight_kg' data points that are not null, and sort by date
-  const weightDataPoints = validMeasurements
-    .filter(m => m.weight_kg !== null && m.weight_kg !== undefined)
+  // UPDATED: Filter for the selected metric that is not null, and sort by date
+  const dataPoints = validMeasurements
+    .filter(m => m[metricKey] !== null && m[metricKey] !== undefined)
     .sort((a, b) => dayjs(a.measurement_date).valueOf() - dayjs(b.measurement_date).valueOf());
 
-  if (weightDataPoints.length < 2) { // Need at least two points to draw a line
+  // UPDATED: Show a generic message if not enough data
+  if (dataPoints.length < 2) {
     return (
       <div className="text-muted-foreground text-xs text-center py-2">
-        Need at least 2 weight entries for graph.
+        Need at least 2 entries for {metricLabel} to graph.
       </div>
     );
   }
 
-  const labels = weightDataPoints.map(m => dayjs(m.measurement_date).format('MMM YY'));
-  const data = weightDataPoints.map(m => m.weight_kg);
+  const labels = dataPoints.map(m => dayjs(m.measurement_date).format('MMM YY'));
+  // UPDATED: Map the data from the dynamic metricKey
+  const data = dataPoints.map(m => m[metricKey] as number);
 
   const chartData = {
     labels,
     datasets: [
       {
-        label: 'Weight',
+        label: metricLabel, // Use the dynamic label
         data: data,
         borderColor: 'rgb(75, 192, 192)',
-        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-        tension: 0.4, // Smooth line
-        pointRadius: 3, // Smaller points
+        backgroundColor: 'rgba(75, 192, 192, 0.2)', // Adjusted for better visuals
+        tension: 0.4,
+        pointRadius: 3,
         pointHoverRadius: 5,
-        fill: true, // Fill area under the line
+        fill: true,
       },
     ],
   };
@@ -66,50 +78,32 @@ export const MiniMeasurementGraph: React.FC<MiniMeasurementGraphProps> = ({ meas
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: false, // No legend for mini graph
-      },
-      title: {
-        display: false, // No title for mini graph
-      },
+      legend: { display: false },
+      title: { display: false },
       tooltip: {
         mode: 'index' as const,
         intersect: false,
         callbacks: {
-          title: () => '', // No title in tooltip for mini graph
+          title: () => '',
+          // UPDATED: Show the dynamic value and unit in the tooltip
           label: function(context: any) {
-            return `${context.parsed.y} kg`; // Only show weight value
+            return `${context.parsed.y} ${metricUnit}`;
           },
         },
       },
     },
     scales: {
-      x: {
-        display: false, // No x-axis labels for mini graph
-        grid: {
-          display: false,
-        },
-      },
-      y: {
-        display: false, // No y-axis labels for mini graph
-        grid: {
-          display: false,
-        },
-        beginAtZero: false,
-      },
+      x: { display: false, grid: { display: false } },
+      y: { display: false, grid: { display: false }, beginAtZero: false },
     },
     elements: {
-      line: {
-        borderWidth: 2, // Thicker line
-      },
-      point: {
-        hitRadius: 10, // Easier to hit points on touch devices
-      },
+      line: { borderWidth: 2 },
+      point: { hitRadius: 10 },
     },
   };
 
   return (
-    <div className="relative h-[100px] w-full"> {/* Fixed height for the mini graph */}
+    <div className="relative h-[100px] w-full">
       <Line data={chartData} options={options} />
     </div>
   );

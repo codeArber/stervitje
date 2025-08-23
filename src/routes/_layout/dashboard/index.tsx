@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Dumbbell, Users, Mail, Compass, PlayCircle, ArrowRight, Building } from 'lucide-react';
+import { Dumbbell, Users, Mail, Compass, PlayCircle, ArrowRight, Building, Home } from 'lucide-react';
 import { usePendingInvitationsQuery } from '@/api/team';
 import { InvitationCard } from '@/components/new/team/InvitationCard';
 import { Breadcrumb } from '@/components/new/TopNavigation';
@@ -45,7 +45,11 @@ function DashboardPage() {
 
   return (
     <div className="container mx-auto">
-      <Breadcrumb currentPath={location.pathname} />
+      <Breadcrumb items={[
+        { label: 'Home', icon: Home },
+      ]}
+      />
+
 
       <header className="mb-8">
         <h1 className="text-4xl font-bold tracking-tight">

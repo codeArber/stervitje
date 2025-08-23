@@ -2,6 +2,7 @@
 
 import type { Plan } from "..";
 import type { Enums, Tables, TablesInsert } from "../database.types";
+import { RichPlanCardData } from "../explore";
 
 export type Team = Tables<'teams'>;
 export type Profile = Tables<'profiles'>;
@@ -26,9 +27,19 @@ export type RichTeamCardData = Team & {
     plans_count: number;
 };
 
+export interface GetTeamDetailsAndMembersResponse {
+  team: Tables<'teams'>;
+  members: Array<{
+    profile: Tables<'profiles'>;
+    role: Enums<'team_member_role'>;
+  }> | null; // Can be null if no members
+  current_user_role: Enums<'team_member_role'> | null; // Can be null if not a member
+}
+
 export type TeamDetails = {
   team: Tables<'teams'>;
   members: TeamMemberWithProfile[] | null;
-  plans: Plan[] | null;
+  plans: RichPlanCardData[] | null;
+  
   current_user_role: TeamMemberRole | null; // <-- ADD THIS LINE
 };

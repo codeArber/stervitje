@@ -2,7 +2,7 @@
 
 import { createFileRoute, redirect, Link } from '@tanstack/react-router';
 // Import supabaseClient directly for use in beforeLoad (no hooks here)
-import { supabase } from '@/lib/supabase/supabaseClient'; 
+import { supabase } from '@/lib/supabase/supabaseClient';
 
 // Components for the fallback UI (if no workspace is selected)
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,8 @@ import { Building, PlusCircle } from 'lucide-react';
 import { useDashboardSummaryQuery } from '@/api/dashboard'; // Used only if the component renders
 import { WorkspaceCard, WorkspaceCardSkeleton } from '@/components/new/workspace/WorkspaceCard';
 import { CreateTeamDialog } from '@/components/new/team/CreateTeamDialog';
+import { Breadcrumb } from '@/components/new/TopNavigation';
+import { Label } from '@/components/ui/label';
 
 export const Route = createFileRoute('/_layout/workspace/')({
   beforeLoad: async ({ context }) => {
@@ -53,47 +55,29 @@ function WorkspaceSelectionPage() {
   const currentWorkspaceId = summary?.current_workspace_id; // Will be null or undefined here
 
   return (
-    <div className="container mx-auto py-8">
-      {/* Header for the selection page */}
-      <header className="mb-8 space-y-2 text-center">
-        <h1 className="text-4xl font-bold tracking-tight flex items-center justify-center gap-2">
-          <Building className="h-9 w-9" /> Select Your Workspace
-        </h1>
-        <p className="text-lg text-muted-foreground">
-          You haven't selected a primary workspace. Please choose one to begin managing your plans and team activities.
-        </p>
-      </header>
-
-      <Separator />
-
-      {/* Action buttons for selection/creation */}
-      <div className="text-center my-8">
-        <CreateTeamDialog />
-      </div>
-
-      <Separator />
-
+    <div className="pb-6">
+      <Breadcrumb currentPath={location.pathname} rightContent={<CreateTeamDialog />} />
       {/* List of all teams/workspaces for selection */}
       <section className="space-y-4 mt-8">
-        <h2 className="text-2xl font-bold tracking-tight text-center">Your Available Workspaces</h2>
+        <Label variant='sectionTitle'>Your Available Workspaces</Label>
         {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 3 }).map((_, i) => <WorkspaceCardSkeleton key={i} />)}
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => <WorkspaceCardSkeleton key={i} />)}
+          </div>
         ) : isError ? (
-            <div className="text-destructive text-center py-10">Error loading workspaces: {error.message}</div>
+          <div className="text-destructive text-center py-10">Error loading workspaces: {error.message}</div>
         ) : !summary?.my_teams || summary.my_teams.length === 0 ? (
-            <div className="text-center py-10 border-2 border-dashed rounded-lg">
-                <h3 className="text-lg font-semibold">You're not on any teams yet!</h3>
-                <p className="text-muted-foreground mt-1">Create your first personal workspace or join a team.</p>
-            </div>
+          <div className="text-center py-10 border-2 border-dashed rounded-lg">
+            <h3 className="text-lg font-semibold">You're not on any teams yet!</h3>
+            <p className="text-muted-foreground mt-1">Create your first personal workspace or join a team.</p>
+          </div>
         ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {/* WorkspaceCard has the "Set as Current" logic */}
-                {summary.my_teams.map(team => (
-                    <WorkspaceCard key={team.id} team={team} currentWorkspaceId={currentWorkspaceId} />
-                ))}
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* WorkspaceCard has the "Set as Current" logic */}
+            {summary.my_teams.map(team => (
+              <WorkspaceCard key={team.id} team={team} currentWorkspaceId={currentWorkspaceId} />
+            ))}
+          </div>
         )}
       </section>
     </div>

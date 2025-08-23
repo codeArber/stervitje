@@ -38,7 +38,9 @@ import {
   ChevronDown,
   Settings2,
   Sparkles,
-  ArrowLeft
+  ArrowLeft,
+  Home,
+  Swords
 } from 'lucide-react';
 import { useTagsQuery } from '@/api/plan';
 import { getExerciseImageUrl } from '@/types/storage';
@@ -59,15 +61,20 @@ function ExerciseListPage() {
 
   return (
     <div className="min-h-screen">
-      <TopNavigation
-        currentPath={location.pathname}
-        rightContent={
+      
+       <TopNavigation
+        items={[
+        { label: 'Home', href: '/', icon: Home },
+          { label: "Exercises", icon: Swords },
+        ]}
+         rightContent={
           <ExerciseFiltersPanel
             filters={filters}
             setFilters={setFilters}
           />
         }
       />
+
 
       <div className="container mx-auto">
         <main>

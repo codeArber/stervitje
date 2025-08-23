@@ -80,7 +80,7 @@ export function Breadcrumb({ items, currentPath, className, rightContent }: Brea
   if (finalBreadcrumbItems.length === 0 && !rightContent) return null;
 
   return (
-    <nav className={cn("flex items-start justify-between text-sm text-muted-foreground py-6", className)}> {/* CHANGED: items-start */}
+    <nav className={cn("flex items-start justify-between text-sm text-muted-foreground py-6 z-20", className)}> {/* CHANGED: items-start */}
       <div className="flex items-center space-x-1"> {/* This div groups the breadcrumb items horizontally */}
         {finalBreadcrumbItems.map((item, index) => {
           const isLast = index === finalBreadcrumbItems.length - 1;

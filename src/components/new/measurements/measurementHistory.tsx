@@ -1,64 +1,52 @@
-// FILE: src/components/measurements/measurement-history.tsx
+// FILE: src/components/new/measurements/measurementHistory.tsx
 
 import React from 'react';
-import { useAuthStore } from '@/stores/auth-store';
-import { useUserMeasurementsQuery } from '@/api/user'; // Only need query hook here
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Ruler, TrendingUp } from 'lucide-react'; // Icons
+import dayjs from 'dayjs';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Link } from '@tanstack/react-router';
+import { FilePenLine, Trash2, History } from 'lucide-react';
+import type { Tables } from '@/types/database.types';
+// UPDATED: Import the new history diagram
+import { MeasurementHistoryDiagram } from './MeasurementHistoryDiagram';
 
+interface MeasurementHistoryProps {
+  measurements: Tables<'user_measurements'>[];
+  isLoading: boolean;
+  isError: boolean;
+  error: Error | null;
+}
 
-import type { Tables } from '@/types/database.types'; // For UserMeasurement type
-import { MeasurementEntryCard } from './MeasurementEntryCard';
-import { MeasurementsHistorySkeleton } from './measurementsSkeleton';
-
-export const MeasurementHistory: React.FC = () => {
-  const { user } = useAuthStore();
-  const { data: measurements, isLoading, isError, error } = useUserMeasurementsQuery(user?.id);
-
-  if (!user) {
+export function MeasurementHistory({ measurements, isLoading, isError, error }: MeasurementHistoryProps) {
+  if (isLoading) return <div>Loading measurement history...</div>;
+  if (isError) return <div className="text-destructive">Error loading history: {error?.message}</div>;
+  if (!measurements || measurements.length === 0) {
     return (
-      <div className="text-destructive text-center py-8">
-        Please log in to view your measurement history.
-      </div>
+      <section className="space-y-4 text-center">
+        <h2 className="text-2xl font-bold tracking-tight flex items-center justify-center gap-2">
+          <History className="h-6 w-6" /> Measurement History
+        </h2>
+        <p className="text-muted-foreground">No past measurements found.</p>
+      </section>
     );
   }
 
+  const sortedMeasurements = [...measurements].sort(
+    (a, b) => new Date(b.measurement_date).getTime() - new Date(a.measurement_date).getTime()
+  );
+
   return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <TrendingUp className="h-6 w-6" />
-          Measurement History
-        </h2>
-        {measurements && measurements.length > 0 && (
-          <Badge variant="secondary" className="text-sm">
-            {measurements.length} {measurements.length === 1 ? 'Entry' : 'Entries'}
-          </Badge>
-        )}
-      </div>
-      
-      {isLoading ? (
-        <MeasurementsHistorySkeleton />
-      ) : isError ? (
-        <Card className="p-8 text-center">
-          <div className="text-destructive">Error loading history: {error?.message}</div>
-        </Card>
-      ) : !measurements || measurements.length === 0 ? (
-        <Card className="p-8 text-center">
-          <div className="space-y-2">
-            <Ruler className="h-12 w-12 mx-auto text-muted-foreground" />
-            <h3 className="text-lg font-semibold">No measurements recorded yet</h3>
-            <p className="text-muted-foreground">Add your first measurement above to start tracking your progress!</p>
-          </div>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {measurements.map(m => (
-            <MeasurementEntryCard key={m.id} measurement={m} />
+    <section className="space-y-6">
+      <div className="space-y-6">
+        <div>
+          {sortedMeasurements.map((measurement) => (
+            <div className='flex flex-col gap-1 py-1'>
+                <div>{dayjs(measurement.created_at).format('YYYY-MM-DD')}</div>
+              <MeasurementHistoryDiagram measurement={measurement} key={measurement.id} />
+            </div>
           ))}
         </div>
-      )}
+      </div>
     </section>
   );
-};
+}

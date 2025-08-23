@@ -30,6 +30,7 @@ export const OverallTrendsView: React.FC = () => {
         date: new Date(d.workout_date),
         count: 1,
     })) || [];
+    console.log(heatmapValues)
 
     return (
         <div className="space-y-6">

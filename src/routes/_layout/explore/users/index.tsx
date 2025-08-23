@@ -19,6 +19,7 @@ import { Link } from '@tanstack/react-router';
 
 // --- Icons ---
 import { Search, User, Star } from 'lucide-react';
+import { Breadcrumb } from '@/components/new/TopNavigation';
 
 // --- Main Route Component ---
 export const Route = createFileRoute('/_layout/explore/users/')({
@@ -35,7 +36,9 @@ function ExploreUsersPage() {
   };
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="pb-6">
+      <Breadcrumb currentPath={location.pathname} />
+
       {/* Header */}
       <header className="mb-8 space-y-2">
         <h1 className="text-4xl font-bold tracking-tight">Explore Users & Coaches</h1>
@@ -105,7 +108,7 @@ function UserResultsGrid({ filters }: { filters: UserFilters }) {
 function UserCard({ user }: { user: RichUserCardData }) {
   // Determine if the user is a coach based on analytics
   const isCoach = (user.analytics?.total_plans_created ?? 0) > 0 || (user.analytics?.total_clients ?? 0) > 0;
-  
+
   return (
     <Link to="/explore/users/$userId" params={{ userId: user.id }} className="group">
       <Card className="h-full flex flex-col items-center text-center p-4 hover:border-primary hover:shadow-lg hover:-translate-y-1 transition-all">
@@ -115,28 +118,28 @@ function UserCard({ user }: { user: RichUserCardData }) {
             {(user.full_name || user.username || 'U').charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
-        
+
         <h3 className="font-semibold leading-tight truncate w-full">{user.full_name || user.username}</h3>
         <p className="text-sm text-muted-foreground">@{user.username}</p>
 
         {isCoach && (
-            <Badge variant="default" className="mt-3">
-                <Star className="h-3 w-3 mr-1.5" />
-                Coach
-            </Badge>
+          <Badge variant="default" className="mt-3">
+            <Star className="h-3 w-3 mr-1.5" />
+            Coach
+          </Badge>
         )}
-        
+
         <div className="flex-grow" />
 
         <div className="flex justify-around text-xs text-muted-foreground font-medium mt-4 w-full border-t pt-3">
-            <div className="flex flex-col items-center" title="Plans Created">
-                <span className="font-bold text-base text-foreground">{user.analytics?.total_plans_created || 0}</span>
-                <span>Plans</span>
-            </div>
-            <div className="flex flex-col items-center" title="Active Clients or Users Coached">
-                <span className="font-bold text-base text-foreground">{user.analytics?.total_clients || 0}</span>
-                <span>Clients</span>
-            </div>
+          <div className="flex flex-col items-center" title="Plans Created">
+            <span className="font-bold text-base text-foreground">{user.analytics?.total_plans_created || 0}</span>
+            <span>Plans</span>
+          </div>
+          <div className="flex flex-col items-center" title="Active Clients or Users Coached">
+            <span className="font-bold text-base text-foreground">{user.analytics?.total_clients || 0}</span>
+            <span>Clients</span>
+          </div>
         </div>
       </Card>
     </Link>
@@ -147,20 +150,20 @@ function UserCard({ user }: { user: RichUserCardData }) {
 function UserCardSkeleton() {
   return (
     <Card className="h-full flex flex-col items-center text-center p-4">
-        <Skeleton className="w-24 h-24 rounded-full mb-4" />
-        <Skeleton className="h-5 w-3/4 mb-1.5" />
-        <Skeleton className="h-4 w-1/2" />
-        <div className="flex-grow" />
-        <div className="flex justify-around w-full border-t pt-3 mt-4">
-            <div className="flex flex-col items-center space-y-1">
-                <Skeleton className="h-5 w-6" />
-                <Skeleton className="h-3 w-10" />
-            </div>
-            <div className="flex flex-col items-center space-y-1">
-                <Skeleton className="h-5 w-6" />
-                <Skeleton className="h-3 w-10" />
-            </div>
+      <Skeleton className="w-24 h-24 rounded-full mb-4" />
+      <Skeleton className="h-5 w-3/4 mb-1.5" />
+      <Skeleton className="h-4 w-1/2" />
+      <div className="flex-grow" />
+      <div className="flex justify-around w-full border-t pt-3 mt-4">
+        <div className="flex flex-col items-center space-y-1">
+          <Skeleton className="h-5 w-6" />
+          <Skeleton className="h-3 w-10" />
         </div>
+        <div className="flex flex-col items-center space-y-1">
+          <Skeleton className="h-5 w-6" />
+          <Skeleton className="h-3 w-10" />
+        </div>
+      </div>
     </Card>
   );
 }

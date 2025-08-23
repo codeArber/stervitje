@@ -17,6 +17,8 @@ import { Button } from '@/components/ui/button';
 // Icons
 import { Search, Users, Dumbbell, PlusCircle, ArrowRight } from 'lucide-react';
 import { TeamFilters } from '@/api/team/endpoint';
+import { TeamCard } from '@/components/new/team/TeamCardExplore';
+import { Breadcrumb } from '@/components/new/TopNavigation';
 
 export const Route = createFileRoute('/_layout/explore/teams/')({
   component: ExploreTeamsPage,
@@ -29,7 +31,9 @@ function ExploreTeamsPage() {
   const filters: TeamFilters = { searchTerm: debouncedSearchTerm };
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="pb-6">
+            <Breadcrumb currentPath={location.pathname} />
+      
       {/* Header */}
       <header className="mb-8 space-y-2">
         <div className="flex justify-between items-center">
@@ -94,46 +98,12 @@ function TeamResultsGrid({ filters }: { filters: TeamFilters }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {teams.map(team => <TeamCard key={team.id} team={team} />)}
+      {teams.map(team => <Link to={`/explore/teams/$teamId`} params={{teamId: team.id}} key={team.id}><TeamCard team={team} /></Link>)}
     </div>
   );
 }
 
-function TeamCard({ team }: { team: RichTeamCardData }) {
-  return (
-    <Link to="/explore/teams/$teamId" params={{ teamId: team.id }}>
-      <Card className="h-full flex flex-col hover:border-primary transition-colors duration-200">
-        <CardHeader>
-          <div className="aspect-video w-full bg-muted rounded-md mb-4 flex items-center justify-center">
-            {team.logo_url ? (
-              <img src={team.logo_url} alt={`${team.name} logo`} className="h-full w-full object-cover rounded-md" />
-            ) : (
-              <Users className="h-12 w-12 text-muted-foreground" />
-            )}
-          </div>
-          <CardTitle>{team.name}</CardTitle>
-          <CardDescription className="line-clamp-2 min-h-[40px]">
-            {team.description || "No description available."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex-grow" />
-        <CardFooter className="bg-muted/50 p-3 flex justify-between items-center text-sm">
-          <div className="flex items-center gap-4 text-muted-foreground font-medium">
-            <div className="flex items-center gap-1.5" title="Members">
-              <Users className="h-4 w-4" />
-              <span>{team.members_count}</span>
-            </div>
-            <div className="flex items-center gap-1.5" title="Public Plans">
-              <Dumbbell className="h-4 w-4" />
-              <span>{team.plans_count}</span>
-            </div>
-          </div>
-          <ArrowRight className="h-5 w-5 text-muted-foreground" />
-        </CardFooter>
-      </Card>
-    </Link>
-  );
-}
+
 
 function TeamCardSkeleton() {
   return (

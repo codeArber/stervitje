@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'; // Make sure Badge is imported if
 import { User, Activity, Ruler, Edit } from 'lucide-react';
 import { MiniMeasurementGraph } from '@/components/new/measurements/MiniMeasurementGraph';
 import { Breadcrumb } from '@/components/new/TopNavigation';
+import BodyMeasurementDiagram from '@/components/new/measurements/BodyMeasurementsDiagram';
 
 
 export const Route = createFileRoute('/_layout/profile/')({
@@ -31,7 +32,7 @@ function ProfilePage() {
   const { data: profile, isLoading: isLoadingProfile, isError: isProfileError, error: profileError } = useCurrentUserQuery();
   const { data: userDetails, isLoading: isLoadingDetails, isError: isDetailsError, error: detailsError } = useUserProfileDetailsQuery(authUser?.id);
   const { data: measurements, isLoading: isLoadingMeasurements, isError: isMeasurementsError, error: measurementsError } = useUserMeasurementsQuery(authUser?.id);
-
+  console.log('Measurements:', measurements);
 
   // Overall loading state: if any key data is loading, show skeleton
   const overallLoading = isLoadingProfile || isLoadingDetails || isLoadingMeasurements;
@@ -55,92 +56,9 @@ function ProfilePage() {
   const { teams } = userDetails;
 
   return (
-    <div className="">
+    <div className="pb-6">
       <Breadcrumb currentPath={location.pathname} />
-      {/* Profile Header */}
-      <header className="space-y-4">
-        <div className="flex items-center gap-6">
-          <Avatar className="h-24 w-24 border-2">
-            <AvatarImage src={profile_image_url || undefined} alt={`${full_name || username}'s profile`} />
-            <AvatarFallback className="text-4xl">{(full_name || username || 'U').charAt(0).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="space-y-1">
-            <h1 className="text-4xl font-bold tracking-tighter">{full_name || username}</h1>
-            <p className="text-muted-foreground text-lg">{username}</p>
-            {email && <p className="text-muted-foreground text-sm">{email}</p>}
-          </div>
-        </div>
-        <p className="text-lg text-muted-foreground">{bio || "No bio yet."}</p>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <User className="h-4 w-4" />
-          <span>Preferred Unit: <span className="capitalize">{unit || 'Metric'}</span></span>
-        </div>
-        <Button variant="outline" className="mt-4">
-          <Edit className="mr-2 h-4 w-4" /> Edit Profile
-        </Button>
-      </header>
-
-      <Separator />
-
-      {/* Navigation Cards to Sub-pages */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="hover:shadow-lg transition-shadow duration-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-primary" /> Performance History</CardTitle>
-            <CardDescription>Review your workout data, progress, and personal records.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="secondary" className="w-full">
-              <Link to="/profile/performance">View Performance</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Body Measurements Card with Mini Graph */}
-        <Card className="hover:shadow-lg transition-shadow duration-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Ruler className="h-5 w-5 text-green-500" /> Body Measurements</CardTitle>
-            <CardDescription>Track your physical changes over time with detailed measurements.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {/* Display Mini Graph Here */}
-            {measurements && measurements.length > 0 ? (
-              <MiniMeasurementGraph measurements={measurements} />
-            ) : (
-              <div className="text-muted-foreground text-xs text-center py-4">
-                No measurements to graph yet.
-              </div>
-            )}
-            <Button asChild variant="secondary" className="w-full">
-              <Link to="/profile/measurements">View Measurements</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </section>
-
-      <Separator />
-
-      {/* My Teams (from userDetails) */}
-      {teams && teams.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold tracking-tight mb-4">My Teams</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {teams.map(teamMembership => (
-              <Card key={teamMembership.team.id} className="p-4 flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold">{teamMembership.team.name}</h3>
-                  <Badge variant="outline" className="capitalize">{teamMembership.role}</Badge>
-                </div>
-                <Button asChild variant="ghost" size="sm">
-                  <Link to="/workspace/$teamId" params={{ teamId: teamMembership.team.id }}>
-                    Go to Team
-                  </Link>
-                </Button>
-              </Card>
-            ))}
-          </div>
-        </section>
-      )}
+      <BodyMeasurementDiagram />
     </div>
   );
 }

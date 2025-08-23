@@ -26,7 +26,9 @@ import {
   Sparkles,
   Play,
   User,
-  Search
+  Search,
+  Home,
+  Swords
 } from 'lucide-react';
 import { Breadcrumb as TopNavigation } from '@/components/new/TopNavigation';
 
@@ -103,7 +105,8 @@ function ExerciseDetailPage() {
     <div className="min-h-screen ">
       <TopNavigation
         items={[
-          { label: "Exercises", href: "/exercise", icon: Search },
+        { label: 'Home', href: '/', icon: Home },
+          { label: "Exercises", href: "/exercise", icon: Swords },
           { label: exercise?.name } // Last item has no href (current page)
         ]}
       />
