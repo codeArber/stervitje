@@ -14,6 +14,7 @@ import { useWorkoutStore } from '@/stores/workout-store';
 import { ActiveWorkoutUI } from '@/components/new/workout/ActiveWorkoutUI';
 import { AdHocWorkoutUI } from '@/components/new/workout/AdHocWorkoutUI';
 import { WorkoutSummary } from '@/components/new/workout/WorkoutSummary';
+import { WorkoutLaunchpad } from '@/components/new/workout/WorkoutLaunchpad';
 
 // --- Child Components (You will create these next) ---
 // import { AdHocWorkoutUI } from '@/components/workout/AdHocWorkoutUI'; // We will create this
@@ -54,7 +55,7 @@ function WorkoutPlayerPage() {
         <p className="text-muted-foreground">{plannedSession?.notes || 'Log your exercises as you go.'}</p>
       </header>
       <Separator className="my-6" />
-      
+
       {plannedSession ? (
         // If a plan exists, render the structured workout UI
         <ActiveWorkoutUI />
@@ -69,26 +70,26 @@ function WorkoutPlayerPage() {
 // --- Placeholder for the Ad-Hoc UI ---
 // We will replace this with a real component in the next step.
 const AdHocWorkoutUIPlaceholder = () => (
-    <div className="space-y-6 text-center">
-        <Card>
-            <CardHeader>
-                <CardTitle>Log Your Workout</CardTitle>
-                <CardDescription>
-                    This is an ad-hoc session. Add the exercises you perform below.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="p-8 border-2 border-dashed rounded-lg">
-                    <p className="text-muted-foreground">Your logged exercises will appear here.</p>
-                </div>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Exercise
-                </Button>
-            </CardContent>
-        </Card>
-        <Button size="lg" className="w-full">Finish Workout</Button>
-    </div>
+  <div className="space-y-6 text-center">
+    <Card>
+      <CardHeader>
+        <CardTitle>Log Your Workout</CardTitle>
+        <CardDescription>
+          This is an ad-hoc session. Add the exercises you perform below.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="p-8 border-2 border-dashed rounded-lg">
+          <p className="text-muted-foreground">Your logged exercises will appear here.</p>
+        </div>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Add Exercise
+        </Button>
+      </CardContent>
+    </Card>
+    <Button size="lg" className="w-full">Finish Workout</Button>
+  </div>
 );
 
 
@@ -111,14 +112,21 @@ const WorkoutLoadingSkeleton = () => (
 );
 
 const NoActiveWorkoutScreen = () => (
-    <div className="container py-16 text-center">
-      <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
-      <h1 className="text-2xl font-bold mt-4 mb-2">No Active Workout</h1>
-      <p className="text-muted-foreground">Start a session from a plan or begin a new ad-hoc workout from the dashboard.</p>
-      <Button asChild className="mt-6">
-        <Link to="/dashboard">Go to Dashboard</Link>
-      </Button>
-    </div>
+  <div className="container py-16 text-center">
+    <WorkoutLaunchpad
+      // Replace these with REAL data from your useWorkoutStore()
+      
+      hasActivePlan={/* hasActivePlan from store */ true}
+      onStartPlannedSession={(sessionId) => {
+        console.log('Starting planned session:', sessionId);
+        // startPlannedSession(sessionId); // Call your store's function
+      }}
+      onStartAdHocSession={() => {
+        console.log('Starting ad-hoc session');
+        // startAdHocSession(); // Call your store's function
+      }}
+    />
+  </div>
 );
 
 const WorkoutCompleteScreen = ({ planId }: { planId: string | null }) => (
