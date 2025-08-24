@@ -1,34 +1,22 @@
 // FILE: src/api/performance/endpoint.ts
 
 import { supabase } from '@/lib/supabase/supabaseClient';
-import type { Plan, PlanGoal } from '@/types/plan';
-import type { Enums } from '@/types/database.types';
-import { Profile } from '@/types';
-
-// --- Type Definitions for the RPC response ---
-
-// This type matches the `performance_summary` object in the JSON
-export interface PlanPerformanceSummary {
-  total_sessions_in_plan: number;
-  logged_sessions_count: number;
-  total_volume_kg: number | null;
-  first_workout_date: string | null;
-  last_workout_date: string | null;
-}
-
-// This is the type for a single item in the array returned by the RPC
-export interface UserPlanPerformanceData {
-  plan_details: Pick<Plan, 'id' | 'title' | 'description' | 'difficulty_level'>;
-  performance_summary: PlanPerformanceSummary;
-  user_plan_status_id: string;
-  user_status_on_plan: Enums<'plan_status'>;
-}
+import type {  Profile, UserMeasurement } from '@/types/index'; // Use centralized imports for base types
+import type {
+  UserPlanPerformanceData,
+  LogbookEntry,
+  PlanPerformanceDetails,
+  UserWorkoutDate, // Import the new type
+} from '@/types/performance'; // Import the new performance types
+import { UserProfileUpdatePayload } from '@/types/user'; // Import from user/index for consistency
 
 /**
- * Fetches a simple list of all dates on which a user logged a workout.
+ * @description Fetches a simple list of all dates on which a user logged a workout.
+ * Corresponds to the `get_user_workout_dates` RPC.
  * @param userId The UUID of the user.
+ * @returns A promise that resolves to an array of dates (`string[]`).
  */
-export const fetchUserWorkoutDates = async (userId: string): Promise<{ workout_date: string }[]> => {
+export const fetchUserWorkoutDates = async (userId: string): Promise<UserWorkoutDate[]> => {
   if (!userId) return [];
 
   const { data, error } = await supabase.rpc('get_user_workout_dates', {
@@ -39,13 +27,16 @@ export const fetchUserWorkoutDates = async (userId: string): Promise<{ workout_d
     console.error('API Error fetchUserWorkoutDates:', error);
     throw new Error(error.message);
   }
+  // RPC returns SETOF date, which database.types.ts correctly infers as `string[]`.
   return data || [];
 };
 
 /**
- * Fetches a list of all plans a user has started, along with
+ * @description Fetches a list of all plans a user has started, along with
  * performance summary statistics for each plan.
+ * Corresponds to the `get_user_plan_performance_summary_list` RPC.
  * @param userId The UUID of the user whose performance is being fetched.
+ * @returns A promise that resolves to an array of `UserPlanPerformanceData`.
  */
 export const fetchUserPlanPerformanceList = async (userId: string): Promise<UserPlanPerformanceData[]> => {
   if (!userId) return [];
@@ -59,25 +50,16 @@ export const fetchUserPlanPerformanceList = async (userId: string): Promise<User
     throw new Error(error.message);
   }
 
-  // The RPC returns a single JSONB array, so we cast it.
-  // If `data` is null (e.g., user has no plans), return an empty array.
+  // The RPC returns jsonb_agg, which will be `[]` if no plans match.
   return (data as UserPlanPerformanceData[]) || [];
 };
 
-// FILE: src/api/performance/endpoint.ts
-// ... (keep existing functions and types)
-
-// --- ADD THESE NEW TYPES AND FUNCTION ---
-export interface LogbookEntry {
-  log_id: string;
-  workout_date: string;
-  session_title: string | null;
-  plan_title: string | null;
-  duration_minutes: number | null;
-  overall_feeling: number | null;
-  plan_id: string | null;
-}
-
+/**
+ * @description Fetches a user's workout logbook, including session and plan titles.
+ * Corresponds to the `get_user_logbook` RPC.
+ * @param userId The UUID of the user.
+ * @returns A promise that resolves to an array of `LogbookEntry`.
+ */
 export const fetchUserLogbook = async (userId: string): Promise<LogbookEntry[]> => {
   if (!userId) return [];
 
@@ -89,43 +71,40 @@ export const fetchUserLogbook = async (userId: string): Promise<LogbookEntry[]> 
     console.error('API Error fetchUserLogbook:', error);
     throw new Error(error.message);
   }
-  return data || [];
+  // RPC returns SETOF a record type, which `database.types.ts` gives as `Record<string, unknown>[]`.
+  // We cast to our specific `LogbookEntry[]`.
+  return (data as LogbookEntry[]) || [];
 };
 
-export interface UserProfileUpdatePayload {
-  full_name: string | null;
-  username: string | null;
-  bio: string | null;
-  unit: 'metric' | 'imperial';
-}
-
 /**
- * Calls the RPC to update the current user's profile information.
+ * @description Calls the RPC to update the current user's profile information.
+ * Corresponds to the `update_user_profile` RPC.
  * @param payload The new profile data.
- * @returns The updated profile record from the database.
+ * @returns The updated `Profile` record from the database.
  */
 export const updateUserProfile = async (payload: UserProfileUpdatePayload): Promise<Profile> => {
   const { data, error } = await supabase
     .rpc('update_user_profile', {
-      p_full_name: payload.full_name,
-      p_username: payload.username,
-      p_bio: payload.bio,
-      p_unit: payload.unit,
+      p_full_name: payload.p_full_name,
+      p_username: payload.p_username,
+      p_bio: payload.p_bio,
+      p_unit: payload.p_unit,
     })
-    .single();
+    .single(); // Assuming the RPC returns a single row
 
-  if (error) {
+  if (error || !data) { // Check for !data in case single() returns null if no row found (e.g. RLS issues)
     console.error("API Error updateUserProfile:", error);
-    throw new Error(error.message);
+    throw new Error(error?.message || 'Failed to update profile.');
   }
 
+  // RPC returns a single row of the updated profile, which should match `Profile`.
   return data as Profile;
 };
 
 /**
- * Sets the initial baseline value for a user's goal progress record.
- * @param progressId The UUID of the user_plan_goal_progress record.
- * @param baselineValue The user-submitted starting value.
+ * @description Sets the initial baseline value for a user's goal progress record.
+ * Corresponds to the `set_goal_baseline` RPC.
+ * @param payload - Object containing `progressId` and `baselineValue`.
  */
 export const setGoalBaseline = async (payload: { progressId: string; baselineValue: number }): Promise<void> => {
   const { error } = await supabase.rpc('set_goal_baseline', {
@@ -139,25 +118,21 @@ export const setGoalBaseline = async (payload: { progressId: string; baselineVal
   }
 };
 
-export interface GoalProgressData {
-    progress_id: string;
-    start_value: number | null;
-    current_value: number | null;
-    target_value: number | null;
-    status: Enums<'goal_status'>;
-    achieved_at: string | null;
-    goal_definition: PlanGoal;
-}
-export interface PlanPerformanceDetails {
-    plan: Plan;
-    goal_progress: GoalProgressData[] | null;
-}
-
+/**
+ * @description Fetches detailed performance data for a specific user plan status, including goal progress.
+ * Corresponds to the `get_user_plan_performance_details` RPC.
+ * @param userPlanStatusId The UUID of the `user_plan_status` record.
+ * @returns A promise that resolves to `PlanPerformanceDetails` or `null`.
+ */
 export const fetchPlanPerformanceDetails = async (userPlanStatusId: string): Promise<PlanPerformanceDetails | null> => {
   if (!userPlanStatusId) return null;
   const { data, error } = await supabase.rpc('get_user_plan_performance_details', {
     p_user_plan_status_id: userPlanStatusId
   });
-  if (error) throw new Error(error.message);
-  return data;
+  if (error) {
+    console.error('API Error fetchPlanPerformanceDetails:', error);
+    throw new Error(error.message);
+  }
+  // RPC returns jsonb_build_object, which can be `null` if no match.
+  return data as PlanPerformanceDetails | null;
 };

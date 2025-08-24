@@ -15,8 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Icons
 import { Users, Dumbbell, UserPlus, ArrowRight, Home, Compass, BuildingIcon } from 'lucide-react';
-import { PlanCardExplore } from '..';
 import { Breadcrumb } from '@/components/new/TopNavigation';
+import { PlanCardExplore } from '@/components/new/explore/plans/PlanCardExplore';
 
 export const Route = createFileRoute('/_layout/explore/teams/$teamId')({
   component: PublicTeamProfilePage,

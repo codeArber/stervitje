@@ -28,6 +28,7 @@ import { Label } from '@/components/ui/label';
 import PlanMuscleDiagram from '@/components/new/exercise/PlanMuscleDiagram';
 import { PlanGoalsDisplay } from '@/components/new/plan/plan-display/PlanGoalDisplay';
 import { EquipmentBadge } from '@/components/new/plan/plan-display/Equipments';
+import { PlanActionButton } from '@/components/new/plan/PlanActionButton';
 
 // --- Main Route Component ---
 export const Route = createFileRoute('/_layout/explore/plans/$planId/')({
@@ -61,7 +62,7 @@ function PublicPlanDetailsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 px-4 pb-4 overflow-y-auto h-full">
       {/* --- Header (No changes here) --- */}
       <header className="space-y-4 flex flex-col ">
         <Breadcrumb
@@ -80,16 +81,14 @@ function PublicPlanDetailsPage() {
                   <div className="flex flex-col gap-1">
                     <div className="flex flex-row gap-2 items-center">
                       <Label variant={'exerciseTitleBig'}>{plan.title}</Label>
-                      | <div className="flex items-center gap-1"><Star className="h-4 w-4 text-yellow-500" /><span>Level {plan.difficulty_level}/5</span></div>
 
                     </div>
                     <span className='text-muted-foreground text-xs flex flex-row gap-1'>By <Link to={'/explore/users/$userId'} params={{ userId: creator.id }} className="flex items-center gap-2 hover:underline">{creator.full_name || creator.username}</Link></span>
                   </div>
                   <div className='flex flex-row gap-4 items-center'>
                     <div className="flex flex-row gap-2 items-center">
-                      {!user_plan_status && (
-                        <StartPlanController planId={plan.id} />
-                      )}
+                      <PlanActionButton planId={plan.id} />
+
                     </div>
                   </div>
                 </div>
@@ -118,9 +117,9 @@ function PublicPlanDetailsPage() {
               <div className="absolute -top-12 -left-12 w-32 h-32 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-full mix-blend-overlay filter blur-xl opacity-30 animate-bounce"></div>
               <div className="absolute top-8 -right-8 w-24 h-24 bg-gradient-to-r from-accent/20 to-muted/20 rounded-full mix-blend-overlay filter blur-xl opacity-30 animate-bounce" style={{ animationDelay: '2s' }}></div>
               <div className="absolute -bottom-8 left-8 w-28 h-28 bg-gradient-to-r from-secondary/20 to-primary/20 rounded-full mix-blend-overlay filter blur-xl opacity-30 animate-bounce" style={{ animationDelay: '4s' }}></div>
-              <CardHeader className="relative z-10 text-center">
-              </CardHeader>
-              <CardContent className="relative z-10 space-y-4">
+             
+              <CardContent className="relative z-10 space-y-1 gap-1 pt-6">
+                <div className="flex items-center gap-1 pb-2"><Star className="h-4 w-4 text-yellow-500" /><span>Level {plan.difficulty_level}/5</span></div>
                 <PlanMuscleDiagram muscles={muscle_activation_summary} />
                 <div className="flex flex-row justify-between w-full px-4">
                   {/* Like Count */}
@@ -185,7 +184,7 @@ function PublicPlanDetailsPage() {
 
 // --- Reusable Sub-components for this page ---
 
-const InfoCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
+export const InfoCard: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
   <div className='p-4 border rounded-lg'>
     <div className='flex items-center gap-2 mb-3'>
       {icon}
@@ -203,7 +202,7 @@ const EquipmentList: React.FC<{ equipment: any[] }> = ({ equipment }) => {
   }
 
   return (
-    <div className="flex flex-row items-center gap-2">
+    <div className="flex flex-row flex-wrap items-center gap-2">
       {equipment.map((item, index) => (
 
         <EquipmentBadge key={item.id || index} equipmentName={item.name} />

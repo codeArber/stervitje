@@ -12,7 +12,7 @@ export const Route = createFileRoute('/_layout/workspace/_workspace-layout')({
 
 function WorkspaceLayout() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen ">
       {/* Workspace specific header/selector */}
       <header className="border-b py-4 px-6 flex justify-between items-center bg-background z-10">
         <div></div>

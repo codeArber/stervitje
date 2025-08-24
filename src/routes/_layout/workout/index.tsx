@@ -15,6 +15,7 @@ import { ActiveWorkoutUI } from '@/components/new/workout/ActiveWorkoutUI';
 import { AdHocWorkoutUI } from '@/components/new/workout/AdHocWorkoutUI';
 import { WorkoutSummary } from '@/components/new/workout/WorkoutSummary';
 import { WorkoutLaunchpad } from '@/components/new/workout/WorkoutLaunchpad';
+import {ActiveWorkoutUI as AI} from '@/components/new/workout/ActiveWorkoutUI2';
 
 // --- Child Components (You will create these next) ---
 // import { AdHocWorkoutUI } from '@/components/workout/AdHocWorkoutUI'; // We will create this
@@ -40,7 +41,7 @@ function WorkoutPlayerPage() {
 
   // --- THE CORE LOGIC SWITCH ---
   return (
-    <div className="container mx-auto max-w-2xl py-8">
+    <div className="pb-6 flex flex-col">
       <header className="mb-4">
         {/* The back button conditionally links to the plan if it exists */}
         {activeSessionLog.plan_id && (
@@ -118,7 +119,7 @@ const NoActiveWorkoutScreen = () => (
       
       hasActivePlan={/* hasActivePlan from store */ true}
       onStartPlannedSession={(sessionId) => {
-        console.log('Starting planned session:', sessionId);
+        
         // startPlannedSession(sessionId); // Call your store's function
       }}
       onStartAdHocSession={() => {

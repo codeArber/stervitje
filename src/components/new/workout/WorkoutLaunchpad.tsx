@@ -10,6 +10,7 @@ import isTomorrow from 'dayjs/plugin/isTomorrow';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dumbbell, CalendarClock, PlusCircle, Sparkles } from 'lucide-react';
+import { useWorkoutStore } from '@/stores/workout-store';
 
 // Extend dayjs with plugins
 dayjs.extend(isToday);
@@ -71,25 +72,29 @@ const UpcomingWorkoutCard = ({ session, onStart }) => {
 /**
  * @description Provides the option to start a blank, unplanned workout.
  */
-const AdHocWorkoutCard = ({ onStart }) => (
-  <Card>
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <Sparkles className="h-6 w-6" />
-        Freestyle Session
-      </CardTitle>
-      <CardDescription>
-        Don't have a plan for today? Log your exercises as you go.
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      <Button variant="outline" className="w-full" onClick={onStart}>
-        <PlusCircle className="mr-2 h-4 w-4" />
-        Start Ad-Hoc Workout
-      </Button>
-    </CardContent>
-  </Card>
-);
+const AdHocWorkoutCard = () => {
+  const { startAdHocSession } = useWorkoutStore();
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-6 w-6" />
+          Freestyle Session
+        </CardTitle>
+        <CardDescription>
+          Don't have a plan for today? Log your exercises as you go.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Button variant="outline" className="w-full" onClick={startAdHocSession}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Start Ad-Hoc Workout
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
 
 /**
  * @description A prompt for users without a plan to go find one.
@@ -132,8 +137,8 @@ export function WorkoutLaunchpad({
       <header>
         <h1 className="text-4xl font-bold tracking-tight">Workout</h1>
         <p className="text-lg text-muted-foreground mt-1">
-          {hasActivePlan 
-            ? "Your next session is ready. Let's get to it." 
+          {hasActivePlan
+            ? "Your next session is ready. Let's get to it."
             : "Start a workout or find a new plan to follow."}
         </p>
       </header>
@@ -144,7 +149,7 @@ export function WorkoutLaunchpad({
       )}
 
       {/* The AdHoc card is always available as an alternative */}
-      <AdHocWorkoutCard onStart={onStartAdHocSession} />
+      <AdHocWorkoutCard />
 
       {/* If they have no plan, add a clear prompt to find one */}
       {!hasActivePlan && (

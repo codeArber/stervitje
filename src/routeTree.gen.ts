@@ -39,6 +39,7 @@ import { Route as LayoutProfileMeasurementsDetailsIndexImport } from './routes/_
 import { Route as LayoutProfileMeasurementsAddIndexImport } from './routes/_layout/profile/measurements/add/index'
 import { Route as LayoutExploreUsersUserIdIndexImport } from './routes/_layout/explore/users/$userId/index'
 import { Route as LayoutExplorePlansPlanIdIndexImport } from './routes/_layout/explore/plans/$planId/index'
+import { Route as LayoutExplorePlansPlanIdBaselinesImport } from './routes/_layout/explore/plans/$planId/baselines'
 import { Route as LayoutWorkspaceWorkspaceLayoutTeamIdPlansIndexImport } from './routes/_layout/workspace/_workspace-layout/$teamId/plans/index'
 import { Route as LayoutWorkspaceWorkspaceLayoutTeamIdInviteIndexImport } from './routes/_layout/workspace/_workspace-layout/$teamId/invite/index'
 import { Route as LayoutWorkspaceWorkspaceLayoutTeamIdPlansNewImport } from './routes/_layout/workspace/_workspace-layout/$teamId/plans/new'
@@ -220,6 +221,13 @@ const LayoutExplorePlansPlanIdIndexRoute =
   LayoutExplorePlansPlanIdIndexImport.update({
     id: '/explore/plans/$planId/',
     path: '/explore/plans/$planId/',
+    getParentRoute: () => LayoutRoute,
+  } as any)
+
+const LayoutExplorePlansPlanIdBaselinesRoute =
+  LayoutExplorePlansPlanIdBaselinesImport.update({
+    id: '/explore/plans/$planId/baselines',
+    path: '/explore/plans/$planId/baselines',
     getParentRoute: () => LayoutRoute,
   } as any)
 
@@ -423,6 +431,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutWorkspaceCreateIndexImport
       parentRoute: typeof LayoutWorkspaceImport
     }
+    '/_layout/explore/plans/$planId/baselines': {
+      id: '/_layout/explore/plans/$planId/baselines'
+      path: '/explore/plans/$planId/baselines'
+      fullPath: '/explore/plans/$planId/baselines'
+      preLoaderRoute: typeof LayoutExplorePlansPlanIdBaselinesImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/explore/plans/$planId/': {
       id: '/_layout/explore/plans/$planId/'
       path: '/explore/plans/$planId'
@@ -572,6 +587,7 @@ interface LayoutRouteChildren {
   LayoutExploreUsersIndexRoute: typeof LayoutExploreUsersIndexRoute
   LayoutProfileMeasurementsIndexRoute: typeof LayoutProfileMeasurementsIndexRoute
   LayoutProfilePerformanceIndexRoute: typeof LayoutProfilePerformanceIndexRoute
+  LayoutExplorePlansPlanIdBaselinesRoute: typeof LayoutExplorePlansPlanIdBaselinesRoute
   LayoutExplorePlansPlanIdIndexRoute: typeof LayoutExplorePlansPlanIdIndexRoute
   LayoutExploreUsersUserIdIndexRoute: typeof LayoutExploreUsersUserIdIndexRoute
   LayoutProfileMeasurementsAddIndexRoute: typeof LayoutProfileMeasurementsAddIndexRoute
@@ -595,6 +611,8 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutExploreUsersIndexRoute: LayoutExploreUsersIndexRoute,
   LayoutProfileMeasurementsIndexRoute: LayoutProfileMeasurementsIndexRoute,
   LayoutProfilePerformanceIndexRoute: LayoutProfilePerformanceIndexRoute,
+  LayoutExplorePlansPlanIdBaselinesRoute:
+    LayoutExplorePlansPlanIdBaselinesRoute,
   LayoutExplorePlansPlanIdIndexRoute: LayoutExplorePlansPlanIdIndexRoute,
   LayoutExploreUsersUserIdIndexRoute: LayoutExploreUsersUserIdIndexRoute,
   LayoutProfileMeasurementsAddIndexRoute:
@@ -628,6 +646,7 @@ export interface FileRoutesByFullPath {
   '/profile/measurements': typeof LayoutProfileMeasurementsIndexRoute
   '/profile/performance': typeof LayoutProfilePerformanceIndexRoute
   '/workspace/create': typeof LayoutWorkspaceCreateIndexRoute
+  '/explore/plans/$planId/baselines': typeof LayoutExplorePlansPlanIdBaselinesRoute
   '/explore/plans/$planId': typeof LayoutExplorePlansPlanIdIndexRoute
   '/explore/users/$userId': typeof LayoutExploreUsersUserIdIndexRoute
   '/profile/measurements/add': typeof LayoutProfileMeasurementsAddIndexRoute
@@ -661,6 +680,7 @@ export interface FileRoutesByTo {
   '/profile/measurements': typeof LayoutProfileMeasurementsIndexRoute
   '/profile/performance': typeof LayoutProfilePerformanceIndexRoute
   '/workspace/create': typeof LayoutWorkspaceCreateIndexRoute
+  '/explore/plans/$planId/baselines': typeof LayoutExplorePlansPlanIdBaselinesRoute
   '/explore/plans/$planId': typeof LayoutExplorePlansPlanIdIndexRoute
   '/explore/users/$userId': typeof LayoutExploreUsersUserIdIndexRoute
   '/profile/measurements/add': typeof LayoutProfileMeasurementsAddIndexRoute
@@ -698,6 +718,7 @@ export interface FileRoutesById {
   '/_layout/profile/measurements/': typeof LayoutProfileMeasurementsIndexRoute
   '/_layout/profile/performance/': typeof LayoutProfilePerformanceIndexRoute
   '/_layout/workspace/create/': typeof LayoutWorkspaceCreateIndexRoute
+  '/_layout/explore/plans/$planId/baselines': typeof LayoutExplorePlansPlanIdBaselinesRoute
   '/_layout/explore/plans/$planId/': typeof LayoutExplorePlansPlanIdIndexRoute
   '/_layout/explore/users/$userId/': typeof LayoutExploreUsersUserIdIndexRoute
   '/_layout/profile/measurements/add/': typeof LayoutProfileMeasurementsAddIndexRoute
@@ -735,6 +756,7 @@ export interface FileRouteTypes {
     | '/profile/measurements'
     | '/profile/performance'
     | '/workspace/create'
+    | '/explore/plans/$planId/baselines'
     | '/explore/plans/$planId'
     | '/explore/users/$userId'
     | '/profile/measurements/add'
@@ -767,6 +789,7 @@ export interface FileRouteTypes {
     | '/profile/measurements'
     | '/profile/performance'
     | '/workspace/create'
+    | '/explore/plans/$planId/baselines'
     | '/explore/plans/$planId'
     | '/explore/users/$userId'
     | '/profile/measurements/add'
@@ -802,6 +825,7 @@ export interface FileRouteTypes {
     | '/_layout/profile/measurements/'
     | '/_layout/profile/performance/'
     | '/_layout/workspace/create/'
+    | '/_layout/explore/plans/$planId/baselines'
     | '/_layout/explore/plans/$planId/'
     | '/_layout/explore/users/$userId/'
     | '/_layout/profile/measurements/add/'
@@ -862,6 +886,7 @@ export const routeTree = rootRoute
         "/_layout/explore/users/",
         "/_layout/profile/measurements/",
         "/_layout/profile/performance/",
+        "/_layout/explore/plans/$planId/baselines",
         "/_layout/explore/plans/$planId/",
         "/_layout/explore/users/$userId/",
         "/_layout/profile/measurements/add/",
@@ -963,6 +988,10 @@ export const routeTree = rootRoute
     "/_layout/workspace/create/": {
       "filePath": "_layout/workspace/create/index.tsx",
       "parent": "/_layout/workspace"
+    },
+    "/_layout/explore/plans/$planId/baselines": {
+      "filePath": "_layout/explore/plans/$planId/baselines.tsx",
+      "parent": "/_layout"
     },
     "/_layout/explore/plans/$planId/": {
       "filePath": "_layout/explore/plans/$planId/index.tsx",

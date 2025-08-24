@@ -9,8 +9,6 @@ import { useRichUserCardsQuery } from '@/api/user';
 
 // --- Types ---
 // Ensure RichPlanCardData reflects the new fields from get_filtered_plans_rich
-import type { RichPlanCardData } from '@/types/plan';
-import type { RichTeamCardData } from '@/types/team';
 import type { RichUserCardData } from '@/types/user';
 
 // --- UI Components ---
@@ -25,13 +23,8 @@ import { Badge } from '@/components/ui/badge';
 // Import all necessary Lucide icons for the PlanCard
 import { Star, GitFork, Heart, Users, Dumbbell, Target, Goal } from 'lucide-react'; // Added Dumbbell & Target for plan stats
 import { Breadcrumb } from '@/components/new/TopNavigation';
-import ExerciseMuscleDiagram from '@/components/new/exercise/ExerciseMuscleDiagram';
-import ExerciseMuscleDiagramDetailed from '@/components/new/exercise/ExerciseMuscleDiagram';
-import PlanMuscleDiagram from '@/components/new/exercise/PlanMuscleDiagram';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import PlanMuscleDiagramExplore from '@/components/new/exercise/PlanMuscleDiagramExplore';
 import { TeamCard } from '@/components/new/team/TeamCardExplore';
+import { PlanCardExplore } from '@/components/new/explore/plans/PlanCardExplore';
 
 // --- Main Route Component ---
 export const Route = createFileRoute('/_layout/explore/')({
@@ -48,7 +41,7 @@ function ExploreHomePage() {
   const { data: users, isLoading: loadingUsers } = useRichUserCardsQuery({ ...previewFilters });
 
   return (
-    <div className="flex flex-col gap-8 pb-6"> {/* Added container and spacing here for consistency */}
+    <div className="flex flex-col gap-8 pb-6 px-6 overflow-y-auto h-full"> {/* Added container and spacing here for consistency */}
       <Breadcrumb currentPath={location.pathname} />
 
       {/* Popular Plans Section */}
@@ -60,7 +53,7 @@ function ExploreHomePage() {
           ) : (
             plans?.map(plan => <PlanCardExplore key={plan.id} planData={plan} />)
           )}
-          
+
         </div>
       </section>
 
@@ -71,7 +64,7 @@ function ExploreHomePage() {
           {loadingTeams ? (
             Array.from({ length: 3 }).map((_, i) => <TeamCardSkeleton key={i} />)
           ) : (
-            teams?.map(team => <Link to={`/explore/teams/$teamId`} params={{teamId: team.id}} key={team.id}><TeamCard team={team} /></Link>)
+            teams?.map(team => <Link to={`/explore/teams/$teamId`} params={{ teamId: team.id }} key={team.id}><TeamCard team={team} /></Link>)
           )}
         </div>
       </section>
@@ -103,133 +96,6 @@ function SectionHeader({ title, ctaLink }: { title: string; ctaLink: string }) {
         </Link>
       </Button>
     </div>
-  );
-}
-
-export function PlanCardExplore({ planData }: { planData: RichPlanCardData }) {
-  const { analytics, creator } = planData;
-  const { total_exercises_count, goals, muscle_activation_summary } = planData; // Now using 'goals' array
-
-  const getDifficultyLabel = (level: number | null) => {
-    switch (level) {
-      case 1: return 'Beginner';
-      case 2: return 'Easy';
-      case 3: return 'Moderate';
-      case 4: return 'Hard';
-      case 5: return 'Expert';
-      default: return 'Unknown';
-    }
-  };
-
-  const displayedGoals = goals?.slice(0, 2); // Show first 2 goals in preview
-  const remainingGoalsCount = (goals?.length || 0) - (displayedGoals?.length || 0);
-
-  return (
-    <Link to="/explore/plans/$planId" params={{ planId: planData.id }} className='w-fit'>
-      <Card className="h-full w-fit flex flex-col hover:border-primary transition-colors duration-200 shadow-lg">
-        <CardHeader className="pb-3">
-          <div className="flex items-center gap-3 mb-3">
-            {creator?.profile_image_url && 
-            <Avatar><AvatarImage src={creator?.profile_image_url || undefined} /><AvatarFallback>{(creator?.full_name || 'U').charAt(0)}</AvatarFallback></Avatar>
-            }
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg leading-tight truncate">{planData.title}</CardTitle>
-              <p className="text-sm text-muted-foreground truncate">{creator?.full_name || creator?.username}</p>
-            </div>
-          </div>
-         <div className="max-w-[400px]">
-           {planData.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">{planData.description}</p>
-          )}
-         </div>
-        </CardHeader>
-
-        <CardContent className="flex flex-col gap-3 pb-3 pt-3 flex-grow">
-          {/* Difficulty Level */}
-          <div className="flex items-center justify-between">
-            <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-              <Star className="h-3 w-3 mr-1" /> {getDifficultyLabel(planData.difficulty_level)}
-            </Badge>
-            {planData.private && (
-              <Badge variant="outline" className="text-xs text-muted-foreground">Private</Badge>
-            )}
-          </div>
-
-          {/* Exercise Count & Goals Section */}
-
-
-          {/* Muscle Activation Diagram */}
-          {muscle_activation_summary && muscle_activation_summary.length > 0 && (
-            <div className="flex items-center justify-between p-2 rounded-md border border-gray-200 mt-2">
-              <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-                {/* Exercises */}
-                <div className="flex items-center gap-1.5">
-                  <Dumbbell className="h-4 w-4 text-gray-500" />
-                  <span>{total_exercises_count || 0} Exercises</span>
-                </div>
-
-                <HoverCard>
-                  <HoverCardTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-1.5 justify-start h-auto p-0 text-sm text-muted-foreground hover:text-foreground"
-                    >
-                      <Target className="h-4 w-4 text-green-500 flex-shrink-0" />
-                      <span className="flex-1 text-left">
-                        {goals && goals.length > 0 ? `${goals.length} Goals` : 'No Goals'}
-                        {displayedGoals?.length > 0 && (
-                          <span className="ml-1 text-xs text-muted-foreground truncate">
-                            ({displayedGoals[0].title})
-                          </span>
-                        )}
-                      </span>
-                    </Button>
-                  </HoverCardTrigger>
-                  <HoverCardContent className="w-[300px] p-2 max-h-[200px] overflow-y-auto">
-                    <h4 className="font-semibold text-base mb-2">
-                      Plan Goals ({goals?.length || 0})
-                    </h4>
-                    {goals?.length > 0 ? (
-                      <div className="space-y-2">
-                        {goals.map((goal) => (
-                          <div key={goal.id} className="flex items-start gap-2 text-sm">
-                            {goal.exercise_id ? (
-                              <Dumbbell className="h-4 w-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                            ) : (
-                              <KanbanSquareDashed className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                            )}
-                            <p className="flex-1">
-                              <span className="font-medium">{goal.title}</span>
-                              <span className="text-muted-foreground ml-1">
-                                ({goal.metric} to {goal.target_value})
-                              </span>
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground text-sm">
-                        No specific goals set for this plan yet.
-                      </p>
-                    )}
-                  </HoverCardContent>
-                </HoverCard>
-
-              </div>
-              <PlanMuscleDiagramExplore
-                muscles={muscle_activation_summary}
-              />
-            </div>
-          )}
-        </CardContent>
-
-        <CardFooter className="bg-muted/50 p-3 flex justify-around text-xs text-muted-foreground font-medium mt-auto">
-          <div className="flex items-center gap-1" title="Likes"><Heart className="h-3 w-3" /><span>{analytics?.like_count || 0}</span></div>
-          <div className="flex items-center gap-1" title="Forks"><GitFork className="h-3 w-3" /><span>{analytics?.fork_count || 0}</span></div>
-          <div className="flex items-center gap-1" title="Active Users"><Users className="h-3 w-3" /><span>{analytics?.active_users_count || 0}</span></div>
-        </CardFooter>
-      </Card>
-    </Link>
   );
 }
 

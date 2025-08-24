@@ -1,18 +1,14 @@
-import { supabase } from '@/lib/supabase/supabaseClient';
-import type { DashboardSummary } from '@/types/dashboard/index';
+// (Conceptual - if you have dashboard.endpoint.ts and index.ts already set up)
 
-/**
- * Fetches the complete, aggregated summary data for the logged-in user's dashboard.
- */
+// In src/api/dashboard/endpoint.ts
+import { supabase } from "@/lib/supabase/supabaseClient";
+import type { DashboardSummary } from "@/types/dashboard";
+
 export const fetchDashboardSummary = async (): Promise<DashboardSummary | null> => {
-  // The RPC call itself does not change, only the data it returns
-  const { data, error } = await supabase
-    .rpc('get_user_dashboard_summary')
-    .single(); // .single() is good practice here as we expect one object
-
+  const { data, error } = await supabase.rpc('get_user_dashboard_summary');
   if (error) {
-    console.error('API Error fetchDashboardSummary:', error);
+    console.error("API Error fetchDashboardSummary:", error);
     throw new Error(error.message);
   }
-  return data as DashboardSummary | null;
+  return data as DashboardSummary | null; // Cast is still useful if database.types.ts is generic
 };

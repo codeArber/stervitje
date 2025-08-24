@@ -16,6 +16,7 @@
 }
 
 
+
 @layer components {
   .muscle-diagram-container svg [data-name] {
     @apply cursor-pointer transition-all duration-200 ease-in-out;

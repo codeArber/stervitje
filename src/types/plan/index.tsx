@@ -1,97 +1,127 @@
 // FILE: /src/types/plan/index.ts
 
-import type { Enums, Tables, TablesInsert } from "../database.types";
-import type { Exercise, ExerciseMuscleWithEngagement, Tag } from "../exercise";
-import type { Profile } from "../user";
-import type { PlanAnalyticsSummary } from "../analytics";
+import type {  Tag,
+  Profile, PlanAnalyticsSummary,
+  UserPlanStatus, SessionLog, SetType,
+} from "../index"; // Use centralized base types
+import { Tables, TablesInsert } from "../database.types";
+import { PlanGoal } from "./planGoals";
+import { PlanWeek } from "./planWeeks";
+import { PlanDay } from "./PlanDays";
+import { PlanSession } from "./planSessions";
+import { PlanExercise } from "./planSessionExercises";
+import { PlanSet } from "./planSessionExerciseSets";
+import { Exercise, ExerciseMuscleWithEngagement } from "../exercise";
 
-// --- Base Types ---
+// Re-export core base types for convenience within the plan module
 export type Plan = Tables<'plans'>;
-export type PlanGoal = Tables<'plan_goals'> & {
-  exercise_details?: Pick<Exercise, 'id' | 'name'> | null; // Add this line
-};
-export type UserPlanStatus = Tables<'user_plan_status'>;
+export type { PlanGoal }; // Re-export PlanGoal from its dedicated file
+export type { UserPlanStatus }; // Re-export UserPlanStatus from index.ts
+export type { PlanWeek }; // Re-export PlanWeek from its dedicated file
+export type { PlanDay }; // Re-export PlanDay from its dedicated file
+export type { PlanSession }; // Re-export PlanSession from its dedicated file
+export type { PlanExercise }; // Re-export PlanExercise from its dedicated file
+export type { PlanSet }; // Re-export PlanSet from its dedicated file
 
-// --- Hierarchy Types ---
-export type PlanSet = Tables<'plan_session_exercise_sets'> & {
-    intent: Enums<'exercise_physical_intent'> | null;
-};
-export type PlanExercise = Tables<'plan_session_exercises'> & {
-  exercise_details: Exercise;
-  sets: PlanSet[];
-};
-export type PlanSession = Tables<'plan_sessions'> & {
-  is_completed_by_user: boolean;
-  exercises: PlanExercise[];
-};
 
-export type PlanSessionStore = Tables<'plan_sessions'> & {
-  is_completed_by_user: boolean; // This might be a computed value
-  exercises: (PlanExercise & {
-    exercise_details: Pick<Tables<'exercises'>, 'id' | 'name' | 'image_url'>; // Use a more specific type for details
-    sets: PlanSet[] | null; // Ensure sets can be null
-  })[] | null; // Ensure exercises array can be null
-};
-export type PlanDay = Tables<'plan_days'> & {
-  sessions: PlanSession[];
-};
-export type PlanWeek = Tables<'plan_weeks'> & {
-  days: PlanDay[];
-};
+// --- Core Hierarchy & Full Plan Types ---
+
+/**
+ * @description Represents the full hierarchical structure of a plan (weeks, days, sessions, exercises, sets).
+ * Corresponds to the `hierarchy` property within `FullPlan`.
+ */
 export type PlanHierarchy = {
-  weeks: PlanWeek[];
+  weeks: PlanWeek[]; // `jsonb_agg` returns [] if empty, not null
 };
 
-// --- RPC Response Types ---
+/**
+ * @description Represents a comprehensive view of a plan, including its creator, team, goals,
+ * edit permissions, required equipment, user's status, and full hierarchical structure.
+ * Corresponds to the return type of `get_plan_details_for_user` RPC.
+ */
 export type FullPlan = {
-  plan: Plan;
+  plan: Tables<'plans'>;
   creator: Profile;
   team: Tables<'teams'> | null;
-  goals: PlanGoal[] | null;
+  goals: PlanGoal[]; // `COALESCE` in RPC makes this an empty array if no goals, not null
   can_edit: boolean;
-  required_equipment: Tag[] | null;
+  required_equipment: Tag[]; // `COALESCE` in RPC makes this an empty array
   user_plan_status: UserPlanStatus | null;
   hierarchy: PlanHierarchy;
-  muscle_activation_summary: ExerciseMuscleWithEngagement[];
-};
-export type UserPlanPerformance = Tables<'user_plan_performance_summary'>;
-export type PlanPerformanceEntry = {
-    profile: Profile;
-    performance: UserPlanPerformance;
-};
-export type RichPlanCardData = Plan & {
-  analytics: PlanAnalyticsSummary | null;
-  creator: Profile;
+  muscle_activation_summary: ExerciseMuscleWithEngagement[]; // `COALESCE` in RPC makes this an empty array
 };
 
-export interface FilteredPlanRich extends Tables<'plans'> {
-  analytics: {
-    plan_id: string;
-    fork_count: number | null;
-    like_count: number | null;
-    active_users_count: number | null;
-    avg_goal_success_rate: number | null;
-  } | null;
-  creator: Tables<'profiles'>;
-  total_exercises_count: number;
-  muscle_activation_summary: ExerciseMuscleWithEngagement[];
-  goals: PlanGoal[]; // CHANGED: Now contains the array of goals
+/**
+ * @description Filters for fetching rich plan cards and other plan lists.
+ */
+export interface PlanFilters {
+  searchTerm?: string | null;
+  tagIds?: number[] | null;
+  difficultyLevel?: number | null;
+  pageLimit?: number;
+  pageOffset?: number;
 }
 
-// --- Mutation Payload Types ---
-export type LoggedSet = Omit<TablesInsert<'set_logs'>, 'id' | 'session_exercise_log_id' | 'created_at'>& {
+/**
+ * @description Represents a plan with rich filtering and summary data.
+ * Corresponds to items returned by `get_filtered_plans_rich` RPC.
+ * This combines data from `plans`, `plan_analytics_summary`, and `plan_content_summary`.
+ */
+
+export interface FilteredPlanRich extends Tables<'plans'> {
+  analytics: PlanAnalyticsSummary | null;
+  creator: Profile; // Assuming this is Profile from index.ts
+  total_exercises_count: number | null;
+  muscle_activation_summary: ExerciseMuscleWithEngagement[] | null;
+  goals: PlanGoal[] | null;
+  // --- NEW: Tags property ---
+  tags: Tag[]; // Aggregated unique tags from exercises within the plan
+}
+
+/**
+ * @description Payload for `create_basic_plan` RPC.
+ */
+export interface CreateBasicPlanPayload {
+  p_title: string;
+  p_description?: string | null;
+  p_difficulty_level?: number | null;
+  p_private?: boolean | null;
+  p_team_id?: string | null;
+}
+
+// --- Mutation Payload Types for Logging Workouts ---
+
+/**
+ * @description Represents a performed set to be logged.
+ * Used in `LoggedExercise`.
+ */
+export type LoggedSet = Omit<TablesInsert<'set_logs'>, 'id' | 'session_exercise_log_id' | 'created_at'> & {
   _tempId?: string; // Add temporary ID for client-side list keys
+  // Specific fields for logging might include:
+  // reps_performed?: number | null;
+  // weight_used?: number | null;
+  // duration_seconds?: number | null;
+  // distance_meters?: number | null;
+  // notes?: string | null;
+  // performance_metadata?: object | null;
+  // set_number: number;
+  // set_type?: SetType;
 };
 
-
-export type LoggedExercise = {
-  _tempId?: string; // Add temporary ID for client-side list keys
-  plan_session_exercise_id: string | null;
-  exercise_id: string;
-  exercise_details?: Exercise; // Add exercise details for easier UI rendering
-  notes?: string;
-  sets: LoggedSet[];
+/**
+ * @description Represents an exercise that was performed and logged in a session.
+ * Used in `LogWorkoutPayload` and `ActiveWorkoutStatePayload` (for ad-hoc sessions).
+ * Extends `session_exercise_logs` and adds nested `exercise_details` and `sets`.
+ */
+export type LoggedExercise = Tables<'session_exercise_logs'> & {
+  _tempId?: string; // For client-side management
+  exercise_details: Exercise; // Full exercise details are included in RPC output
+  sets: LoggedSet[]; // `json_agg` returns [] if empty, not null
 };
+
+/**
+ * @description Payload for the `log_workout` RPC.
+ */
 export type LogWorkoutPayload = {
   session_log_id: string;
   performed_exercises: LoggedExercise[];
@@ -100,144 +130,26 @@ export type LogWorkoutPayload = {
   notes: string;
 };
 
-export interface AddPlanWeekPayload {
-  p_plan_id: string;
-  p_week_number: number;
-  p_description?: string | null;
-}
+// --- Plan Performance Related Types ---
 
-export interface UpdatePlanWeekPayload {
-  p_week_id: string;
-  p_week_number: number;
-  p_description?: string | null;
-}
+/**
+ * @description Represents a user's performance entry for a plan.
+ * Corresponds to items returned by `get_plan_user_performance_list` RPC.
+ */
+export type PlanPerformanceEntry = {
+    profile: Profile;
+    performance: Tables<'user_plan_performance_summary'>; // Direct use of Tables view type
+};
 
-export interface DeletePlanWeekPayload {
-  p_week_id: string;
-}
+/**
+ * @description Represents a user's submitted baseline for a goal.
+ * Corresponds to CompositeTypes<'user_baseline'>.
+ */
+export type UserBaseline = {
+  goal_id: string;
+  baseline_value: number;
+};
 
-export interface AddPlanDayPayload {
-  p_plan_week_id: string;
-  p_day_number: number;
-  p_title?: string | null;
-  p_description?: string | null;
-  p_is_rest_day?: boolean | null;
-}
-export interface AddPlanSessionPayload {
-  p_plan_day_id: string;
-  p_order_index: number;
-  p_title?: string | null;
-  p_notes?: string | null;
-}
+// --- Plan Mutation Change Sets ---
 
-export interface UpdatePlanSessionPayload { // <--- NEW
-  p_session_id: string;
-  p_order_index: number;
-  p_title?: string | null;
-  p_notes?: string | null;
-}
-
-export interface DeletePlanSessionPayload { // <--- NEW
-  p_session_id: string;
-}
-
-export interface UpdatePlanDayPayload { // <--- ADD THIS
-  p_day_id: string;
-  p_day_number: number;
-  p_title?: string | null;
-  p_description?: string | null;
-  p_is_rest_day?: boolean | null;
-}
-
-export interface DeletePlanDayPayload { // <--- ADD THIS
-  p_day_id: string;
-}
-
-
-export interface AddPlanSessionExercisePayload {
-  p_plan_session_id: string;
-  p_exercise_id: string;
-  p_order_within_session: number;
-  p_notes?: string | null;
-  p_execution_group?: number | null;
-  p_post_exercise_rest_seconds?: number | null;
-  p_post_group_rest_seconds?: number | null;
-}
-
-export interface DeletePlanSessionExercisePayload {
-  p_plan_session_exercise_id: string;
-}
-
-// --- NEW: Plan Session Exercise Set Mutation Payloads ---
-export interface AddPlanSessionExerciseSetPayload {
-  p_plan_session_exercise_id: string;
-  p_set_number: number;
-  p_target_reps?: number | null;
-  p_target_weight?: number | null;
-  p_target_duration_seconds?: number | null;
-  p_target_distance_meters?: number | null;
-  p_target_rest_seconds?: number | null;
-  p_notes?: string | null;
-  p_set_type?: Tables<'plan_session_exercise_sets'>['set_type']; // Use DB type for enum
-  p_metadata?: object | null; // jsonb
-}
-
-export interface UpdatePlanSessionExerciseSetPayload {
-  p_set_id: string;
-  p_set_number: number;
-  p_target_reps?: number | null;
-  p_target_weight?: number | null;
-  p_target_duration_seconds?: number | null;
-  p_target_distance_meters?: number | null;
-  p_target_rest_seconds?: number | null;
-  p_notes?: string | null;
-  p_set_type?: Tables<'plan_session_exercise_sets'>['set_type'];
-  p_metadata?: object | null;
-}
-
-
-export interface DeletePlanSessionExerciseSetPayload {
-  p_set_id: string;
-}
-
-export interface UpdatePlanSessionExercisePayload {
-  p_plan_session_exercise_id: string;
-  p_exercise_id: string; // Allow changing exercise, or make non-editable based on UI
-  p_order_within_session: number;
-  p_notes?: string | null;
-  p_execution_group?: number | null;
-  p_post_exercise_rest_seconds?: number | null;
-  p_post_group_rest_seconds?: number | null;
-}
-
-export interface GoalProgressData {
-    progress_id: string; // This is the ID from the user_plan_goal_progress table
-    start_value: number | null;
-    current_value: number | null;
-    target_value: number | null; // This is the personalized target
-    status: Enums<'goal_status'>;
-    // This object contains the original goal definition from the plan_goals table
-    goal_definition: PlanGoal; 
-}
-
-export interface PlanPerformanceDetails {
-    plan: Plan;
-    goal_progress: GoalProgressData[] | null;
-    // We can add the list of logged workouts here later
-}
-
-export interface FilteredPlanRich extends Tables<'plans'> {
-  analytics: {
-    plan_id: string; // Add if analytics always has this
-    fork_count: number | null; // Analytics can override top-level, or be null
-    like_count: number | null;
-    active_users_count: number | null;
-    avg_goal_success_rate: number | null; // Added based on your analytics schema
-  } | null;
-  creator: Tables<'profiles'>;
-  // NEW: Fields from plan_content_summary
-  total_exercises_count: number;
-  muscle_activation_summary: ExerciseMuscleWithEngagement[]; // Assuming this maps to your existing type
-  total_goals_count: number;
-}
-export type GetFilteredPlansRichResponse = FilteredPlanRich[];
+// Re-export the PlanChangeset type from utils (assuming it's a shared structure)

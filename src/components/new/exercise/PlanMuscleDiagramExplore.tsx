@@ -2,9 +2,11 @@
 import React from 'react';
 import Model from 'react-body-highlighter'; // Assuming Model is the default export
 import type { ExerciseMuscleWithEngagement } from '@/types/exercise'; // Import your type
+import { cn } from '@/lib/utils';
 
 interface ExerciseMuscleDiagramProps {
   muscles: ExerciseMuscleWithEngagement[];
+  className?: string;
   // You can add props here to control size, e.g., width?: string, height?: string
   // For a list card, we'll use fixed small sizes initially.
 }
@@ -44,7 +46,7 @@ function mapMuscleToHighlighter(muscleName: string): string | null {
   return muscleMap[muscleName] || null;
 }
 
-const PlanMuscleDiagramExplore: React.FC<ExerciseMuscleDiagramProps> = ({ muscles }) => {
+const PlanMuscleDiagramExplore: React.FC<ExerciseMuscleDiagramProps> = ({ muscles, className }) => {
   if (!muscles || muscles.length === 0) {
     return null; // Don't render anything if no muscles are provided
   }
@@ -123,7 +125,7 @@ const PlanMuscleDiagramExplore: React.FC<ExerciseMuscleDiagramProps> = ({ muscle
   const customStyles = createCustomStyles();
 
   return (
-    <div className="group relative flex-shrink-0 flex flex-row gap-1 w-full flex-row" >
+    <div className={cn('group relative flex-shrink-0 flex flex-row gap-1 w-full flex-row', className)} >
       {/* Front view - always visible */}
         <Model
           data={muscleData}

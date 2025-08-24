@@ -54,7 +54,7 @@ function ExerciseDetailPage() {
 
   if (isError || !exerciseData) {
     return (
-      <div className="min-h-screen container items-center flex w-full">
+      <div className="min-h-screen container items-center flex w-full ">
         <div className="container max-w-4xl py-16">
           <Card className="border-red-200 bg-blue-50/80 backdrop-blur-sm shadow-xl">
             <CardContent className="p-12 text-center">
@@ -102,17 +102,18 @@ function ExerciseDetailPage() {
   };
 
   return (
-    <div className="min-h-screen ">
-      <TopNavigation
-        items={[
-        { label: 'Home', href: '/', icon: Home },
-          { label: "Exercises", href: "/exercise", icon: Swords },
-          { label: exercise?.name } // Last item has no href (current page)
-        ]}
-      />
-
-      <div className="w-full" >
-        <main className="space-y-8">
+    <div className="min-h-screen flex flex-col">
+      <div className="px-4 fixed z-20 bg-black w-full">
+        <TopNavigation
+          items={[
+            { label: 'Home', href: '/', icon: Home },
+            { label: "Exercises", href: "/exercise", icon: Swords },
+            { label: exercise?.name } // Last item has no href (current page)
+          ]}
+        />
+      </div>
+  <div className="w-full px-4 flex-1 overflow-y-auto pb-4 pt-[68px]">
+        <main className="space-y-8 ">
           {/* Hero Section */}
           <Card className="border-0 shadow-xl bg-muted backdrop-blur-sm overflow-hidden">
             <CardContent className="p-0 ">

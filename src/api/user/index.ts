@@ -6,40 +6,47 @@ import {
   fetchCurrentUserProfile,
   fetchUserPlanHistory,
   fetchUserProfileDetails,
-  fetchRichUserCards, // The new function
+  fetchRichUserCards,
   fetchUserMeasurements,
-  type UserFilters,
   setCurrentUserWorkspace,
   insertUserMeasurement,
-  fetchDiscoverableUsers
+  fetchDiscoverableUsers,
+  type RichUserCardFilters, // Import the new filters type
 } from './endpoint';
 import { useAuthStore } from '@/stores/auth-store';
-import type { Profile } from '@/types/index';
-import type { DiscoverableUser, DiscoverableUserFilters, RichUserCardData, UserPlanHistoryItem, UserProfileDetails } from '@/types/user/index';
-import { Tables, TablesInsert } from '@/types/database.types';
+import type { Profile, UserMeasurement } from '@/types/index';
+import type {
+  DiscoverableUser,
+  DiscoverableUserFilters,
+  RichUserCardData,
+  UserPlanHistoryItem,
+  UserProfileDetails,
+  UserProfileUpdatePayload, // Import the new payload type
+} from '@/types/user/index';
+import { Tables, TablesInsert } from '@/types/database.types'; // Still used for TablesInsert
 import { toast } from 'sonner';
-import { updateUserProfile, UserProfileUpdatePayload } from '../performance/endpoint';
+// Assuming updateUserProfile and UserProfileUpdatePayload are correctly imported
+// from `../performance/endpoint` as discussed.
+import { updateUserProfile } from '../performance/endpoint';
+
 
 // --- Query Keys ---
 const userKeys = {
   all: ['user'] as const,
   currentUser: () => [...userKeys.all, 'current'] as const,
   profileDetails: (userId: string) => [...userKeys.all, 'details', userId] as const,
-  // Key for the new rich user card lists
   richLists: () => [...userKeys.all, 'rich', 'list'] as const,
-  
-  lists: () => [...userKeys.all, 'list'] as const,
-  richList: (filters: UserFilters) => [...userKeys.richLists(), filters] as const,
-  planHistory: (userId: string) => [...userKeys.all, 'planHistory', userId] as const, 
-   measurements: () => [...userKeys.all, 'measurements'] as const, // Base key for all measurements
-  userMeasurements: (userId: string) => [...userKeys.measurements(), userId] as const, // Specific user's measurements
-  discoverableList: (filters: DiscoverableUserFilters) => [...userKeys.lists(), 'discoverable', filters] as const,
+  richList: (filters: RichUserCardFilters) => [...userKeys.richLists(), filters] as const, // Use RichUserCardFilters
+  planHistory: (userId: string) => [...userKeys.all, 'planHistory', userId] as const,
+  measurements: () => [...userKeys.all, 'measurements'] as const,
+  userMeasurements: (userId: string) => [...userKeys.measurements(), userId] as const,
+  discoverableList: (filters: DiscoverableUserFilters) => [...userKeys.all, 'list', 'discoverable', filters] as const, // Updated path for clarity
 };
 
 // --- Hooks ---
 
 /**
- * Hook for fetching the current authenticated user's simple profile record.
+ * @description Hook for fetching the current authenticated user's simple profile record.
  * This is now powered by the Zustand store.
  */
 export const useCurrentUserQuery = () => {
@@ -53,7 +60,7 @@ export const useCurrentUserQuery = () => {
 };
 
 /**
- * Hook for fetching the complete, aggregated profile details for any user.
+ * @description Hook for fetching the complete, aggregated profile details for any user.
  */
 export const useUserProfileDetailsQuery = (userId: string | undefined) => {
   return useQuery<UserProfileDetails | null, Error>({
@@ -64,10 +71,9 @@ export const useUserProfileDetailsQuery = (userId: string | undefined) => {
 };
 
 /**
- * NEW & REPLACES useDiscoverableUsersQuery: Hook for fetching rich, analytical data
- * for user/coach cards on the Explore page.
+ * @description Hook for fetching rich, analytical data for user/coach cards on the Explore page.
  */
-export const useRichUserCardsQuery = (filters: UserFilters) => {
+export const useRichUserCardsQuery = (filters: RichUserCardFilters) => {
     return useQuery<RichUserCardData[], Error>({
       queryKey: userKeys.richList(filters),
       queryFn: () => fetchRichUserCards(filters),
@@ -75,7 +81,7 @@ export const useRichUserCardsQuery = (filters: UserFilters) => {
 };
 
 /**
- * Hook for fetching a user's complete workout plan history.
+ * @description Hook for fetching a user's complete workout plan history.
  */
 export const useUserPlanHistoryQuery = (userId: string | undefined) => {
   return useQuery<UserPlanHistoryItem[], Error>({
@@ -86,7 +92,7 @@ export const useUserPlanHistoryQuery = (userId: string | undefined) => {
 };
 
 /**
- * Hook for the mutation to complete the user's onboarding process.
+ * @description Hook for the mutation to complete the user's onboarding process.
  */
 export const useCompleteOnboardingMutation = () => {
   const queryClient = useQueryClient();
@@ -94,47 +100,55 @@ export const useCompleteOnboardingMutation = () => {
     mutationFn: completeOnboarding,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.currentUser() });
+      toast.success('Onboarding completed!'); // Added toast for user feedback
     },
     onError: (error) => {
       console.error('Error completing onboarding mutation:', error);
+      toast.error(`Failed to complete onboarding: ${error.message}`); // Added toast for error
     }
-  });
-};
-
-
-export const useSetCurrentUserWorkspaceMutation = () => {
-  const queryClient = useQueryClient();
-  return useMutation<void, Error, string | null>({ // <--- CHANGED: parameter can be string | null
-    mutationFn: (workspaceId) => setCurrentUserWorkspace(workspaceId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dashboard', 'summary'] });
-      queryClient.invalidateQueries({ queryKey: userKeys.currentUser() });
-    },
-    onError: (error) => {
-      console.error('Error setting current workspace:', error);
-    }
-  });
-};
-
-export const useUserMeasurementsQuery = (userId: string | undefined) => {
-  return useQuery<Tables<'user_measurements'>[], Error>({
-    queryKey: userKeys.userMeasurements(userId!),
-    queryFn: () => fetchUserMeasurements(userId!),
-    enabled: !!userId, // Only run if userId is available
   });
 };
 
 /**
- * NEW: Hook for inserting a new user measurement.
+ * @description Hook for the mutation to set the current user's active workspace.
+ */
+export const useSetCurrentUserWorkspaceMutation = () => {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string | null>({
+    mutationFn: (workspaceId) => setCurrentUserWorkspace(workspaceId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'summary'] }); // Invalidate dashboard summary
+      queryClient.invalidateQueries({ queryKey: userKeys.currentUser() }); // Invalidate current user profile
+      toast.success('Workspace updated successfully!'); // Added toast
+    },
+    onError: (error) => {
+      console.error('Error setting current workspace:', error);
+      toast.error(`Failed to set workspace: ${error.message}`); // Added toast
+    }
+  });
+};
+
+/**
+ * @description Hook for fetching a user's body measurements.
+ */
+export const useUserMeasurementsQuery = (userId: string | undefined) => {
+  return useQuery<UserMeasurement[], Error>({
+    queryKey: userKeys.userMeasurements(userId!),
+    queryFn: () => fetchUserMeasurements(userId!),
+    enabled: !!userId,
+  });
+};
+
+/**
+ * @description Hook for inserting a new user measurement.
  */
 export const useInsertUserMeasurementMutation = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuthStore(); // Get current user from auth store
+  const { user } = useAuthStore();
 
-  return useMutation<Tables<'user_measurements'>, Error, TablesInsert<'user_measurements'>>({
+  return useMutation<UserMeasurement, Error, TablesInsert<'user_measurements'>>({ // Return type `UserMeasurement`
     mutationFn: (newMeasurementData) => insertUserMeasurement(newMeasurementData),
     onSuccess: (newRecord) => {
-      // Invalidate the measurements query for the current user to refetch the updated list
       if (user?.id) {
         queryClient.invalidateQueries({ queryKey: userKeys.userMeasurements(user.id) });
       }
@@ -146,36 +160,34 @@ export const useInsertUserMeasurementMutation = () => {
   });
 };
 
+/**
+ * @description Hook for the mutation to update the current user's profile.
+ */
 export const useUpdateUserProfileMutation = () => {
   const queryClient = useQueryClient();
-  const { setProfile } = useAuthStore.getState(); // Get the action to update the auth store
+  const { setProfile } = useAuthStore.getState();
 
-  return useMutation({
-    mutationFn: (payload: UserProfileUpdatePayload) => updateUserProfile(payload),
+  return useMutation<Profile, Error, UserProfileUpdatePayload>({ // Return type `Profile`
+    mutationFn: (payload) => updateUserProfile(payload),
     onSuccess: (updatedProfile) => {
       toast.success("Profile updated successfully!");
-      
-      // Update the auth store immediately for a snappy UI response
-      setProfile(updatedProfile);
-      
-      // Invalidate queries that depend on user data to refetch in the background
+      setProfile(updatedProfile); // Update the auth store
       queryClient.invalidateQueries({ queryKey: userKeys.currentUser() });
       queryClient.invalidateQueries({ queryKey: userKeys.profileDetails(updatedProfile.id) });
     },
     onError: (error) => {
-      // The zod schema on the form should prevent most errors,
-      // but this will catch things like a non-unique username.
       toast.error(`Update failed: ${error.message}`);
     }
   });
 };
 
+/**
+ * @description Hook for fetching a list of discoverable users based on filters.
+ */
 export const useDiscoverableUsersQuery = (filters: DiscoverableUserFilters) => {
   return useQuery<DiscoverableUser[], Error>({
     queryKey: userKeys.discoverableList(filters),
     queryFn: () => fetchDiscoverableUsers(filters),
-    // You might want to enable/disable based on search term or dialog open state
-    // For the InviteMemberDialog, it's generally enabled to fetch initially or with debounced search
-    enabled: true, // or some specific condition if filtering should only occur on user input
+    enabled: true,
   });
 };

@@ -1,15 +1,14 @@
-import type { Plan, Team, Profile } from '@/types/index';
-import type { TeamMemberRole } from '@/types/team';
-import type { TeamMemberWithProfile } from '@/types/team'; // Import this type
+// src/types/workspace/index.ts
 
-// Type for a single member within the workspace view
-// Already exists as TeamMemberWithProfile, so we can reuse or keep this alias if desired.
+// Import the rich team details type from the team module
+import type { TeamDetails, TeamMemberWithProfile } from '@/types/team';
+
+// No need for explicit 'team', 'members', 'plans', 'current_user_role' properties here anymore
+// as they are all part of the aliased TeamDetails.
+export type WorkspaceData = TeamDetails;
+
+/**
+ * @description Represents a single member within the workspace view.
+ * This is an alias for `TeamMemberWithProfile`.
+ */
 export type WorkspaceMember = TeamMemberWithProfile;
-
-// This is the main type for the entire JSON object returned by the get_team_details_and_members RPC.
-export type WorkspaceData = {
-  team: Team;
-  members: WorkspaceMember[] | null; // Renamed to 'members' to match RPC
-  plans: Plan[] | null;
-  current_user_role: TeamMemberRole | null; // Matches RPC output
-};

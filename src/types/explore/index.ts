@@ -1,4 +1,5 @@
 import type { PlanAnalyticsSummary, CoachAnalyticsSummary } from "../analytics";
+import { ExerciseMuscleWithEngagement } from "../exercise";
 import type { Plan, Profile, Team } from "../index"; // Ensure Profile is imported from correct path
 
 // This is the data structure for one plan card on the Explore Plans page
@@ -20,4 +21,17 @@ export type RichTeamCardData = Team & {
 export type RichUserCardData = Profile & {
   analytics: CoachAnalyticsSummary | null;
   // specializations: string[] | null; // REMOVED
+};
+
+
+/**
+ * @description Data structure for a single plan card on the Explore Plans page.
+ * Corresponds to items returned by `get_filtered_plans_rich` RPC.
+ */
+export type ExplorePlanCard = Plan & {
+  analytics: PlanAnalyticsSummary | null;
+  creator: Profile;
+  total_exercises_count: number | null;
+  muscle_activation_summary: ExerciseMuscleWithEngagement[] | null;
+  goals: PlanGoal[] | null;
 };

@@ -1,93 +1,97 @@
-// FILE: src/components/workspace/workspace-card.tsx
+// FILE: src/components/new/workspace/WorkspaceCard.tsx (Conceptual)
 
 import React from 'react';
-import { useNavigate } from '@tanstack/react-router';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Users,  CheckCircle, Play, Dumbbell } from 'lucide-react'; // Added Play icon
+import { Link } from '@tanstack/react-router';
 import { useSetCurrentUserWorkspaceMutation } from '@/api/user';
 import { toast } from 'sonner';
 
-// shadcn/ui components
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import type { DashboardMyTeam } from '@/types/dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Icons
-import { Home, Users } from 'lucide-react';
-
-// Types
-import type { MyTeam } from '@/types/dashboard';
-
 interface WorkspaceCardProps {
-  team: MyTeam;
+  team: DashboardMyTeam; // This is the new, enriched type
   currentWorkspaceId: string | null | undefined;
 }
 
 export const WorkspaceCard: React.FC<WorkspaceCardProps> = ({ team, currentWorkspaceId }) => {
-  const navigate = useNavigate();
-  const Icon = team.is_personal_workspace ? Home : Users;
-  const { mutate: setCurrentWorkspace, isPending } = useSetCurrentUserWorkspaceMutation();
+  const setCurrentUserWorkspaceMutation = useSetCurrentUserWorkspaceMutation();
 
-  const isCurrent = team.id === currentWorkspaceId;
+  const isCurrentWorkspace = currentWorkspaceId === team.id;
 
-  const handleCardClick = () => {
-    const toastId = toast.loading('Setting current workspace...');
-    setCurrentWorkspace(team.id, {
-      onSuccess: () => {
-        toast.success(`'${team.name}' set as current workspace!`, { id: toastId });
-        navigate({ to: '/workspace/$teamId', params: { teamId: team.id } });
-      },
-      onError: (error) => {
-        toast.error(`Error setting workspace: ${error.message}`, { id: toastId });
-      }
-    });
+  const handleSetAsCurrent = async () => {
+    try {
+      await setCurrentUserWorkspaceMutation.mutateAsync(team.id);
+      toast.success(`'${team.name}' set as your current workspace.`);
+    } catch (error: any) {
+      toast.error(`Failed to set workspace: ${error.message}`);
+    }
   };
 
-  if (isCurrent) {
-    // If this card represents the current workspace, it's displayed in CurrentWorkspaceOverview.
-    // So, this component should not render itself if it's the current one.
-    return null;
-  }
-
   return (
-    <Card 
-      className={`h-full flex flex-col hover:border-primary transition-colors duration-200 cursor-pointer ${
-        isPending ? 'opacity-50 pointer-events-none' : ''
-      }`}
-      onClick={handleCardClick}
-    >
-      <CardHeader className="flex-grow">
-        <div className="flex items-center gap-3 text-muted-foreground mb-4">
-          <Icon className="h-5 w-5" />
-          <span className="font-semibold text-sm">
-            {team.is_personal_workspace ? "Personal Workspace" : "Collaborative Team"}
-          </span>
-        </div>
-        <CardTitle>{team.name}</CardTitle>
-        <CardDescription className="line-clamp-2 min-h-[40px]">
-          {team.description || "No description provided."}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex-grow" />
-      <CardFooter className="bg-muted/50 p-3 flex justify-center items-center text-sm">
-        <Badge variant="secondary" className="capitalize">{team.role}</Badge>
-      </CardFooter>
-    </Card>
-  );
-};
-
-// Reusing MyTeamCardSkeleton for consistency, can be named WorkspaceCardSkeleton if preferred.
-export const WorkspaceCardSkeleton: React.FC = () => {
-  return (
-    <Card className="h-full flex flex-col">
+    <Card className="flex flex-col h-full hover:shadow-lg transition-shadow duration-200">
       <CardHeader>
-        <Skeleton className="h-5 w-32 mb-4" />
-        <Skeleton className="h-6 w-3/4" />
-        <Skeleton className="h-4 w-full mt-2" />
-        <Skeleton className="h-4 w-1/2" />
+        <CardTitle className="flex justify-between items-center">
+          <Link to={`/workspace/$teamId`} params={{teamId: team.id}} className="hover:underline">
+            {team.name}
+          </Link>
+          {isCurrentWorkspace && (
+            <span className="text-sm text-green-500 flex items-center gap-1">
+              <CheckCircle className="h-4 w-4" /> Current
+            </span>
+          )}
+        </CardTitle>
+        <CardDescription>{team.description || 'No description provided.'}</CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow" />
-      <CardFooter className="bg-muted/50 p-3">
-        <Skeleton className="h-5 w-full" />
+      <CardContent className="flex-grow">
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <p className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Members: <span className="font-semibold text-foreground">{team.members_count}</span>
+          </p>
+          <p className="flex items-center gap-2">
+            <Dumbbell className="h-4 w-4" />
+            Plans: <span className="font-semibold text-foreground">{team.plans_count}</span>
+          </p>
+          <p className="flex items-center gap-2">
+            Your Role: <span className="font-semibold text-foreground capitalize">{team.role}</span>
+          </p>
+          {/* NEW: Display active plan status for this team */}
+          {team.has_active_plan_for_user && (
+            <p className="flex items-center gap-2 text-blue-600 font-medium">
+              <Play className="h-4 w-4" />
+              Active Plan Here!
+            </p>
+          )}
+        </div>
+      </CardContent>
+      <CardFooter className="flex justify-end">
+        {!isCurrentWorkspace && (
+          <Button variant="outline" onClick={handleSetAsCurrent} disabled={setCurrentUserWorkspaceMutation.isPending}>
+            Set as Current
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
 };
+
+export const WorkspaceCardSkeleton: React.FC = () => (
+  <Card className="flex flex-col h-full animate-pulse">
+    <CardHeader>
+      <Skeleton className="h-6 w-3/4 mb-2" />
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-2/3" />
+    </CardHeader>
+    <CardContent className="flex-grow space-y-2">
+      <Skeleton className="h-4 w-1/2" />
+      <Skeleton className="h-4 w-1/2" />
+      <Skeleton className="h-4 w-1/3" />
+    </CardContent>
+    <CardFooter className="flex justify-end">
+      <Skeleton className="h-10 w-28" />
+    </CardFooter>
+  </Card>
+);

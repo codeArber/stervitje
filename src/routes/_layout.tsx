@@ -63,9 +63,9 @@ function AuthenticatedLayout() {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden">
+    <div className="flex h-screen w-screen">
       <AppSidebar />
-      <main className='flex-1 overflow-y-auto px-6 overflow-x-hidden'>
+      <main className='flex-1 min-h-0 overflow-y-auto'>
         <Outlet />
       </main>
     </div>

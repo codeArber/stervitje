@@ -57,7 +57,7 @@ export const GoalCard: React.FC<GoalCardProps> = ({ goal, canEdit, onEdit, onDel
             </Badge>
             
             {/* --- THIS IS THE NEW PART --- */}
-            {goal.exercise_details?.name && (
+            {goal.exercise_details?.name && goal.exercise_details && (
               <Link to="/exercise/$exerciseId" params={{ exerciseId: goal.exercise_id! }}>
                 <Badge variant="outline" className="hover:bg-muted">
                     <Target className="h-3 w-3 mr-1.5" />
